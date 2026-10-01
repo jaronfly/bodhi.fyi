@@ -52,5 +52,34 @@ To turn this preview into a public launch, reconcile the release label, select t
 - `experience.js`: original pixel scenes and interactions.
 - `jaronfly-section.html`: a separate GitHub + Bodhi invitation section to adapt surgically to the current website.
 - `assets/`: the existing brand lockup and mark.
+- `claude-field.css`, `claude-field.js` and `assets/claude/`: the pixel-art scenes merged in after the film (see the section below).
 
 The Jaronfly section is an integration preview. It does not claim to be installed into Breakdance. The landing page and section use relative links so the bundle works at the existing experimental route or on a local static server.
+
+## The pixel scenes after the film (merged October 1, 2026)
+
+Jaron asked for the solid text content to come after the scroller, with the style of the pixel-art story replacing the blandness that followed the film. The old two-column `section#afterward` is replaced by those scenes. The film is unchanged.
+
+**What was merged, and from where.** The landing-site build on the `claude/landing-site` branch: a pixel-art scroll story written by Claude in a separate cloud session on September 30, 2026 (its `index.html`, `styles.css`, `app.js`, the commit data for the ancestral plane; the seven receipt screenshots are held back pending the owner's approval). It arrives here as `claude-field.css`, `claude-field.js` and `assets/claude/` (the Random Universe monogram), inside one `div.claude-field` in place of `section#afterward`.
+
+**Scene order.** A short transition (the seed animation, "Roots first.", one quote), then roots, the cell (the honey bear that unpacks, then the playable padded cell), to be, the tree, the sky, ancestors, questions, receipts, the workbench, plant and access. The end note, a short colophon and the original footer close the page. The first section keeps `id="afterward"` so the skip links and "Meet the seed" still land on it, and the Replay link returns to the film.
+
+**Source boundaries.**
+
+- The cinematic opening (`.story`, `cinema.css`, `cinema.js`, `vendor/`) is Astra's work, with Luna source research and Sol implementation support, credited as above. This merge changes none of it.
+- The scenes after it are Claude's. Their words keep the provenance labels they carry: lines marked "written for this page" are Jaron's, cleaned up with him; dated records are verbatim; every figure keeps its Measured, Estimated or Asserted label and source.
+- The old afterward's content lives on inside the scenes: the invitation, the copy-brief control (`#copy-brief`, `#copy-status`, and `#brief` inside a `details`, which `cinema.js` binds by id), the access note, the five FAQ answers as `details`, the end note and the footer links.
+
+**Keeping the two apart.**
+
+- Every ported CSS rule sits under `.claude-field`. Class names that `cinema.css` styles globally were renamed (`.grain` is `.cf-grain`, `.stage` is `.root-stage`), keyframes are prefixed `cf-`, and `em`, `details`, `pre` and `footer` are reset or kept out of the wrapper. The original footer sits after it.
+- `claude-field.js` is one IIFE with no globals and no storage. It never writes to the film's state. It reads the film's Stillness button (`aria-pressed`) and the system's reduced-motion setting, and adds its own Motion switch that lives in memory and resets on reload. With any of those off, every scene renders a still frame.
+- One Google Fonts request carries all four families. Tiny5 is added because the scenes draw their pixel headings with it.
+
+**Privacy.** This site promises no personal details, vendor spending, token totals or persistent storage, so the merge removes the typed-hours, token and dollar stats, a personal anecdote from the workbench, hardware and host details from the field notes, vendor names from image descriptions, and the `localStorage` motion setting. The receipt screenshots are not published: each exhibit keeps its caption and shows a held-back slot until the owner approves an image (see `MERGE_REVIEW.md`).
+
+**Not merged.** The 3D `#journey` layer and `journey/journey.js` (the film is this site's 3D), and the landing-site header, scene rail and scenes menu.
+
+**Open before launch.** `MERGE_REVIEW.md` lists the placeholders, the quotes to approve, what remains visible in the images and everything that was cut.
+
+Merged by Claude, subagent, cloud session.
