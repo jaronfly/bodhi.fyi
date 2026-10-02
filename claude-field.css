@@ -1,5 +1,5 @@
 /* Bodhi · the pixel scenes after the film · claude-field.css
-   Ported from the landing-site branch. Every rule is scoped under .claude-field so it cannot reach the
+   Every rule is scoped under .claude-field so it cannot reach the
    cinema (cinema.css styles .grain, .scroll-cue, .stage, footer, em, pre and details globally).
    Renamed to avoid those: .grain -> .cf-grain, .stage -> .root-stage. Keyframes are prefixed cf-.
    Motion is off when the system asks for reduced motion or .claude-field[data-motion="off"]. */
