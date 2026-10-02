@@ -1,0 +1,6 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:#c9874f;display:flex;flex-wrap:wrap;gap:24px;padding:24px;align-items:flex-end">
+<script type=module>
+import {spriteCanvas,PAINTERS} from './seed-journey/sprites.js';
+for (const n of Object.keys(PAINTERS)) for (const f of [0,1]) { const c=spriteCanvas(n,f,6); const d=document.createElement('div'); d.style.cssText='background:linear-gradient(#7a5a8a,#e09060);padding:8px'; c.style.imageRendering='pixelated'; d.append(c); document.body.append(d);}
+document.title='ready';
+</script>
