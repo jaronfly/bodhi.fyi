@@ -73,20 +73,42 @@
     for(let i=0;i<3;i++){const k=(t*.035+i*.31)%1;rect(c,i%2?'#8d9c5d':'#a9b56b',x+(Math.sin(k*5+i)*18-24)*s,y-(76-k*72)*s,2*s,s);}
   }
   function dog(c,x,y,s,t,hello){
-    const phase=t%13,looking=phase<7||hello>0,hop=hello>0?Math.sin(Math.min(1,hello/1.2)*Math.PI)*4:phase>7&&phase<8?Math.sin((phase-7)*Math.PI)*4:0;
-    const body=['..............','.......ddd....','......dgggd...','.....dggllld..','..ddddgggggdd.','.dgggggggllnd.','dggggggglllln.','dggggggllll...','.dgggggglld...','..dgd..dgd....','..dgd..dgd....','..ddd..ddd....'];
-    const colors={d:'#704c2c',g:'#c38b46',l:'#e4b668',n:'#263728'};
-    // Tail hinges at the rump; its four poses wag without moving the whole pet.
-    line(c,'#c38b46',[[x+2*s,y-8*s],[x-2*s,y-(10+Math.sin(t*8)*2)*s],[x-3*s,y-(13+Math.sin(t*8)*2)*s]],2*s);
-    const yy=y-12*s-hop*s;
+    // A small tricolour hound facing the tree: dark floppy ears, a white blaze,
+    // a dark saddle, white chest and paws. It jumps up at the fruit in a little
+    // cycle — crouch, hop, land, beat of anticipation — and goes properly
+    // ecstatic when greeted. The tail is raised, white-tipped, three wag poses.
+    const cyc=t%1.5;
+    let hop=0,crouch=false;
+    if(hello>0) hop=Math.abs(Math.sin(hello*6))*5;
+    else if(cyc<0.16){crouch=true;hop=0;}
+    else if(cyc<0.66) hop=Math.sin((cyc-0.16)/0.5*Math.PI)*4.5;
+    const body=[
+    '...............',
+    '..........dd...',
+    '.........dggd..',
+    '........dgWWd..',
+    '.......gggWgnd.',
+    '........ggggd..',
+    '.....lggggggl..',
+    '..WWgggggggWW..',
+    '.WdWgKKKKKgWd..',
+    '.WdWWd...dWd...',
+    '.ddWd....dWd...',
+    '..dd......dd...'];
+    const colors={d:'#704c2c',B:'#c38b46',g:'#c38b46',l:'#e4b668',n:'#263728',K:'#263728',W:'#f2eee4'};
+    const wag=Math.floor(t*5)%3;
+    // the tail is UP and wagging, and it follows the hop: short stepped pixels
+    // hinged at the rump, white-tipped, three poses.
+    const ty=y-8*s-hop*s+(crouch?s:0);
+    if(wag===0){rect(c,'#c38b46',x+1*s,ty,3*s,2*s);rect(c,'#c38b46',x-1*s,ty-1*s,2*s,2*s);rect(c,'#f2eee4',x-2*s,ty-1*s,s,s);}
+    else if(wag===1){rect(c,'#c38b46',x+1*s,ty-1*s,3*s,2*s);rect(c,'#c38b46',x-1*s,ty-3*s,2*s,3*s);rect(c,'#f2eee4',x-2*s,ty-4*s,s,2*s);}
+    else{rect(c,'#c38b46',x+1*s,ty,3*s,2*s);rect(c,'#c38b46',x-2*s,ty-2*s,2*s,2*s);rect(c,'#f2eee4',x-3*s,ty-3*s,s,2*s);}
+    const yy=y-12*s-(hop*s)+(crouch?s:0);
     body.forEach((row,j)=>[...row].forEach((a,i)=>{if(a!=='.')rect(c,colors[a],x+i*s,yy+j*s,s,s);}));
-    rect(c,'#17231b',x+10*s,yy+3*s,s,s);
-    rect(c,'#936332',x+7*s,yy+3*s,2*s,4*s);
-    if(looking){rect(c,'#17231b',x+11*s,yy+6*s,2*s,s);}
-    if(hello>0||(phase>2&&phase<2.7)||(phase>4&&phase<4.5)){
-      line(c,'#f2eee4',[[x+16*s,yy+2*s],[x+19*s,yy]],s);
-      line(c,'#f2eee4',[[x+16*s,yy+5*s],[x+20*s,yy+5*s]],s);
-    }
+    // one bright eye above the white blaze, dark nose at the muzzle's end
+    rect(c,'#17231b',x+10*s,yy+2*s,s,s);
+    if(hello>0||hop>3){line(c,'#f2eee4',[[x+13*s,yy+2*s],[x+16*s,yy]],s);line(c,'#f2eee4',[[x+13*s,yy+5*s],[x+17*s,yy+5*s]],s);}
+    else if(Math.floor(t*2)%4===1){line(c,'#f2eee4',[[x+13*s,yy+5*s],[x+16*s,yy+5*s]],s);}
   }
   const background=document.getElementById('landscapeCanvas'),orchard=document.getElementById('orchardCanvas');
   const scenes=[{cv:background,kind:'field',visible:false},{cv:orchard,kind:'orchard',visible:false}].filter(s=>s.cv);
@@ -95,16 +117,30 @@
   function size(s){const r=s.cv.getBoundingClientRect();s.cv.width=Math.max(160,Math.round(r.width/4));s.cv.height=Math.max(150,Math.round(r.height/4));s.ctx=s.cv.getContext('2d');s.ctx.imageSmoothingEnabled=false;}
   function draw(s){const c=s.ctx,w=s.cv.width,h=s.cv.height;
     if(s.kind==='orchard'){
-      valley(c,w,h,time,true);const x=w*.74,y=h*.88,scale=Math.min(w/260,h/165);
+      // The credits live ON this section now: the vista grows and the canvas
+      // paints behind them. The composed scene (sun, valley, tree, dog) anchors
+      // to the band above the credits; below it the sunset's ground tones
+      // continue, dithered down into dusk, so the picture persists under the
+      // words like a held last frame.
+      const band=Math.max(150,Math.min(h,Math.round(s.band||h)));
+      valley(c,w,band,time,true);
+      for(let y=band;y<h;y++){
+        const k=(y-band)/Math.max(1,h-band);
+        for(let x=0;x<w;x++){const th=B[(y%4)*4+x%4]/16;
+          rect(c,k<0.16?(th>0.5?'#5d6040':'#545738'):k<0.45?(th>0.5?'#4d4a30':'#464427'):k<0.75?(th>0.6?'#3b3a25':'#353420'):(th>0.7?'#2c2c1c':'#272817'),x,y);}
+      }
+      const x=w*.74,y=band*.90,scale=Math.min(w/260,band/120);
       orchardTree(c,x,y,scale,time);dog(c,x-39*scale,y+2*scale,scale,time,hello);
-      for(let i=0;i<40;i++){const x=i*w/39;line(c,i%2?'#566b3e':'#859355',[[x,h],[x+Math.sin(time+i)*2,h-4-i%5]],1);}
+      for(let i=0;i<40;i++){const x=i*w/39;line(c,i%2?'#566b3e':'#859355',[[x,band],[x+Math.sin(time+i)*2,band-4-i%5]],1);}
     }else{
       const r=root.getBoundingClientRect(),p=clamp(-r.top/(r.height-innerHeight));valley(c,w,h,time,false,clamp((p-.72)/.28));
       c.fillStyle='#0e24186b';c.fillRect(0,0,w,h);
     }
   }
   function frame(now){raf=0;if(document.hidden)return;if(now-last>=66||dirty){const dt=Math.min(.1,(now-last)/1000);last=now;if(motion()){time+=dt;hello=Math.max(0,hello-dt);}scenes.filter(s=>s.visible).forEach(draw);dirty=false;}if(motion()&&scenes.some(s=>s.visible))raf=requestAnimationFrame(frame);}
-  const wake=()=>{root.dataset.ambient=motion()?'on':'off';dirty=true;if(!raf&&!document.hidden)raf=requestAnimationFrame(frame);};
+  const lower=document.querySelector('.orchard-lower');
+  const measure=()=>{scenes.forEach(s=>{if(s.kind!=='orchard')return;const r=s.cv.getBoundingClientRect();if(!r.height)return;s.band=Math.round((lower?lower.getBoundingClientRect().top-r.top:r.height)/(r.height/s.cv.height));});};
+  const wake=()=>{scenes.forEach(s=>{const r=s.cv.getBoundingClientRect();if(Math.max(160,Math.round(r.width/4))!==s.cv.width||Math.max(150,Math.round(r.height/4))!==s.cv.height)size(s);});measure();root.dataset.ambient=motion()?'on':'off';dirty=true;if(!raf&&!document.hidden)raf=requestAnimationFrame(frame);};
   const io=new IntersectionObserver(entries=>{entries.forEach(e=>{const s=scenes.find(s=>s.cv===e.target);s.visible=e.isIntersecting;});wake();});
   scenes.forEach(s=>{size(s);draw(s);io.observe(s.cv);});
   addEventListener('resize',()=>{scenes.forEach(size);wake();});addEventListener('scroll',wake,{passive:true});document.addEventListener('visibilitychange',wake);reduced.addEventListener('change',wake);

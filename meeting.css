@@ -1,0 +1,84 @@
+/* Bodhi · the meeting · meeting.css
+   The cast of the tree world. Scoped to .scene-meeting inside .claude-field, like every other
+   field-guide rule, so it cannot reach the cinema. The section sits on the fixed pixel night
+   backdrop like its neighbours: text lives on near-opaque Soil plates and the world shows in
+   the gaps between them. With no script the stage is hidden (js-only) and the noscript copy
+   and the cast list read as plain text. */
+.claude-field .scene-meeting {
+  position: relative;
+  padding: clamp(80px, 12vw, 150px) 0;
+}
+
+/* the statement card: kicker, two-voice headline, the honest-limit line */
+.claude-field .meeting-head {
+  max-width: 700px;
+  background: rgba(23, 35, 27, .95);
+  border: 1px solid var(--moss);
+  padding: clamp(24px, 3.4vw, 44px);
+}
+.claude-field .meeting-head h2 { margin-bottom: 28px; }
+.claude-field .meeting-head .measure { color: var(--sage); }
+.claude-field .meeting-tag { margin: 22px 0 0; }
+.claude-field .meeting-tag .vd { margin: 0; }
+
+/* the night circle, drawn one art pixel per canvas pixel */
+.claude-field .meeting-stage {
+  padding: clamp(36px, 6vw, 72px) 0;
+}
+.claude-field .meeting-frame {
+  display: flex;
+  justify-content: center;
+}
+.claude-field .meeting-canvas {
+  image-rendering: pixelated;
+  max-width: 100%;
+}
+
+/* the cast labels: small-caps mono names over one honest-limit line each */
+.claude-field .meeting-cast {
+  list-style: none;
+  margin: 0 auto;
+  padding: 20px 26px;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  background: rgba(23, 35, 27, .95);
+  border: 1px solid var(--moss);
+  text-align: center;
+}
+.claude-field .meeting-cast .px {
+  display: block;
+  font: 9px/1.7 var(--f-mono);
+  letter-spacing: .12em;
+  color: var(--bone);
+  margin-bottom: 8px;
+}
+.claude-field .meeting-cast p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--sage);
+}
+
+/* without script: the same copy as plain text on the same plate */
+.claude-field .meeting-still {
+  max-width: 700px;
+  margin: 0 auto clamp(36px, 6vw, 72px);
+  background: rgba(23, 35, 27, .95);
+  border: 1px solid var(--moss);
+  padding: clamp(24px, 3.4vw, 44px);
+  font-size: 15px;
+}
+.claude-field .meeting-still .px {
+  display: block;
+  font: 9px/1.7 var(--f-mono);
+  letter-spacing: .12em;
+  color: var(--bone);
+  margin-top: 14px;
+}
+.claude-field .meeting-still span span { color: var(--sage); letter-spacing: .02em; text-transform: none; }
+
+@media (max-width: 700px) {
+  .claude-field .meeting-cast { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+}

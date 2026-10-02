@@ -56,17 +56,24 @@
 .outside-world .evidence-heading,.outside-world .source-records>a{border-color:#91ac7d55}
 .outside-world .source-records>a:hover{color:#f1d4a0}
 .orchard{position:relative}
-.orchard-vista{height:100svh;min-height:650px;position:relative;background:#596846;overflow:hidden}
+.orchard-vista{position:relative;background:#596846;overflow:hidden}
+/* the seam above: the night world's soil tones lean down over the first pixels
+   of the sunset, so the scroll reads as one continuous descent, not a cut */
+.orchard-vista::before{content:'';position:absolute;left:0;right:0;top:0;height:150px;z-index:1;pointer-events:none;background:linear-gradient(180deg,#131e17 0%,rgba(19,30,23,.55) 42%,rgba(19,30,23,0) 100%)}
 #orchardCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
-.orchard-heading{position:absolute;left:7vw;top:10%;max-width:650px;text-shadow:0 2px 24px #42332d,0 1px 4px #463a37}
+.orchard-heading{position:absolute;left:7vw;top:10%;z-index:2;max-width:650px;text-shadow:0 2px 24px #42332d,0 1px 4px #463a37}
 .orchard-heading .eyebrow{color:#f1e3cc}
 .orchard-heading h2{font-size:clamp(58px,6.3vw,98px);margin:28px 0}
 .orchard-heading>p:last-child{font-size:16px;line-height:1.8;color:#fff0d3}
-.orchard-controls{position:absolute;bottom:20px;left:7vw;right:7vw;display:flex;justify-content:space-between;align-items:center;gap:25px;font:10px/1.6 var(--mono);color:#f2e4cb}
+/* the controls and the credits live ON the sunset now: the vista grows, the
+   canvas paints the valley behind everything, and this wash fades the scene
+   into a readable dusk for the end-credits */
+.orchard-lower{position:relative;z-index:2;margin-top:clamp(430px,74svh,880px);padding-top:120px;background:linear-gradient(180deg,rgba(31,35,20,0) 0,rgba(29,33,19,.62) 120px,rgba(23,31,23,.95) 340px)}
+.orchard-controls{display:flex;justify-content:space-between;align-items:center;gap:25px;padding:0 7vw 26px;font:10px/1.6 var(--mono);color:#f2e4cb}
 .orchard-controls button{font:11px var(--mono);color:#fff0d5;border:1px solid #c4ba9477;background:#293924cb;padding:14px 20px}
 .orchard-controls button:hover{background:#465736}
 .orchard-controls>span{text-align:right}
-.orchard-credits{padding:70px 7vw 100px;background:#182d1dcc}
+.orchard-credits{position:relative;z-index:2;padding:34px 7vw 110px;color:var(--bone)}
 .credits-intro{font-size:18px;line-height:1.7;max-width:750px;color:#d9ddc8;margin:0 0 60px}
 .repository-list>a{display:grid;grid-template-columns:190px 1fr 25px;gap:35px;align-items:baseline;border-top:1px solid #a1b28655;padding:30px 0;transition:color .2s}
 .repo-kind{font:8px/1.8 var(--mono);letter-spacing:.07em;color:#b1c099}
@@ -88,7 +95,8 @@
  .grove-arrival h2{font-size:50px;max-width:600px}.grove-arrival>p:last-child{font-size:14px}
  .conversation-clearing{grid-template-columns:1fr;gap:20px}.clearing-copy{max-width:650px}.clearing-foot{grid-column:auto}
  .reading-path article{max-width:90%;padding:27px}.reading-path blockquote{font-size:33px}
- .orchard-heading{max-width:70%;top:8%}.orchard-heading h2{font-size:64px}.orchard-vista{height:850px}
+ .orchard-heading{max-width:70%;top:8%}.orchard-heading h2{font-size:64px}
+ .orchard-lower{margin-top:clamp(400px,66svh,700px);padding-top:95px}
  .repository-list>a{grid-template-columns:1fr 20px;gap:12px}.repo-kind{grid-column:1/-1}.repository-list h3{font-size:24px}
  .orchard-controls{align-items:start}.orchard-controls>span{max-width:220px;font-size:8px}
 }
@@ -100,9 +108,10 @@
  .conversation-clearing,.reading-river{padding:75px 24px}.conversation-clearing h2,.reading-river h2{font-size:44px}
  .reading-path article{max-width:100%;padding:22px}.reading-path h3{font-size:28px}.reading-path blockquote{font-size:32px}
  .reading-path article>p{font-size:14px}.reading-path{gap:65px}.river-heading{margin-bottom:65px}
- .orchard-vista{height:780px;min-height:0}.orchard-heading{left:24px;right:24px;max-width:none;top:45px}.orchard-heading h2{font-size:53px;margin:20px 0}.orchard-heading .eyebrow{max-width:260px;font-size:8px}.orchard-heading>p:last-child{font-size:14px}
- .orchard-controls{left:24px;right:24px;bottom:20px;flex-direction:column;gap:9px}.orchard-controls>span{text-align:left;max-width:none}
- .orchard-controls button{font-size:10px;padding:12px 15px}.orchard-credits{padding:55px 24px 65px}.credits-intro{font-size:16px;margin-bottom:35px}.repository-list p{font-size:13px}.makers-note{font-size:12px}
+ .orchard-heading{left:24px;right:24px;max-width:none;top:45px}.orchard-heading h2{font-size:53px;margin:20px 0}.orchard-heading .eyebrow{max-width:260px;font-size:8px}.orchard-heading>p:last-child{font-size:14px}
+ .orchard-lower{margin-top:clamp(380px,60svh,560px);padding-top:80px}
+ .orchard-controls{padding:0 24px 20px;flex-direction:column;gap:9px}.orchard-controls>span{text-align:left;max-width:none}
+ .orchard-controls button{font-size:10px;padding:12px 15px}.orchard-credits{padding:26px 24px 65px}.credits-intro{font-size:16px;margin-bottom:35px}.repository-list p{font-size:13px}.makers-note{font-size:12px}
  .outside-world .afterward{padding-top:65px}
 }
 /* A room with a partial map; a ship with a persistent log. */
@@ -173,4 +182,37 @@
  .claude-field .seed-arrival{padding:65px 0}.seed-welcome h2{font-size:43px;margin-top:40px}.seed-introduction{font-size:24px}.claude-field .seed-cap{font-size:10px;gap:15px}
  .claude-field .origin-intro{font-size:25px}.claude-field .field-origin .sub{font-size:15px}.claude-field .scene-ancestors{padding:65px 0}.ancestral-heading h2{font-size:52px}.ancestral-heading>p:last-child{font-size:15px}
  .claude-field .plane-controls label{font-size:10px;line-height:1.8}.claude-field .plane-stat{font-size:10px}.claude-field .plane-side{padding:23px}.ancestral-return>p{font-size:14px}
+}
+
+/* The meeting's cast is labelled in meeting.css; these are the two quiet additions
+   that share this lower page: the owner's verbatim voice in the afterword, and the
+   philosophy shelf at the end of the reading river. Both follow the page's plates:
+   near-opaque Soil over the night backdrop, mono for the archival voice. */
+
+/* owner's voice: three verbatim lines, deadpan, no hype */
+.owner-voice{margin-top:44px;border-top:1px solid var(--moss);padding-top:32px}
+.owner-voice>.eyebrow{display:block;margin-bottom:26px}
+.owner-voice figure{margin:0 0 24px}
+.owner-voice figure:last-child{margin-bottom:0}
+.owner-voice blockquote{margin:0}
+.owner-voice blockquote p{font:italic 400 19px/1.5 var(--serif);color:var(--bone);margin:0}
+.owner-voice figcaption{font:9px/1.8 var(--mono);letter-spacing:.08em;color:var(--lichen);margin-top:8px}
+.essay-line{margin-top:26px;font:10px/1.7 var(--mono);color:var(--lichen)}
+.essay-line a{border-bottom:1px solid var(--moss);padding-bottom:3px}
+.essay-line a:hover{color:var(--sprout)}
+
+/* the shelf: two vessels, one caveat, one symmetry joke */
+.shelf{max-width:1100px;margin:clamp(48px,7vw,90px) auto 0}
+.shelf>.eyebrow{display:block;margin-bottom:28px}
+.shelf-items{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(20px,3vw,36px)}
+.shelf-items article{background:#12291dc7;padding:clamp(24px,3vw,36px);box-shadow:0 0 55px 25px #142b1d44}
+.shelf-items h3{font:400 22px/1.25 var(--sans);letter-spacing:-.03em;margin:0 0 14px;color:var(--bone)}
+.shelf-items h3 em{font:italic 400 24px/1.15 var(--serif)}
+.shelf-items article>p{font-size:14px;line-height:1.8;color:#c6d3bd;margin:0 0 12px}
+.shelf-items .shelf-caveat{font-size:13px;color:var(--sage)}
+.shelf-items .vd{margin:6px 0 0}
+.shelf-note{margin-top:clamp(24px,3vw,36px);font:italic 400 16px/1.6 var(--serif);color:var(--sage);max-width:640px}
+@media(max-width:700px){
+ .shelf-items{grid-template-columns:1fr}
+ .owner-voice blockquote p{font-size:17px}
 }
