@@ -1,0 +1,17 @@
+/* Mobile floors and the visible prompt (UX audit rows 8, 16, 17; owner: "the pick-the-lock instructions aka the prompt are visible").
+   Loaded last on purpose. Text floor 11px, touch targets 44px, display type never hyphenates. */
+.prompt-card{margin-top:18px;max-width:30ch;padding:12px 14px;border:1px solid #2e3b33;background:rgba(8,13,13,.62);color:#f2eee4;font-family:'Geist Mono',monospace;font-size:13px;line-height:1.6;letter-spacing:.02em}
+.prompt-card .prompt-tag{display:block;margin-bottom:6px;color:#8a968d;font-size:11px;letter-spacing:.14em}
+@media (max-width:650px){
+  #act-label,.whisper,#frame-counter,.skip-story,.eyebrow,#next-season,#world-status,.mt-state,.kicker,.mono,.src,#cell-desc,.note-state,.vd,.path-number,.px,#stillness,.quiet-button,.btn-sm,.film-meta,.scroll-cue,.editorial-note,.transcript-link,.note-btn,figcaption,small{font-size:11px!important;line-height:1.5}
+  .btn,.btn-sm,.btn-quiet,.quiet-button,#stillness,#next-season,#plant-seed,#world-pause,#greet-dog,.note-btn,.transcript-link{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;padding-inline:14px}
+  .skip-story{display:inline-flex;align-items:center;min-height:44px;padding:0 8px}
+  h1,h2,h3,.huge,.big,.q-xl{hyphens:manual!important;-webkit-hyphens:manual!important}
+}
+@media (max-width:650px){
+  #world-weather,#plant-seed,#world-pause,#greet-dog,#orchard-status,.record-mark,.record-mark *,.repo-kind,.access-note,footer,footer *,.makers-note,.makers-note *,.orchard-controls *,.world-toolbar *,article a{font-size:11px!important;line-height:1.5}
+  .btn.btn-quiet.btn-sm,.note-btn,.replay{min-height:44px!important}
+  /* inline links: grow the tap area, not the layout */
+  main a,article a,footer a,details a,.makers-note a,.afterword-head a{position:relative}
+  main a::after,article a::after,footer a::after,details a::after,.makers-note a::after,.afterword-head a::after{content:"";position:absolute;inset:-12px -6px}
+}

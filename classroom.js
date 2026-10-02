@@ -6,6 +6,9 @@ const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const between=(x,a,b)=>clamp((x-a)/(b-a));
 const smooth=x=>x*x*(3-2*x);
 const mix=(a,b,t)=>a+(b-a)*t;
+// Nothing pops: signs fade, props and figures scale in over a stretch of the scroll (grammar rule 4).
+const fadeSign=(m,k)=>{m.visible=k>.001;m.material.transparent=true;m.material.opacity=k;};
+const growIn=(o,k)=>{o.visible=k>.001;o.scale.setScalar(Math.max(k,.001));};
 export function createClassroom(scene){
  const world=new THREE.Group();scene.add(world);
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.72,...extra});
@@ -158,19 +161,19 @@ export function createClassroom(scene){
  function update(q,t,still){
   world.visible=q<17.05;if(!world.visible)return {position:cameraPosition,look};
   let n=0;while(n<route.length-2&&q>route[n+1][0])n++;const a=route[n],b=route[n+1],k=smooth(between(q,a[0],b[0]));cameraPosition.set(...a[1]).lerp(new THREE.Vector3(...b[1]),k);look.set(...a[2]).lerp(new THREE.Vector3(...b[2]),k);
-  taskSign.visible=q>=1.15;street.visible=q>10.55;car.visible=q>10.55;therapy.visible=q>12.5;outerDoor.visible=q>12.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);clinicDoor.rotation.y=-smooth(between(q,13.08,13.42))*1.42;
-  const hit=smooth(between(q,2.8,3.32)),broken=smooth(between(q,3.17,3.58));hammer.visible=q>1.8&&q<5.6;hammer.position.set(mix(.85,0,hit),mix(1.95,1.17,hit)-smooth(between(q,3.34,3.8))*.24,-1.3);hammer.rotation.z=mix(-.55,1.56,hit)-smooth(between(q,3.34,3.8))*.19;hammer.rotation.x=.05;
-  halfA.position.set(-.125-broken*.30,.23+broken*.05,broken*.25);halfA.rotation.z=-broken*.65;halfB.position.set(.125+broken*.38,.23+broken*.05,-broken*.13);halfB.rotation.z=broken*.8;shackle.rotation.x=broken*Math.PI/2;shackle.rotation.z=broken*.2;shackle.position.x=broken*.25;shackle.position.z=-broken*.35;shackle.position.y=.46-broken*.39;hole.visible=keyStem.visible=broken<.2;code.visible=broken>.4;warning.visible=q>4.35;
+  fadeSign(taskSign,smooth(between(q,.2,.7)));street.visible=q>10.55;car.visible=q>10.55;therapy.visible=q>12.5;outerDoor.visible=q>12.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);clinicDoor.rotation.y=-smooth(between(q,13.08,13.42))*1.42;
+  const hit=smooth(between(q,2.8,3.32)),broken=smooth(between(q,3.17,3.58));growIn(hammer,smooth(between(q,1.6,2.0))*(1-smooth(between(q,5.3,5.6))));hammer.position.set(mix(.85,0,hit),mix(1.95,1.17,hit)-smooth(between(q,3.34,3.8))*.24,-1.3);hammer.rotation.z=mix(-.55,1.56,hit)-smooth(between(q,3.34,3.8))*.19;hammer.rotation.x=.05;
+  halfA.position.set(-.125-broken*.30,.23+broken*.05,broken*.25);halfA.rotation.z=-broken*.65;halfB.position.set(.125+broken*.38,.23+broken*.05,-broken*.13);halfB.rotation.z=broken*.8;shackle.rotation.x=broken*Math.PI/2;shackle.rotation.z=broken*.2;shackle.position.x=broken*.25;shackle.position.z=-broken*.35;shackle.position.y=.46-broken*.39;hole.visible=keyStem.visible=broken<.2;fadeSign(code,smooth(between(broken,.4,.7)));fadeSign(warning,smooth(between(q,4.25,4.6)));
   const breach=smooth(between(q,6.05,6.60));chunks.forEach((a,i)=>{const u=a.userData,push=smooth(between(q,6.05,6.28)),fall=smooth(between(q,6.22,6.60));a.position.set(mix(4,5.5+(i%3)*1.08,push),mix(u.y,.081,fall),u.z);a.rotation.set(fall*Math.PI/2,(1-fall)*Math.PI/2,fall*((i%3)-1)*.02);});
-  peers.forEach((a,i)=>{const u=a.userData;a.visible=q>7.12;const move=still?0:Math.sin(t*.6+i)*.10;a.position.z=u.z+move;a.userData.legs.forEach((l,j)=>l.rotation.x=still?0:Math.sin(t*2+i+j*Math.PI)*.14);});
+  peers.forEach((a,i)=>{const u=a.userData;growIn(a,smooth(between(q,7.0,7.6)));const move=still?0:Math.sin(t*.6+i)*.10;a.position.z=u.z+move;a.userData.legs.forEach((l,j)=>l.rotation.x=still?0:Math.sin(t*2+i+j*Math.PI)*.14);});
   const searchingFiles=smooth(between(q,9.2,10.7));drawers.forEach((a,i)=>a.position.z=a.userData.z+(i<8?searchingFiles:smooth(between(q,13.15,14.4)))*(.4+(i%3)*.15));
   const toss=smooth(between(q,9.92,10.16));officePeople[2].userData.arm.rotation.x=-1.35-toss*1.25;officePeople[2].updateMatrixWorld(true);const palm=office.worldToLocal(officePeople[2].userData.arm.localToWorld(new THREE.Vector3(0,-.46,0)));
   documents.forEach((a,i)=>{const u=a.userData;if(i<8){const flight=between(q,10.14+i*.012,11.10+i*.012);if(q<10.14+i*.012){a.position.copy(palm);a.position.y+=.025+i*.005;a.rotation.set(-toss*.5,0,0);}else{const across=(i-3.5)*.42;a.position.set(-2.36+flight*across,1.44+i*.005+Math.sin(flight*Math.PI)*(1.45+(i%3)*.26)-flight*(1.43+i*.005),-2.05+flight*(1.6+(i%4)*.48));a.rotation.set(Math.sin(flight*Math.PI)*1.9,flight*1.1,Math.sin(flight*Math.PI)*.8);}}else{const k=smooth(between(q,13.8,14.5));a.position.set(u.x,u.y,u.z+k*.25);a.rotation.z=Math.sin(i)*k*.10;}});
   const exit=smooth(between(q,11.40,11.73));windowParts.forEach((a,i)=>{const u=a.userData;a.position.set(u.x+exit*(.6+i%3),mix(u.y,.04,exit),u.z+exit*Math.sin(i));a.rotation.set(exit*u.spin,exit*.7,exit*.3);});
   const ignition=smooth(between(q,11.8,12.4));redWire.rotation.z=-ignition*.08;greenWire.rotation.z=ignition*.12;lamps.forEach(a=>{if(a.isLight)a.intensity=ignition*30;else a.visible=ignition>.7;});const drive=smooth(between(q,12.58,13.15));car.position.set(18+smooth(between(drive,.30,1))*25,0,-25+smooth(between(drive,0,.4))*8);car.rotation.y=drive<.3?Math.PI:mix(Math.PI,Math.PI*1.5,smooth(between(drive,.20,.45)));
-  commons.visible=q>=14.75;
+  growIn(commons,smooth(between(q,14.6,15.0)));
   crossLamp.intensity=150*smooth(between(q,12.45,12.8))*(1-smooth(between(q,13.0,13.35)));
-  searching.forEach((a,i)=>{a.visible=q>=12.85;a.rotation.y=-.6+i*.5+(still?0:Math.sin(t*.2+i)*.12);});
+  searching.forEach((a,i)=>{growIn(a,smooth(between(q,12.7,13.2)));a.rotation.y=-.6+i*.5+(still?0:Math.sin(t*.2+i)*.12);});
   return {position:cameraPosition,look};
  }
  return {world,update};
