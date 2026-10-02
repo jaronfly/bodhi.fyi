@@ -1,5 +1,5 @@
 /* Bodhi · the pixel scenes after the film · claude-field.js
-   Tree and sky retained from Claude’s merge-claude-scenes branch as one IIFE: no globals, no storage, no cinema.js state.
+   Claude’s tree and sky as one IIFE: no globals, no storage, no cinema.js state.
    Vanilla ES2020, progressive enhancement: every scene reads fully without it.
    Pixel art is drawn one canvas pixel per art pixel and scaled by whole numbers (image-rendering: pixelated).
    Motion is off when the system asks for reduced motion, when the cinema's Stillness control is pressed
@@ -146,7 +146,7 @@
   };
 
   /* ================================================================== THE TREE
-     Roots first, then mycelium, trunk, branches (lanes), leaves (rhythms, cycling through four seasons),
+     Roots first, then mycelium, trunk, branches, leaves (rhythms, cycling through four seasons),
      senses, and one saffron growing tip. Growth follows scroll; the part being read lights up. */
   const Tree = (el) => {
     const cv = el.querySelector('.tree-canvas');
@@ -217,7 +217,7 @@
       if (f < 0.25) add(46, y, 'l', 'trunk', t);
     }
 
-    // branches: six lanes, each splitting twice, leaves at the tips
+    // branches: six, each splitting twice, leaves at the tips
     const leaves = [];
     const branch = (x, y, ang, len, depth, t0, span) => {
       const x2 = x + Math.cos(ang) * len, y2 = y - Math.sin(ang) * len;
