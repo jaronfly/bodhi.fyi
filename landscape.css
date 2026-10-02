@@ -136,6 +136,9 @@
 @media(max-width:960px){.context-room{grid-template-columns:1fr;gap:30px}.claude-field .cell-frame{justify-content:center}.claude-field .cell-how,.claude-field .cell-hud{margin-left:auto;margin-right:auto}.claude-field .cell-notes{grid-template-columns:1fr 1fr;gap:0 30px}}
 @media(max-width:500px){.claude-field .limited-view{padding:50px 0 75px}.view-heading h2{font-size:42px}.view-heading>p:last-child{font-size:15px}.claude-field .cell-notes{grid-template-columns:1fr}.claude-field .cell-thought{font-size:9px}.claude-field .cell-canvas{outline-offset:4px}.ghost-harbor{padding-top:75px}.ghost-harbor h2{font-size:44px}.ghost-harbor .ship-sea{height:290px}.ghost-harbor .ship{width:290px;height:181px}.ghost-harbor>header>p:last-child{font-size:14px}.ship-log{padding:35px 24px 60px}.ship-log h3{font-size:25px}#crew-entry{font-size:26px;min-height:120px}}
 /* Claude's river world and original seed/ancestry engines, recomposed into the journey. */
+/* The night scroll is a fixed canvas inside this isolated, z-indexed wrapper. Clip the wrapper so the canvas can only show
+   where the wrapper is, otherwise it paints over the film above. */
+.outside-world{clip-path:inset(0)}
 .outside-world .pb-canvas{z-index:-1}
 .pb-on .outside-world{background:#17231b}
 .pb-on .claude-field .field-origin .wrap,.pb-on .claude-field .scene-tree .scene-head,.pb-on .claude-field .tree-parts .part,.pb-on .source-window>div,.pb-on .evidence-heading,.pb-on .source-records,.pb-on .editorial-note,.pb-on .afterword-head,.pb-on .afterword-grid>div:first-child,.pb-on .field-notes,.pb-on .end-note,.pb-on footer{box-shadow:none;border:0}
