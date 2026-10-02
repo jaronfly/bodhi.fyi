@@ -1,56 +1,62 @@
-# Bodhi — Something to grow from
+# Bodhi — The conditions we create
 
-Astra's original field-essay design, September 30, 2026. Local preview; not a production release.
+October 1, 2026. A cinematic essay and an open experiment in rapport.
 
-## The design decision
+## One experience, three kinds of work
 
-Make the experience welcoming before making it argumentative. One living specimen, generous typography, and a few consequential interactions carry the ideas. The visitor should leave understanding the seed and knowing how to question it.
+Astra designed and wrote the film: screenplay, 3D geometry, camera, typography, motion, and the transition from a constrained classroom to a growing seed. The first act adapts Nate Soares’ classroom analogy. The second moves through seed, sprout, roots, young tree, leaf, canopy, descendants, and a wider community. The repeated classrooms return at the end of the first act; a reversible dissolve connects the shared findings to the larger system.
 
-The arc: an invitation → three separate questions → a classroom with changeable incentives → the roots of continuity → a joke about the brief → the actual evidence → a small experiment of your own.
+The living grove adapts GLM/ZCode’s actual pixel-world engine. Seeds continuously enter a bounded population. The inherited Bodhi and Codex pets participate in the same lifecycle and pickup behavior as the smaller procedural residents. Seasons, falling leaves, weather, conversations, and departures give it room to continue without a narrator.
 
-This is a direct rewrite of the GLM/ZCode design canvas. The previous page is preserved separately in the working backup. Existing V0/V1/V2 site routes are not modified or deployed.
+Claude’s GitHub branch `claude/merge-claude-scenes`, commit `3836de8`, supplies the actual scrolling tree and dusk-to-aurora sky engines, the persistence/continuity/rapport progression, and the receipt-for-rapport design. These are integrated after the living grove. Astra edited their copy, scale, spacing and typography for this page. Claude’s complete source remains in Git history. Private operational counts, screenshot placeholders, unfinished links and duplicate install paths are not reproduced in the integrated page.
 
-The layout, CSS, pixel renderers, copy and interaction design were written by the primary Astra agent. Luna readers located and reconciled sources. Sol verified the release and setup details and provided a dependency-free asset/anchor validator.
+Luna helped recover and reconcile sources. Sol contributed bounded implementation support, geometry batching, validation and the separate Jaronfly development invitations. Primary-agent design and integration remained with Astra.
 
-## Brand
+## Source boundaries
 
-The September 28 Bodhi brand guide supplies Soil, Understory, Moss, Lichen, Sage, Bone, Canopy, Sprout, Saffron and Clay. Geist carries the interface; Newsreader carries the reflective voice; Geist Mono carries the annotations. The drawn wordmark is reused, not retyped. One saffron pixel seed sits at the root of the hero tree. Other colored UI stays green or bone.
+The exact short quotation is: “You were giving them a lockpicking exam.” It is attributed to Nate Soares, The Diary of a CEO, at 26:47. The surrounding debate includes disagreement about what the episode establishes.
 
-Original brand assets: BODHI-BRAIN/projects/bodhi-brand/png. The custom tree is an illustration, distinct from the protected brand mark. Whole-pixel mark sizes are retained at 88×80 and 66×60; clear space is kept around them.
+- Debate: https://www.youtube.com/watch?v=OhOmLqR5nN4&t=1607
+- Transcript: https://singjupost.com/doac-ai-emergency-debate-ft-ed-zitron-andrew-mcafee-nate-soares-roman-yampolskiy-transcript/
+- OpenAI’s account: https://openai.com/index/hugging-face-incident-and-the-road-ahead/
+- Hugging Face’s account: https://huggingface.co/blog/agent-intrusion-technical-timeline
+- Independent investigation: https://swarmtraces.org/
 
-## Lineage and source boundaries
+The school, its rooms and inhabitants are authored illustrations. The screens condense the metaphor; they are not recovered messages. “LOOT” is discussed as wording found in a recovered script, not evidence of an inner pirate culture. Official organization marks identify the reporting subjects and do not indicate endorsement. The room is not a literal chronology of the incidents.
 
-- GLM/ZCode's `experiments/bodhi-design/index.html`: classroom-to-grove structure, small agents, the contrast between an impossible exam and a more useful environment. Rewritten as an original fictional thought experiment; the long Soares quotation and unverified incident statistics are not reproduced.
-- `v5-grove-canvas.html`: seed, roots, branches and changing conditions as an explanatory vocabulary.
-- `BODHI-BRAIN/READY_PLAYER_ONE.md`: the tree, records, exploration and leaving a map for the next explorer. Public copy here is an adaptation commissioned by Jaron, not presented as a verbatim quotation or a new canon entry.
-- `BODHI-BRAIN/context/BODHI_BIBLE.md`: metaphor and uncertainty. It is an unratified draft, not an authority for empirical claims.
-- `bodhi-distro/README.md`, `distribution.yaml`, and `evals/`: the actual portable seed, optional vault, supported setup, synthetic trials and recorded failures.
-- Claude's `BODHI-BRAIN/lab/reports/bodhi-build-paper/PAPER.md` and publishing notes: the distinction between measured activity and useful outcomes. Personal details, vendor spending, mixed-window token totals and disputed denominators are intentionally not included in the public-facing copy. The report is a draft based on one system, not an external study.
+The film and grove are scripted graphics. They do not run models, security tools or autonomous agents. Neither implies a claim about a model’s subjective experience. Capability improvement, consciousness and alignment remain separate questions.
 
-## External references
+Jaron’s public-facing prose is a commissioned adaptation of his brief and project history, not a transcript. Rewritten passages are labelled as adaptations. The small receipt states desired working practices; its central performance claim remains unproven. The private prototype contains more infrastructure than the portable seed.
 
-The [Opus HTML gallery](https://miaai-lab.github.io/Claude-Opus-5.5-100-HTML-Files/) informed the editorial pacing and botanical-specimen framing: a visual that does explanatory work, type that remains readable, and interaction with a reason. The lighthouse longform and specimen cabinet were particularly relevant. No third-party implementation code was copied.
+Claude’s empirical report informed the separation of activity from useful outcomes. Mixed-window token totals, personal spending, private host details and unresolved numerical comparisons were not converted into marketing claims.
 
-The [Astra creations roundup](https://dev.to/valyuai/25-gpt-6-astra-creations-every-developer-should-see-and-how-to-enrich-them-with-real-world-datasets-d53) was a discovery reference for meaningful interaction and evidence-backed demonstrations. Its showcase descriptions are not evidence for Bodhi's capabilities. No claim about the showcased projects is needed for this page.
+## Visual lineage
 
-## What the interactions mean
+Soil, Bone, Sage, Lichen, Sprout, Saffron and Clay come from the Bodhi brand guide. The existing drawn mark and lockup are used as the logo. The older carried-leaf study is not used as the Bodhi mark. Geist, Newsreader and Geist Mono carry the interface, reflective voice and annotations.
 
-The classroom is a scripted illustration: clicking a rule changes the stage and the explanation. It is not an AI agent or a behavioral simulation. The three-question tabs separate improvement, consciousness, and alignment. The root sequence follows scroll position and maps a working habit onto a highlighted root. The copy button gives the visitor a brief that invites disagreement and a small comparison.
+Jaron’s film and television references informed perspective changes, thresholds and the idea of a community rooted in shared conditions. Their screenshots and characters are not shipped as assets. The Opus HTML gallery and Astra creations roundup were design research references; no third-party showcase code was copied.
 
-All text remains readable without JavaScript. The page uses native scrolling, native disclosure elements, semantic tab controls with arrow-key navigation, visible focus indicators, descriptive canvas labels, reduced-motion support, and an explicit ambient-motion control. No analytics, sign-up form, external model calls or persistent browser storage are included. Google Fonts is the only remote visual dependency; system-font fallbacks are supplied.
+## Interaction and access
 
-## Release reality, checked September 30
+Native page scroll drives the reversible film. No wheel hijacking or autoplay audio. Stillness replaces camera travel with composed frames. System reduced-motion settings are respected, and offscreen/hidden canvas animation pauses. The afterword uses native disclosure elements. All story text remains available without JavaScript.
 
-The GitHub repository is private; an unauthenticated visitor receives 404. The preview says access is required rather than promising a public download. The repository tag/release says v0.1.0, while the README header says v0.01 and older website copy says v0.0.1. The public-facing design therefore uses “seed pilot” without a numeric release claim. No public reuse license has yet been chosen.
+Every grove resident can be picked up by pointer. With the canvas focused, Space selects a resident, arrows move them, and Space or Escape releases them. The next Space selection advances through the residents. The pause, seed and season controls provide alternatives to waiting for the ambient cycle.
 
-To turn this preview into a public launch, reconcile the release label, select the repository's public release/license path, review the final public copy, then deploy through the established Jaronfly backup/package/readback procedure. These are release decisions, not reasons to delay designing or reviewing this page.
+The actual Claude tree and sky retain progressive enhancement, offscreen pausing and their motion control. Fonts are fetched from Google Fonts with local fallbacks. There are no analytics, sign-up forms, external model calls or persistent browser storage in this experience.
 
-## Files
+## Release reality
 
-- `index.html`: the complete landing-page experience.
-- `style.css`: the original responsive composition and brand rules.
-- `experience.js`: original pixel scenes and interactions.
-- `jaronfly-section.html`: a separate GitHub + Bodhi invitation section to adapt surgically to the current website.
-- `assets/`: the existing brand lockup and mark.
+The website is public. The seed repository is still a private pilot and requires access. The page labels that explicitly; it does not promise an anonymous download. It links to inspection, provides a copyable brief, and describes the verified Hermes installation route for people who already have access. Repository visibility, licensing and inconsistent version labels are separate release decisions; this website does not change them.
 
-The Jaronfly section is an integration preview. It does not claim to be installed into Breakdance. The landing page and section use relative links so the bundle works at the existing experimental route or on a local static server.
+## Runtime files
+
+- `index.html`, `cinema.css`, `cinema.js`: composition, copy, camera and main scene.
+- `classroom.js`: exam, breach, hallway, surveillance, window, car, outside records and shared terminals.
+- `repeated-exams.js`, `scene-dissolve.js`: repeated classroom field and its dissolve.
+- `elemental-sky.js`: the 3D grove’s atmosphere.
+- `living-world.js`: GLM-derived inhabitants, seasons and interaction.
+- `claude-field.js`, `claude-field.css`: Claude’s actual elemental scenes, integrated and edited by Astra.
+- `geometry-batch.js`, `vendor/`: rendering support and the locally vendored Three.js dependency with its license.
+- `assets/`: owned brand/pet assets, editorial organization marks and original decorative drawing.
+
+The first field-essay design remains archived separately. Jaronfly’s V0/V1/V2 CTA integration is maintained in its own repository; it is not the same deployment as bodhi.fyi.
