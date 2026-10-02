@@ -54,7 +54,7 @@ export function createClassroom(scene){
  box(hall,7,.15,26,8,-.1,-7.5,hallFloor);
  for(let i=0;i<6;i++){const z=5-i*4.4;
    box(hall,.16,3.8,4.32,11.5,1.9,z,hallWhite);if(i>2)box(hall,.16,3.8,4.32,4.5,1.9,z,hallWhite);else if(i===2)box(hall,.16,3.8,2.8,4.5,1.9,z-.75,hallWhite);
-   box(hall,6.5,.05,4.1,8,3.9,z,glow);
+   box(hall,6.5,.05,4.4,8,3.9,z,glow);
    for(const x of [4.41,11.41]){if(x<5&&i<=2)continue;box(hall,.03,.045,4.3,x,2.45,z,hallTrim);box(hall,.03,3.8,.035,x,1.9,z+2.1,hallTrim);}
  }
  light(hall,8,3.5,-7,65);light(hall,8,3.5,-18,45);
