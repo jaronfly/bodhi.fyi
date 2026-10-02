@@ -22,7 +22,7 @@ function updateText(){const next=Math.min(captions.length-1,Math.floor(progress*
 document.getElementById('progress-fill').style.width=(progress*100)+'%';document.getElementById('scroll-cue').style.opacity=progress<.035?'1':'0';
 // An intentional cut to black separates the environments.
 const q=still?beat+.35:progress*captions.length;const darkness=q<16.75?0:q<17.28?ease(range(q,16.75,17.28)):q<17.65?1:1-ease(range(q,17.65,18.22));
-document.getElementById('curtain').style.opacity=String(darkness);}
+document.getElementById('curtain').style.opacity=String(darkness);const arrival=ease(range(q,.18,.56));document.getElementById('opening-process').style.opacity=String(1-arrival);document.getElementById('opening-task').style.opacity=String(arrival);}
 function onScroll(){const r=story.getBoundingClientRect();targetProgress=clamp(-r.top/Math.max(1,story.offsetHeight-innerHeight));if(still||!lastTime||Math.abs(targetProgress-progress)>.07)progress=targetProgress;needsDraw=true;wake();}
 
 function syncStillness(){stillness.setAttribute('aria-pressed',String(still));document.body.classList.toggle('still-frames',still);stillness.title=still?'Restore the moving camera':'Use still frames instead of camera movement';stillness.innerHTML=still?'Motion <span aria-hidden="true">▷</span>':'Stillness <span aria-hidden="true">Ⅱ</span>';document.documentElement.style.scrollBehavior=still?'auto':'';updateText();needsDraw=true;wake();}

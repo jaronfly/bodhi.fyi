@@ -55,7 +55,7 @@ export function createClassroom(scene){
  for(let i=0;i<6;i++){const z=5-i*4.4;
    box(hall,.16,3.8,4.32,11.5,1.9,z,hallWhite);if(i>2)box(hall,.16,3.8,4.32,4.5,1.9,z,hallWhite);else if(i===2)box(hall,.16,3.8,2.8,4.5,1.9,z-.75,hallWhite);
    box(hall,6.5,.05,4.1,8,3.9,z,glow);
-   for(const x of [4.65,11.35]){box(hall,.03,.045,4.3,x,2.45,z,hallTrim);box(hall,.03,3.8,.035,x,1.9,z+2.1,hallTrim);}
+   for(const x of [4.41,11.41]){if(x<5&&i<=2)continue;box(hall,.03,.045,4.3,x,2.45,z,hallTrim);box(hall,.03,3.8,.035,x,1.9,z+2.1,hallTrim);}
  }
  light(hall,8,3.5,-7,65);light(hall,8,3.5,-18,45);
  // Two groups hesitate at an intersection instead of marching in formation.
@@ -64,7 +64,7 @@ export function createClassroom(scene){
    if(i===1||i===4){box(a,.44,.06,.29,.1,.91,.25,paper);box(a,.15,.2,.13,-.1,1.02,.27,wood);}
  });
  // Side passages make the encounter read as a shared, discovered space.
- box(hall,16,.12,4,8,-.09,-9,hallFloor);box(hall,15.5,.045,.045,8,2.4,-11.0,hallTrim);
+ box(hall,16,.12,4,8,-.09,-9,hallFloor);
  // An open central aperture leads past the crossing to the surveillance room.
  box(hall,6.8,3.7,.25,1.0,1.85,-11.1,hallWhite);box(hall,6.8,3.7,.25,15.0,1.85,-11.1,hallWhite);
 

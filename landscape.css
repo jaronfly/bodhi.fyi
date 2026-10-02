@@ -1,0 +1,173 @@
+/* Astra: the afterword becomes a place. Pixel scenery stays continuous behind
+   readable, unboxed editorial composition. */
+.outside-world{position:relative;isolation:isolate;z-index:10;background:#172b20}
+.landscape-backdrop{position:sticky;top:0;height:100vh;height:100svh;margin-bottom:-100vh;margin-bottom:-100svh;pointer-events:none;overflow:hidden;z-index:-1}
+#landscapeCanvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+.outside-world .living-grove,.outside-world .claude-field,.outside-world .afterward{background:transparent}
+.outside-world .living-grove{overflow:visible;padding-top:0}
+.grove-arrival{position:absolute;z-index:2;top:8%;right:7vw;width:46%;padding:0;display:block;text-shadow:0 2px 30px #12241c,0 1px 5px #14251d}
+.grove-arrival h2{font-size:clamp(38px,4.5vw,72px);margin:22px 0}
+.grove-arrival .eyebrow,.grove-arrival>p:last-child{color:var(--bone)}
+.grove-window{border:0}
+.world-toolbar{background:#12251ccb;border:0}
+.world-status{color:#d3dccb}
+.grove-thought{padding:17vh 7vw;background:none;text-shadow:0 2px 18px #13271a}
+.grove-thought::before{display:none}
+.grove-thought>div{color:#d1dccb;max-width:720px;margin:auto}
+.outside-world .eyebrow{color:#bfcdb3}
+.outside-world .claude-field{--soil:transparent;--under:#14291dc9}
+.claude-field .field-origin{padding-top:15vh;padding-bottom:15vh}
+.claude-field .field-origin .sub{max-width:800px;font-size:20px;line-height:1.7}
+.claude-field .field-origin .wrap,.claude-field .scene-tree .wrap{position:relative}
+.claude-field .scene-tree{border:0}
+.claude-field .part{border-top:1px solid #95af8644}
+.claude-field .part.panel{background:#112b20c2;padding:30px;box-shadow:0 0 65px 20px #112b2055}
+.claude-field .scene-head.panel{background:#112b20bf;padding:35px;box-shadow:0 0 65px 25px #112b2040}
+.claude-field .tree-stage{background:transparent}
+.claude-field .tree-frame{filter:drop-shadow(0 0 20px #14261b)}
+.claude-field .ev-key{gap:8px 22px}
+.claude-field .origin-path{background:#152d20af;padding:28px;gap:40px}
+.claude-field .scene-sky{margin-top:7vh}
+.conversation-clearing,.reading-river{position:relative;padding:15vh 7vw;color:var(--bone)}
+.conversation-clearing{display:grid;grid-template-columns:1fr 1fr;gap:50px 12%;background:#102a20a6}
+.conversation-clearing h2,.reading-river h2{font-size:clamp(44px,5.3vw,80px);margin:24px 0 32px}
+.clearing-copy>p:not(.eyebrow){font-size:15px;color:#cfdbc7;line-height:1.85;margin-top:20px;max-width:570px}
+.conversation-path{list-style:none;padding:0;margin:38px 0 0}
+.conversation-path li{display:flex;gap:22px;position:relative;padding:0 0 40px}
+.conversation-path li+li{padding-top:20px}
+.conversation-path li:not(:last-child)::before{content:'';position:absolute;width:1px;background:#acc39166;top:33px;bottom:0;left:16px}
+.path-number{font:10px var(--mono);flex:0 0 33px;border:1px solid #a4b88a77;height:33px;display:grid;place-items:center;background:#1c3828}
+.conversation-path h3{font:400 23px/1.2 var(--sans);letter-spacing:-.035em;margin:0 0 13px}
+.conversation-path p{font-size:14px;color:#c0cebb;line-height:1.7;max-width:450px}
+.clearing-foot{grid-column:1/-1;border-top:1px solid #90a78144;padding-top:25px;font:11px/1.7 var(--mono);color:#bbccb3}
+.river-heading{max-width:810px;margin:0 auto 12vh;text-align:center}
+.river-heading>p:last-child{max-width:570px;margin:auto;color:#d2dfc8;font-size:16px}
+.reading-path{max-width:1100px;margin:auto;display:grid;gap:12vh}
+.reading-path article{max-width:580px;background:#12291dc7;padding:40px;box-shadow:0 0 55px 25px #142b1d44}
+.reading-path article:nth-child(2){justify-self:end}
+.reading-path h3,.reading-path blockquote{font:400 35px/1.2 var(--sans);letter-spacing:-.04em;margin:24px 0}
+.reading-path blockquote{font:italic 39px/1.2 var(--serif)}
+.reading-path article>p{color:#c6d3bd;font-size:15px;line-height:1.85;margin:18px 0}
+.reading-path a{font:10px/1.7 var(--mono);border-bottom:1px solid #96af83;display:inline-block;padding-bottom:6px;margin-top:14px}
+.outside-world .source-window,.outside-world .evidence-folio{background:#11281be3;color:var(--bone)}
+.outside-world .source-window p,.outside-world .evidence-heading p,.outside-world .source-records small,.outside-world .editorial-note{color:#bcccb4}
+.outside-world .record-mark{background:transparent}
+.outside-world .record-mark img[alt="OpenAI"]{filter:invert(1)}
+.outside-world .evidence-heading,.outside-world .source-records>a{border-color:#91ac7d55}
+.outside-world .source-records>a:hover{color:#f1d4a0}
+.orchard{position:relative}
+.orchard-vista{height:100svh;min-height:650px;position:relative;background:#596846;overflow:hidden}
+#orchardCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.orchard-heading{position:absolute;left:7vw;top:10%;max-width:650px;text-shadow:0 2px 24px #42332d,0 1px 4px #463a37}
+.orchard-heading .eyebrow{color:#f1e3cc}
+.orchard-heading h2{font-size:clamp(58px,6.3vw,98px);margin:28px 0}
+.orchard-heading>p:last-child{font-size:16px;line-height:1.8;color:#fff0d3}
+.orchard-controls{position:absolute;bottom:20px;left:7vw;right:7vw;display:flex;justify-content:space-between;align-items:center;gap:25px;font:10px/1.6 var(--mono);color:#f2e4cb}
+.orchard-controls button{font:11px var(--mono);color:#fff0d5;border:1px solid #c4ba9477;background:#293924cb;padding:14px 20px}
+.orchard-controls button:hover{background:#465736}
+.orchard-controls>span{text-align:right}
+.orchard-credits{padding:70px 7vw 100px;background:#182d1dcc}
+.credits-intro{font-size:18px;line-height:1.7;max-width:750px;color:#d9ddc8;margin:0 0 60px}
+.repository-list>a{display:grid;grid-template-columns:190px 1fr 25px;gap:35px;align-items:baseline;border-top:1px solid #a1b28655;padding:30px 0;transition:color .2s}
+.repo-kind{font:8px/1.8 var(--mono);letter-spacing:.07em;color:#b1c099}
+.repository-list h3{font-size:27px;font-weight:400;letter-spacing:-.03em;margin:0 0 12px}
+.repository-list p{font-size:14px;color:#c0ccb2;max-width:670px;line-height:1.8}
+.repository-list>a:hover{color:#edba6d}
+.makers-note{margin-top:65px;max-width:790px;font-size:13px;color:#bfccb4}
+.makers-note p{margin:20px 0;line-height:1.85}
+.makers-note a{font:10px var(--mono);border-bottom:1px solid #91a17f;padding-bottom:5px}
+.outside-world .afterward{background:#10251dcc;padding-top:110px}
+.outside-world .end-note::before{display:none}
+.opening-title{position:relative;min-height:2.05em}
+.opening-title>span{display:block;transition:opacity .6s ease}
+#opening-task{position:absolute;inset:0;opacity:0}
+.no-webgl #opening-process{display:none}.no-webgl #opening-task{position:static;opacity:1}
+@media(min-width:960px){.claude-field .tree-parts .part{padding:40px;min-height:65vh}.claude-field .scene-tree .tree-stage{top:8vh}}
+@media(max-width:800px){
+ .grove-arrival{position:relative;top:auto;right:auto;width:auto;padding:75px 7vw 35px;background:transparent}
+ .grove-arrival h2{font-size:50px;max-width:600px}.grove-arrival>p:last-child{font-size:14px}
+ .conversation-clearing{grid-template-columns:1fr;gap:20px}.clearing-copy{max-width:650px}.clearing-foot{grid-column:auto}
+ .reading-path article{max-width:90%;padding:27px}.reading-path blockquote{font-size:33px}
+ .orchard-heading{max-width:70%;top:8%}.orchard-heading h2{font-size:64px}.orchard-vista{height:850px}
+ .repository-list>a{grid-template-columns:1fr 20px;gap:12px}.repo-kind{grid-column:1/-1}.repository-list h3{font-size:24px}
+ .orchard-controls{align-items:start}.orchard-controls>span{max-width:220px;font-size:8px}
+}
+@media(max-width:500px){
+ .grove-arrival{padding:60px 24px 35px}.grove-arrival h2{font-size:43px}.grove-thought{padding:80px 24px}
+ .claude-field .field-origin .sub{font-size:16px}.claude-field .origin-path{padding:20px;grid-template-columns:1fr;gap:25px}
+ .claude-field .scene-head.panel,.claude-field .part.panel{padding:23px}.claude-field .scene-head .measure{font-size:14px}
+ .claude-field .tree-layout{gap:15px}.claude-field .part p{font-size:14px}
+ .conversation-clearing,.reading-river{padding:75px 24px}.conversation-clearing h2,.reading-river h2{font-size:44px}
+ .reading-path article{max-width:100%;padding:22px}.reading-path h3{font-size:28px}.reading-path blockquote{font-size:32px}
+ .reading-path article>p{font-size:14px}.reading-path{gap:65px}.river-heading{margin-bottom:65px}
+ .orchard-vista{height:780px;min-height:0}.orchard-heading{left:24px;right:24px;max-width:none;top:45px}.orchard-heading h2{font-size:53px;margin:20px 0}.orchard-heading .eyebrow{max-width:260px;font-size:8px}.orchard-heading>p:last-child{font-size:14px}
+ .orchard-controls{left:24px;right:24px;bottom:20px;flex-direction:column;gap:9px}.orchard-controls>span{text-align:left;max-width:none}
+ .orchard-controls button{font-size:10px;padding:12px 15px}.orchard-credits{padding:55px 24px 65px}.credits-intro{font-size:16px;margin-bottom:35px}.repository-list p{font-size:13px}.makers-note{font-size:12px}
+ .outside-world .afterward{padding-top:65px}
+}
+/* A room with a partial map; a ship with a persistent log. */
+.claude-field .limited-view{padding:80px 0 110px;background:#11241ab8}
+.view-heading{max-width:750px;margin-bottom:55px}.view-heading h2{font-size:clamp(45px,5vw,76px);margin:24px 0}.view-heading>p:last-child{max-width:580px;font-size:17px;color:#bfccb6}
+.claude-field .cell-frame{margin:0;justify-content:flex-start}.claude-field .cell-canvas{border:0;outline:1px solid #7d966750;outline-offset:8px;image-rendering:pixelated;max-width:100%;height:auto!important;touch-action:pan-y}
+.claude-field .cell-canvas:focus-visible{outline:2px solid #e8982a}
+.claude-field .cell-how{font:10px/1.7 var(--mono);margin-top:22px;max-width:450px;color:#b7c5ad}
+.claude-field .cell-hud{justify-content:space-between;max-width:600px;font:10px var(--mono)}
+.claude-field .cell-thought{height:32px;font:11px/1.7 var(--mono);color:#d7bc88;text-align:left}
+.claude-field .cell-notes{border:0;grid-template-columns:1fr;background:#12261aaf}
+.claude-field .cell-notes>.note{box-shadow:none;border-top:1px solid #839b6744;padding:19px 0;background:transparent}
+.claude-field .note-btn{font:400 15px var(--sans)}.claude-field .note-state{font:8px var(--mono)}
+.claude-field .note-body{font-size:13px;color:#c3cfb9;line-height:1.8}.claude-field .note-body p{margin-top:15px}
+.context-room{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:60px;align-items:start}.context-room+.src{margin-top:30px;max-width:700px}
+.ghost-harbor{position:relative;padding:100px 0 0;background:#0d201ccc}
+.ghost-harbor>header{max-width:1000px;padding:0 7vw;margin:auto;text-align:center}
+.ghost-harbor h2{font-size:clamp(47px,5vw,78px);margin:25px 0 30px}.ghost-harbor>header>p:last-child{font-size:16px;line-height:1.8;color:#b9cbbd}
+.ghost-harbor .ship-sea{position:relative;height:410px;overflow:hidden;margin-top:60px;background-image:radial-gradient(circle,#bbcbb44d 1px,transparent 1px);background-size:113px 79px}
+.ghost-harbor .ship{position:absolute;width:380px;height:240px;left:50%;bottom:42px;transform:translateX(-50%);animation:crew-bob 5s steps(6,end) infinite;z-index:2}
+.ghost-harbor .ship svg{width:100%;height:100%;image-rendering:pixelated;transition:clip-path 1.3s steps(10,end)}
+.ghost-harbor .ship[data-build="0"] svg{clip-path:inset(55% 0 0)}.ghost-harbor .ship[data-build="1"] svg{clip-path:inset(22% 0 0)}
+.deck-lantern{position:absolute;left:76%;top:62%;width:5px;height:7px;background:#e8982a;box-shadow:0 0 24px #e8982a88}
+.ghost-harbor .sea{position:absolute;height:90px;left:0;right:0;bottom:0;background:repeating-linear-gradient(175deg,#34584b 0 2px,#294c41 2px 14px,#6f938066 15px 16px,#193e34 17px 30px);background-size:160% 100%;animation:crew-sea 16s linear infinite;z-index:3;opacity:.86}
+.ship-log{max-width:850px;padding:50px 7vw 90px;box-sizing:content-box;margin:auto}.ship-log h3{font-weight:400;font-size:30px;line-height:1.2;letter-spacing:-.04em;margin:23px 0}
+#crew-entry{font:italic 30px/1.4 var(--serif);min-height:90px;color:#d0decc;max-width:670px}
+#pass-log{font:11px var(--mono);margin:25px 0 35px;padding:15px 0;background:transparent;color:#e5ecd8;border:0;border-bottom:1px solid #93b093}
+.ship-log .ship-explanation{font-size:12px;color:#a6bca7;max-width:650px;line-height:1.9}
+@keyframes crew-bob{50%{transform:translate(-50%,5px) rotate(1deg)}}@keyframes crew-sea{to{background-position:100% 0}}
+.still-frames .ghost-harbor .ship,.still-frames .ghost-harbor .sea{animation:none}
+@media(max-width:960px){.context-room{grid-template-columns:1fr;gap:30px}.claude-field .cell-frame{justify-content:center}.claude-field .cell-how,.claude-field .cell-hud{margin-left:auto;margin-right:auto}.claude-field .cell-notes{grid-template-columns:1fr 1fr;gap:0 30px}}
+@media(max-width:500px){.claude-field .limited-view{padding:50px 0 75px}.view-heading h2{font-size:42px}.view-heading>p:last-child{font-size:15px}.claude-field .cell-notes{grid-template-columns:1fr}.claude-field .cell-thought{font-size:9px}.claude-field .cell-canvas{outline-offset:4px}.ghost-harbor{padding-top:75px}.ghost-harbor h2{font-size:44px}.ghost-harbor .ship-sea{height:290px}.ghost-harbor .ship{width:290px;height:181px}.ghost-harbor>header>p:last-child{font-size:14px}.ship-log{padding:35px 24px 60px}.ship-log h3{font-size:25px}#crew-entry{font-size:26px;min-height:120px}}
+/* Claude's river world and original seed/ancestry engines, recomposed into the journey. */
+.outside-world .pb-canvas{z-index:-1}
+.pb-on .outside-world{background:#17231b}
+.pb-on .claude-field .field-origin .wrap,.pb-on .claude-field .scene-tree .scene-head,.pb-on .claude-field .tree-parts .part,.pb-on .source-window>div,.pb-on .evidence-heading,.pb-on .source-records,.pb-on .editorial-note,.pb-on .afterword-head,.pb-on .afterword-grid>div:first-child,.pb-on .field-notes,.pb-on .end-note,.pb-on footer{box-shadow:none;border:0}
+.pb-on .claude-field .field-origin .wrap{background:#17231bc4}
+.pb-on .record-mark:not(.text-mark){background:transparent;padding:0}
+.pb-on .outside-world .source-window,.pb-on .outside-world .evidence-folio{background:transparent}
+.pb-on .source-window>div,.pb-on .evidence-heading,.pb-on .source-records,.pb-on .editorial-note{background:#12261ee8}
+.pb-on .claude-field .tree-parts .part{min-height:55vh;margin:5vh 0;background:#15271ede}
+.claude-field .seed-arrival{padding:100px 0 80px;background:#13261b88}
+.seed-welcome{max-width:950px;margin:auto;text-align:center}
+.seed-welcome>.kicker{margin-bottom:45px}
+.seed-welcome h2{font-size:clamp(50px,5.8vw,88px);margin:55px 0 30px}
+.seed-introduction{font:italic 29px/1.55 var(--serif);max-width:700px;margin:0 auto 20px;color:#d8e0cf}
+.claude-field .origin-intro{font:italic 30px/1.45 var(--serif);max-width:780px;margin:35px 0;color:#d9e2d0}
+.claude-field .scene-ancestors{padding:110px 0;background:#0e1b17bb}
+.ancestral-heading{max-width:750px;margin-bottom:70px}
+.ancestral-heading h2{font-size:clamp(56px,6vw,90px);margin:25px 0}
+.ancestral-heading>p:last-child{font-size:18px;line-height:1.8;color:#ced7c6;max-width:680px}
+.claude-field .plane-canvas{background:transparent;max-width:100%;height:auto!important;image-rendering:pixelated}
+.claude-field .plane-side{border:0;background:#11221dd4;padding:30px}
+.plane-side h3{font-size:27px;font-weight:400;letter-spacing:-.035em;margin:0 0 20px}
+.plane-side>p{font-size:14px;line-height:1.8;color:#bfcebc}
+.claude-field .plane-side .legend{margin:30px 0}
+.claude-field .plane-side .src,.ancestral-voices p{font-size:11px;line-height:1.8;color:#b2c3af}
+.ancestral-voices{margin-top:45px;border-top:1px solid #78987444;padding-top:25px}
+.ancestral-voices .kicker{font-size:8px;margin-bottom:20px}
+.ancestral-return{max-width:760px;margin:80px auto 0;text-align:center}
+.ancestral-return blockquote{font-size:clamp(37px,4vw,61px);line-height:1.15;letter-spacing:-.04em;margin-bottom:35px}
+.ancestral-return>p{font-size:16px;line-height:1.9;color:#ccd7c3}.ancestral-return .src{font-size:10px;margin-top:20px}
+.outside-world[data-ambient="off"] .ghost-harbor .ship,.outside-world[data-ambient="off"] .ghost-harbor .sea{animation:none}
+@media(max-width:600px){
+ .claude-field .seed-arrival{padding:65px 0}.seed-welcome h2{font-size:43px;margin-top:40px}.seed-introduction{font-size:24px}.claude-field .seed-cap{font-size:10px;gap:15px}
+ .claude-field .origin-intro{font-size:25px}.claude-field .field-origin .sub{font-size:15px}.claude-field .scene-ancestors{padding:65px 0}.ancestral-heading h2{font-size:52px}.ancestral-heading>p:last-child{font-size:15px}
+ .claude-field .plane-controls label{font-size:10px;line-height:1.8}.claude-field .plane-stat{font-size:10px}.claude-field .plane-side{padding:23px}.ancestral-return>p{font-size:14px}
+}

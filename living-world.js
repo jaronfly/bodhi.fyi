@@ -84,6 +84,14 @@ function drawTP(ctx, pxX, pxY, u, mode, t, heldSwing, side=1, variant=0){
       pxr(ctx,col, X+xx*u, pxY+yy*u, u, u);
     }
   }
+  // Different equipment and silhouettes, without implying a hierarchy of inner lives.
+  if(variant%3===1){
+    pxr(ctx,'#64734e',X-u,pxY+u,11*u,u);pxr(ctx,'#8a9a61',X+u,pxY-u,7*u,2*u);
+    pxr(ctx,'#ccbc81',X+7*u,pxY+7*u,2*u,3*u);pxr(ctx,'#6e7048',X+6*u,pxY+5*u,u,4*u);
+  }else if(variant%3===2){
+    pxr(ctx,'#98bdb0',X+5*u,pxY+3*u,3*u,3*u);pxr(ctx,'#2a5041',X+5.5*u,pxY+3.5*u,2*u,2*u);
+    pxr(ctx,'#dce4be',X+6*u,pxY+4*u,u,u);pxr(ctx,'#b3c086',X+u,pxY-2*u,u,3*u);
+  }
   const kick = heldSwing ? Math.floor(t/4)%2 : 0;
   if (mode==='type'){
     pxr(ctx,C[2], X+1*u, pxY+8*u, 7*u, u);
