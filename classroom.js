@@ -97,11 +97,12 @@ export function createClassroom(scene){
  const windowParts=[];for(let i=0;i<12;i++){const a=box(office,.025,.79,.97,5,1.65+Math.floor(i/4)*.81,.0+i%4,glass);a.userData={...a.position,spin:i*.53};windowParts.push(a);}
  for(const y of [1.2,3.95])box(office,.16,.10,4.2,5,y,1.5,steel);for(const z of [-.55,3.55])box(office,.16,2.8,.10,5,2.58,z,steel);box(office,.18,.11,4.3,5,1.19,1.5,paper);
  // A street and the car: steering wheel, dangling abstract leads, wheels and headlights.
- const street=new THREE.Group();world.add(street);box(street,9,.15,62,19,-.12,-7,material('#111e1c'));for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
+ const street=new THREE.Group();world.add(street);box(street,9,.15,62,19,-.12,-7,material('#22362f'));for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
  for(let i=0;i<10;i++){const side=i%2?-1:1,x=side<0?-13-i%3*4:48+i%3*5,z=-35+Math.floor(i/2)*11;const h=5+i%4*2;box(street,5,h,7,x,h/2,z,material(i%2?'#263d36':'#20372f'));for(let j=0;j<4;j++)for(let row=0;row<3;row++)box(street,.6,.8,.018,x-1.7+j,1.6+row*1.6,z+3.52,new THREE.MeshBasicMaterial({color:row===i%3?'#829c83':'#3a5144'}));}
- box(street,31,.12,7,29,-.11,-17,material('#111e1c'));for(let x=18;x<43;x+=4)box(street,1.3,.008,.12,x,-.035,-17,edge);
+ box(street,31,.12,7,29,-.11,-17,material('#22362f'));for(let x=18;x<43;x+=4)box(street,1.3,.008,.12,x,-.035,-17,edge);
  const car=new THREE.Group();world.add(car);car.position.set(18,.0,-25);
  light(street,18,4.5,-25,50);
+ const crossLamp=light(street,25,6,-14,0); // lights the cross street only while the camera flies over it (beats 12.5-13.3); intensity changes, light count does not, so no shader recompile
  const paint=material('#698078',{metalness:.65,roughness:.28}),rubber=material('#121e19');box(car,1.8,.5,3.5,0,.7,0,paint);box(car,1.70,.14,.95,0,1.03,-1.23,paint);box(car,1.65,.05,1.35,0,1.91,-.15,paint);
  for(const x of [-.81,.81]){box(car,.10,.42,1.46,x,1.13,-.12,paint);box(car,.12,.055,1.50,x,1.35,-.12,steel);box(car,.025,.05,.25,x*1.08,1.19,.30,steel);}
  box(car,1.64,.34,.13,0,1.12,.60,paint);
@@ -168,6 +169,7 @@ export function createClassroom(scene){
   const exit=smooth(between(q,11.40,11.73));windowParts.forEach((a,i)=>{const u=a.userData;a.position.set(u.x+exit*(.6+i%3),mix(u.y,.04,exit),u.z+exit*Math.sin(i));a.rotation.set(exit*u.spin,exit*.7,exit*.3);});
   const ignition=smooth(between(q,11.8,12.4));redWire.rotation.z=-ignition*.08;greenWire.rotation.z=ignition*.12;lamps.forEach(a=>{if(a.isLight)a.intensity=ignition*30;else a.visible=ignition>.7;});const drive=smooth(between(q,12.58,13.15));car.position.set(18+smooth(between(drive,.30,1))*25,0,-25+smooth(between(drive,0,.4))*8);car.rotation.y=drive<.3?Math.PI:mix(Math.PI,Math.PI*1.5,smooth(between(drive,.20,.45)));
   commons.visible=q>=14.75;
+  crossLamp.intensity=150*smooth(between(q,12.45,12.8))*(1-smooth(between(q,13.0,13.35)));
   searching.forEach((a,i)=>{a.visible=q>=12.85;a.rotation.y=-.6+i*.5+(still?0:Math.sin(t*.2+i)*.12);});
   return {position:cameraPosition,look};
  }
