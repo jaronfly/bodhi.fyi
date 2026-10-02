@@ -1,5 +1,5 @@
 /* Bodhi · the pixel scenes after the film · claude-field.js
-   Tree and sky retained from Claude’s merge-claude-scenes branch as one IIFE: no globals, no storage, no cinema.js state.
+   Claude’s tree and sky as one IIFE: no globals, no storage, no cinema.js state.
    Vanilla ES2020, progressive enhancement: every scene reads fully without it.
    Pixel art is drawn one canvas pixel per art pixel and scaled by whole numbers (image-rendering: pixelated).
    Motion is off when the system asks for reduced motion, when the cinema's Stillness control is pressed
@@ -41,7 +41,7 @@
   const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
   const bayer = (x, y) => BAYER[((y & 3) << 2) + (x & 3)];
 
-  const ANCESTRY = {"source":"The Bodhi Build (draft v0.3, 2026-09-28), DATA.commits: git log --no-merges of the Brain repository, 2026-05-21 to 2026-09-28. Kinds as classified by the report (build, fix, write, other, auto = autosave). Subjects omitted.","label":"MEASURED","start":"2026-05-21","kinds":"ofowobfwwwwwbwwbbwwwwwwwwwwwwboobbbbbbbbofffbobbbbbbbbbbbbbbwbbbfbbbfoobwfbbfbbbbwowbfbbbbffbwwfbfbbbooooofobbfwwwooboooowwwoooooooooooooooooooooooooooooooooooooooooooooobbbbooooooooooowwbbbbbbbowwooooooooobbbbboobbwwoooooooooooooooowwwwwwwwwwwwwwwwbboooowoooooooowffooffffbbbbbwbbfffbwbwowwooowwfbwbbbfbowoowwowowwwwooooowbbaawawawaaowaooawbaawabaabfaawwwwwfwwoooofffofwwbfffwbowwbfwwbbbbffbwwfwwfwbwwfwbbwwfowfwfofbbbfbbbbbfbbbbbfbfbwfoowwobobwwbbwwfbbffbffwffbbbofoooooffwowwbfbfbbbbbfbfffobbbbbffbfwbfwfwbfbbwbbbwwwwbbbfbbwwbwbofffbbbbbbbbwfofbbwwbbbbbbwbwffbabaaaaaobfbbfbfwffwwbwbaaaabafaaaaaaawwfwwwwwwwwwbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaafaaaaaaaaaaaaaaaabaaaaaaaaaaaaaaaaaaaaaaaaabaaaaaaawwbabababaaaaaabwbwbbbfbfbffwbfwbowfwbwwwwfbfwffwfwbfbwwwwwwwbfaowwwwwwwwwwwwwwbwwwwwawwwffwwwwwwwaaaaaaawwwwwwwwwwwwwawwawwwwwwwwwwawwaaaawwaaaaaawwwwfwaaaoaaawobwaoaaaawbaaaaaaaaaaaaaaawwbaoooobobwaaaaabaabawaaaawawaaawowwaaaooooobafaaobboobwowoowwwwboao","days":[[0,28],[2,2],[3,2],[4,9],[5,3],[6,2],[7,5],[8,4],[9,3],[10,10],[11,5],[19,1],[20,5],[21,10],[23,18],[24,6],[25,15],[26,1],[30,4],[31,2],[32,5],[33,2],[35,1],[37,2],[58,1],[62,1],[65,3],[66,8],[70,10],[71,12],[72,2],[73,3],[74,3],[75,3],[76,2],[77,6],[78,5],[80,7],[82,22],[83,12],[84,6],[86,13],[87,11],[90,13],[91,11],[92,54],[93,16],[94,70],[95,16],[96,12],[97,3],[100,4],[101,1],[100,3],[101,18],[103,1],[104,47],[105,6],[106,16],[107,5],[111,1],[113,2],[114,11],[115,27],[116,4],[117,32],[118,31],[119,30],[120,43],[121,19],[122,4],[124,8],[125,48],[126,57],[127,27],[129,25],[130,47]]};
+  const ANCESTRY = {"source":"The Bodhi Build (draft v0.3, 2026-09-28), DATA.commits: git log --no-merges of the project repository, 2026-05-21 to 2026-09-28. Kinds as classified by the report (build, fix, write, other, auto = autosave). Subjects omitted.","label":"MEASURED","start":"2026-05-21","kinds":"ofowobfwwwwwbwwbbwwwwwwwwwwwwboobbbbbbbbofffbobbbbbbbbbbbbbbwbbbfbbbfoobwfbbfbbbbwowbfbbbbffbwwfbfbbbooooofobbfwwwooboooowwwoooooooooooooooooooooooooooooooooooooooooooooobbbbooooooooooowwbbbbbbbowwooooooooobbbbboobbwwoooooooooooooooowwwwwwwwwwwwwwwwbboooowoooooooowffooffffbbbbbwbbfffbwbwowwooowwfbwbbbfbowoowwowowwwwooooowbbaawawawaaowaooawbaawabaabfaawwwwwfwwoooofffofwwbfffwbowwbfwwbbbbffbwwfwwfwbwwfwbbwwfowfwfofbbbfbbbbbfbbbbbfbfbwfoowwobobwwbbwwfbbffbffwffbbbofoooooffwowwbfbfbbbbbfbfffobbbbbffbfwbfwfwbfbbwbbbwwwwbbbfbbwwbwbofffbbbbbbbbwfofbbwwbbbbbbwbwffbabaaaaaobfbbfbfwffwwbwbaaaabafaaaaaaawwfwwwwwwwwwbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaafaaaaaaaaaaaaaaaabaaaaaaaaaaaaaaaaaaaaaaaaabaaaaaaawwbabababaaaaaabwbwbbbfbfbffwbfwbowfwbwwwwfbfwffwfwbfbwwwwwwwbfaowwwwwwwwwwwwwwbwwwwwawwwffwwwwwwwaaaaaaawwwwwwwwwwwwwawwawwwwwwwwwwawwaaaawwaaaaaawwwwfwaaaoaaawobwaoaaaawbaaaaaaaaaaaaaaawwbaoooobobwaaaaabaabawaaaawawaaawowwaaaooooobafaaobboobwowoowwwwboao","days":[[0,28],[2,2],[3,2],[4,9],[5,3],[6,2],[7,5],[8,4],[9,3],[10,10],[11,5],[19,1],[20,5],[21,10],[23,18],[24,6],[25,15],[26,1],[30,4],[31,2],[32,5],[33,2],[35,1],[37,2],[58,1],[62,1],[65,3],[66,8],[70,10],[71,12],[72,2],[73,3],[74,3],[75,3],[76,2],[77,6],[78,5],[80,7],[82,22],[83,12],[84,6],[86,13],[87,11],[90,13],[91,11],[92,54],[93,16],[94,70],[95,16],[96,12],[97,3],[100,4],[101,1],[100,3],[101,18],[103,1],[104,47],[105,6],[106,16],[107,5],[111,1],[113,2],[114,11],[115,27],[116,4],[117,32],[118,31],[119,30],[120,43],[121,19],[122,4],[124,8],[125,48],[126,57],[127,27],[129,25],[130,47]]};
 
   /* ------------------------------------------------------------------ announcer */
   const announcer = doc.createElement('div');
@@ -633,7 +633,7 @@
   doc.querySelectorAll('[data-cell]').forEach(Cell);
 
   /* ================================================================== THE TREE
-     Roots first, then mycelium, trunk, branches (lanes), leaves (rhythms, cycling through four seasons),
+     Roots first, then mycelium, trunk, branches, leaves (rhythms, cycling through four seasons),
      senses, and one saffron growing tip. Growth follows scroll; the part being read lights up. */
   const Tree = (el) => {
     const cv = el.querySelector('.tree-canvas');
@@ -704,7 +704,7 @@
       if (f < 0.25) add(46, y, 'l', 'trunk', t);
     }
 
-    // branches: six lanes, each splitting twice, leaves at the tips
+    // branches: six, each splitting twice, leaves at the tips
     const leaves = [];
     const branch = (x, y, ang, len, depth, t0, span) => {
       const x2 = x + Math.cos(ang) * len, y2 = y - Math.sin(ang) * len;
@@ -993,7 +993,7 @@
   doc.querySelectorAll('.scene-sky').forEach(Sky);
 
   /* ================================================================== THE ANCESTRAL PLANE
-     987 real commits on a sunflower spiral, first at the centre, newest at the rim; thirteen lane
+     987 real commits on a sunflower spiral, first at the centre, newest at the rim; thirteen
      constellations around it. The slider and the field notes replay the history day by day. */
   const Plane = (el) => {
     const D = ANCESTRY;
@@ -1015,7 +1015,7 @@
     const iso = (d) => new Date(START + d * 864e5).toISOString().slice(0, 10);
     const KC = { w: 'b', b: 'p', o: 'g', f: 'r', a: 'l' };
     const GA = Math.PI * (3 - Math.sqrt(5));
-    // co-author lines per lane; null = on record, not counted that way
+    // co-author lines per constellation; null = on record, not counted that way
     const LANES = Array(13).fill(null);
     const SHAPES = [
       [[0, 0], [4, -2], [8, -1], [10, 3], [6, 5]],
