@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+<!-- Sol: the human before the helper, in the seed's existing palette. -->
+<path fill="#5B4638" d="M14 57h36v3H14z"/>
+<path fill="#A86F85" d="M22 34h20v17H22zM20 48h8v6h-8zM36 48h8v6h-8z"/>
+<path fill="#D9AA84" d="M23 13h17v3h4v5h3v13h-4v6H24v-4h-5V21h4zM17 35h6v10h-6zM40 35h7v9h-7z"/>
+<path fill="#E8C4A0" d="M24 16h16v5H24zM22 21h18v10H22z"/>
+<path fill="#5B4638" d="M29 10h5v3h-5zM26 13h5v2h-5zM24 24h7v2h-7zM36 24h7v2h-7z"/>
+<path fill="#263728" d="M26 27h3v2h-3zM37 27h3v2h-3zM30 32h7v5h-7z"/>
+<path fill="#D9674F" d="M32 35h3v2h-3z"/>
+<path fill="#8AADB8" d="M25 29h2v7h-2zM40 29h2v5h-2z"/>
+<path fill="#B8C2BA" d="M20 39h27v22H20z"/>
+<path fill="#F2EEE4" d="M19 39h27v3H19zM21 43h23v16H21z"/>
+<path fill="#5B4638" d="M24 45h9v1h-9zM24 48h16v1H24zM26 51h13v1H26zM24 54h7v1h-7zM34 54h6v1h-6z"/>
+<path fill="#D9AA84" d="M18 41h5v4h-5zM43 42h5v4h-5z"/>
+</svg>

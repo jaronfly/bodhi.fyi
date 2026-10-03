@@ -64,7 +64,12 @@ html.pj-on .ghost-harbor .ship-sea {
   height: auto;
   aspect-ratio: 8 / 5;
   transform: translateX(-50%);
+  transition: left 5.5s steps(80, end);
 }
+
+.ghost-harbor .ship.ship-departing { left: calc(100% + 300px); }
+.still-frames .ghost-harbor .ship { transition: none; }
+.outside-world[data-ambient="off"] .ghost-harbor .ship { transition: none; }
 
 .ghost-harbor .ship svg {
   display: block;
@@ -264,6 +269,7 @@ html.pj-on .ghost-harbor .ship-sea {
   .ghost-harbor .ship,
   .ghost-harbor .sea {
     animation: none;
+    transition: none;
   }
 
   .ghost-harbor .ship svg {

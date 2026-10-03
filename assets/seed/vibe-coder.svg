@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+<!-- Sol: the same human, with a new way into the work. -->
+<path fill="#5B4638" d="M9 48h48v3H9zM12 51h3v11h-3zM54 51h3v11h-3z"/>
+<path fill="#39402C" d="M16 35h4v25h-4zM20 54h18v4H20z"/>
+<path fill="#2E6B45" d="M22 28h13v18H22zM20 32h6v15h-6zM31 32h5v8h-5z"/>
+<path fill="#263728" d="M24 47h11v7h-4v6h-4v-7h-3zM27 59h11v3H27z"/>
+<path fill="#D9AA84" d="M23 14h15v4h3v11h-4v3H25v-4h-3V18h1zM30 38h12v4H30z"/>
+<path fill="#39402C" d="M23 12h14v3h3v6h-3v-4H23zM22 15h3v8h-3zM24 26h5v3h-5z"/>
+<path fill="#263728" d="M33 21h3v2h-3zM37 27h3v1h-3z"/>
+<path fill="#F2EEE4" d="M38 27h7v1h-7z"/><path fill="#D9674F" d="M45 27h2v1h-2z"/>
+<path fill="#8A968D" d="M46 22h1v3h-1zM44 19h2v3h-2zM45 15h1v4h-1zM46 13h2v2h-2z"/>
+<path fill="#2E3B33" d="M36 33h18v13H36zM31 45h23v3H31z"/>
+<path fill="#8A968D" d="M38 35h14v9H38zM32 46h20v1H32z"/>
+<path fill="#8BCB8B" d="M40 37h2v1h-2zM42 38h2v1h-2zM40 39h2v1h-2zM45 40h5v1h-5z"/>
+</svg>

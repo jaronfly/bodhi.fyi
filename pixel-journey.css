@@ -33,6 +33,8 @@ html.pj-on .source-records>a{
 }
 /* Keep actual record points distinguishable from the sky's ambient stars. */
 html.pj-on .plane-frame{background:radial-gradient(ellipse,rgba(15,24,20,.92),rgba(15,24,20,.78) 48%,transparent 72%)}
+/* The room's controls stay readable when the walk passes snow behind them. */
+html.pj-on :is(.cell-how,.cell-hud){background:radial-gradient(ellipse,rgba(15,24,20,.92),rgba(15,24,20,.78) 60%,transparent);padding:8px 12px}
 
 /* The citizen census, under the simulator: the grove's residents out walking, counted. */
 .claude-field .census-canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
@@ -49,8 +51,19 @@ html.pj-on .plane-frame{background:radial-gradient(ellipse,rgba(15,24,20,.92),rg
 .book-title{font-family:'Newsreader',Georgia,serif;font-style:italic;font-size:17px;line-height:1.25}
 .book-by{font-size:13px;color:#B8C2BA}
 .book-kind{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8A968D}
-html.pj-on .orchard-credits{background:rgba(15,24,20,.66);padding:24px clamp(16px,3vw,32px)}
+/* The credits darken the same valley gradually, without a rectangular panel edge. */
+html.pj-on .orchard-vista::before{display:none}
+html.pj-on .orchard-lower{background:none}
+html.pj-on .orchard-credits{background:linear-gradient(180deg,transparent,rgba(15,24,20,.66) 160px,rgba(15,24,20,.66) calc(100% - 180px),transparent);padding:40px clamp(16px,3vw,32px)}
 html.pj-on .orchard :is(h2,h3,p,li,span){text-shadow:0 0 2px rgba(12,18,14,.95),0 0 8px rgba(12,18,14,.8)}
+
+/* The human learns alongside the seed. Whole-pixel figures share the palette. */
+.human-growth{display:flex;align-items:end;gap:clamp(20px,4vw,64px);margin:48px 0 38px}
+.human-growth>div{flex:0 0 auto;text-align:center}
+.human-growth img{display:block;width:128px;height:128px;image-rendering:pixelated}
+.human-growth .human-label{font:10px/1.7 var(--f-mono);color:var(--sage);margin-top:14px}
+.human-growth>span{align-self:center;color:var(--lichen);font:24px var(--f-serif)}
+@media(max-width:600px){.human-growth img{width:96px;height:96px}.human-growth{gap:clamp(14px,5vw,24px)}}
 
 /* Phones: long runs of cards become swipeable rows, so a section reads as one screen instead of a long column.
    The next card peeks in from the edge; native scroll-snap, no script. */

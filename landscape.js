@@ -117,21 +117,12 @@
   function size(s){const r=s.cv.getBoundingClientRect();s.cv.width=Math.max(160,Math.round(r.width/4));s.cv.height=Math.max(150,Math.round(r.height/4));s.ctx=s.cv.getContext('2d');s.ctx.imageSmoothingEnabled=false;}
   function draw(s){const c=s.ctx,w=s.cv.width,h=s.cv.height;
     if(s.kind==='orchard'){
-      // The credits live ON this section now: the vista grows and the canvas
-      // paints behind them. The composed scene (sun, valley, tree, dog) anchors
-      // to the band above the credits; below it the sunset's ground tones
-      // continue, dithered down into dusk, so the picture persists under the
-      // words like a held last frame.
+      // The tree and dog anchor above the credits, while one uninterrupted
+      // valley continues behind the whole section.
       const band=Math.max(150,Math.min(h,Math.round(s.band||h)));
-      valley(c,w,band,time,true);
-      for(let y=band;y<h;y++){
-        const k=(y-band)/Math.max(1,h-band);
-        for(let x=0;x<w;x++){const th=B[(y%4)*4+x%4]/16;
-          rect(c,k<0.16?(th>0.5?'#5d6040':'#545738'):k<0.45?(th>0.5?'#4d4a30':'#464427'):k<0.75?(th>0.6?'#3b3a25':'#353420'):(th>0.7?'#2c2c1c':'#272817'),x,y);}
-      }
+      valley(c,w,h,time,true);
       const x=w*.74,y=band*.90,scale=Math.min(w/260,band/120);
       orchardTree(c,x,y,scale,time);dog(c,x-39*scale,y+2*scale,scale,time,hello);
-      for(let i=0;i<40;i++){const x=i*w/39;line(c,i%2?'#566b3e':'#859355',[[x,band],[x+Math.sin(time+i)*2,band-4-i%5]],1);}
     }else{
       const r=root.getBoundingClientRect(),p=clamp(-r.top/(r.height-innerHeight));valley(c,w,h,time,false,clamp((p-.72)/.28));
       c.fillStyle='#0e24186b';c.fillRect(0,0,w,h);
@@ -146,7 +137,6 @@
   addEventListener('resize',()=>{scenes.forEach(size);wake();});addEventListener('scroll',wake,{passive:true});document.addEventListener('visibilitychange',wake);reduced.addEventListener('change',wake);
   new MutationObserver(wake).observe(document.body,{attributes:true,attributeFilter:['class']});
   const ambient=document.querySelector('[data-motion-toggle]');if(ambient)new MutationObserver(wake).observe(ambient,{attributes:true,attributeFilter:['aria-pressed']});
-  document.getElementById('greet-dog')?.addEventListener('click',()=>{hello=2.4;document.getElementById('orchard-status').textContent='A wag, two barks. Still very interested in that fruit.';wake();});
 })();
 
 // The crew changes; the structure and its source record persist.
@@ -185,12 +175,17 @@
   let wasInChapter = false;
   const currentStage = () => Number(section.dataset.crewStage || 0);
 
-  function setStage(idx, isUserAction = false) {
+  function setStage(idx, isUserAction = false, depart = false) {
     idx = Number(idx);
     idx = Math.max(0, Math.min(logs.length - 1, Number.isFinite(idx) ? Math.round(idx) : 0));
     if (isUserAction) manualSelection = true;
 
     section.dataset.crewStage = String(idx);
+    // Scrolling and scrubbing may assemble the ship. Only activating the final
+    // crew tab sends it away; returning to an earlier crew brings it home.
+    if (idx !== logs.length - 1) delete section.dataset.shipDeparted;
+    else if (depart) section.dataset.shipDeparted = 'true';
+    if (ship) ship.classList.toggle('ship-departing', section.dataset.shipDeparted === 'true');
     if (ship) ship.dataset.build = idx;
     if (crewNumber) crewNumber.textContent = logs[idx][0];
     if (crewHeading) crewHeading.textContent = logs[idx][1];
@@ -228,7 +223,7 @@
   stepBtns.forEach((btn, i) => {
     btn.addEventListener('click', () => {
       const st = Number(btn.dataset.stage);
-      setStage(st, true);
+      setStage(st, true, st === logs.length - 1);
     });
 
     btn.addEventListener('keydown', (event) => {

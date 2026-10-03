@@ -1,6 +1,6 @@
 /* Bodhi · the walk · pixel-journey.js
    One footpath, walked in first person, behind everything after the film. It starts at a cottage door at
-   dusk, goes through a meadow, a fogged pine wood (a partial view), past a pond, under a great tree, into
+   dusk, goes through an autumn meadow, a wintry fogged wood (a partial view), past a pond, under a great tree, into
    a clearing with room on both sides, over the river by a lantern-lit footbridge, stops to look up at the
    ancestors, comes down to the coast at first light where the ghost ship assembles, and arrives in the
    orchard's own golden hour at the broad tree with the dog.
@@ -14,8 +14,8 @@
    What it reuses, literally: the night scroll's 23-colour palette, Bayer dither, star field, moon,
    aurora, cloud puffs, hill ranges and blob trees (pixel-backdrop.js), and the orchard's broad tree (landscape.js) and
    original seed puppy (assets/seed/sprites.js), whose colours are added to the palette so the walk arrives in the
-   orchard's light. Colours are authored per hour of the day as a table of roles, and two hours blend by
-   dither, never by alpha.
+   orchard's light. Colours are authored per hour of the day as a table of roles, and the role palette
+   interpolates in whole pixels without smoothing their edges.
 
    Motion: still when the system asks for reduced motion, when the film's Stillness is on, or when the
    field guide's ambient-motion switch is off. Pauses when hidden. No storage, no network. */
@@ -83,7 +83,7 @@ import { paintCottage } from './assets/seed/cottage.js';
       roles: Object.assign({}, night, { G0: 'soil', G1: 'ink', G2: 'under', TUFT: 'moss', T3: 'moss', T2: 'under', T1: 'soil', T0: 'ink',
         HILL0: 'soil', HILL1: 'ink', HILL2: 'ink', FOG: 'under', CLOUD: 'soil', CLOUDL: 'under' }) },
     // 4 first light, at the coast
-    { sky: ['soil', 'moss', 'dusk', 'glow', 'dawn'], stars: 0.2, moon: 0.35, aurora: 0, sun: 0.25, lamp: 0.3,
+    { sky: ['soil', 'dusk', 'glow', 'dawn', 'sk4'], stars: 0.12, moon: 0.15, aurora: 0, sun: 0.55, lamp: 0.3,
       roles: Object.assign({}, night, { G0: 'moss', G1: 'under', G2: 'canopyDk', TUFT: 'canopy', P0: 'dawn', P1: 'earthL', PEB: 'earthL',
         BANK: 'earthL', BANKL: 'dawn', WHI: 'wHi', SAND: 'dawn', T0: 'under', T1: 'moss', T2: 'canopyDk', T3: 'canopy', PINE0: 'under', PINE1: 'moss',
         ROCK0: 'moss', ROCK1: 'lichen', ROCKHI: 'sage', HILL0: 'dusk', HILL1: 'moss', HILL2: 'under', FOG: 'lichen', WOOD: 'dawn', WOODD: 'earthL',
@@ -128,7 +128,9 @@ import { paintCottage } from './assets/seed/cottage.js';
   const PW = 0.6;                                      // half-width of the path
   const inRange = (z, a, b, edge = 8) => smooth(a - edge, a, z) * (1 - smooth(b, b + edge, z));
   const autumnAt = (z) => inRange(z, 25, 65);
-  const winterAt = (z) => inRange(z, 298, 335, 12);
+  // Winter belongs to the early mountain/limited-view passage. After the
+  // ancestral sky the path returns to thawed ground and a rising sun.
+  const winterAt = (z) => inRange(z, 72, 108, 12);
   const pathWidth = (z) => PW - 0.22 * inRange(z, 76, 128, 12) + 0.5 * inRange(z, 202, 234, 12) - 0.28 * inRange(z, 304, 329, 12);
   const RIV0 = 236, RIV1 = 292, RIVZ = 264, RW = 0.9;  // the river crosses the path diagonally at RIVZ
   const riverD = (z) => (z - RIVZ) * 0.9;
@@ -212,6 +214,7 @@ import { paintCottage } from './assets/seed/cottage.js';
     add('cottage', -3.2, 5, { w: 1.7, h: 1.25 }); add('cat', -2.3, 4.6); add('cottage', 4.0, 10, { w: 1.4, h: 1.05 }); add('sign', 0.95, 7);
     // landmarks
     add('tree', 2.6, 50, { r: 1.3 });                                   // the old tree where it started
+    add('tree', -2.8, 84, { r: 0.8 }); add('tree', 3.8, 103, { r: 0.9 }); // bare winter branches before the lake
     add('tree', 2.0, 158, { r: 2.1 });                                  // the great tree you sit under
     add('bench', -1.15, 210, { face: 1 }); add('bench', 1.15, 210, { face: -1 }); // a clearing: room on both sides
     add('cottage', -3.8, 214, { w: 1.7, h: 1.25 }); // the shared workbench, using the first home's own painter
@@ -226,7 +229,7 @@ import { paintCottage } from './assets/seed/cottage.js';
     add('orchard', 3.0, 450); add('dog', 1.9, 449.7);
     // the countryside
     for (let z = 2; z < 470; z += 0.45) {
-      const pine = z > 70 && z < 134, clearing = inRange(z, 196, 240, 12), alpine = inRange(z, 298, 338, 12), coast = z > 340 && z < 406, gold = z > 406;
+      const pine = z > 70 && z < 134, clearing = inRange(z, 196, 240, 12), alpine = inRange(z, 72, 108, 12), coast = z > 340 && z < 406, gold = z > 406;
       let p = pine ? 0.85 : coast ? 0.16 : gold ? 0.28 : 0.34;
       p = lerp(p, 0.2, clearing);
       p = lerp(p, 0.58, alpine);
@@ -287,25 +290,30 @@ import { paintCottage } from './assets/seed/cottage.js';
   }
 
   /* ------------------------------------------------------------------ per-frame colour state */
-  const CA = new Uint32Array(ROLES.length), CB = new Uint32Array(ROLES.length);
+  const colours = new Uint32Array(ROLES.length);
+  const mixInk = (a, b, t) => {
+    const inv = 1 - t;
+    return (0xff000000 | ((((a >>> 16) & 255) * inv + ((b >>> 16) & 255) * t) << 16) |
+      ((((a >>> 8) & 255) * inv + ((b >>> 8) & 255) * t) << 8) |
+      ((a & 255) * inv + (b & 255) * t)) >>> 0;
+  };
   let PF = 0, HA = 0, HB = 0, fallWeight = 0, snowWeight = 0;
   const setHour = (a, b, f) => {
     HA = a; HB = b; PF = f;
-    for (let i = 0; i < ROLES.length; i++) { CA[i] = U32[TAB[a][i]]; CB[i] = U32[TAB[b][i]]; }
-    // Seasons belong to places in the story. Their palettes dither in as daylight changes independently.
+    // Seasons belong to places in the story. Interpolate the role palette once,
+    // keeping every object solid while its daylight and season change.
     fallWeight = autumnAt(CZ);
     snowWeight = winterAt(CZ);
+    for (let i = 0; i < ROLES.length; i++) {
+      let c = mixInk(U32[TAB[a][i]], U32[TAB[b][i]], f);
+      if (AUTUMN_COLORS[i] != null) c = mixInk(c, U32[AUTUMN_COLORS[i]], fallWeight);
+      if (WINTER_COLORS[i] != null) c = mixInk(c, U32[WINTER_COLORS[i]], snowWeight);
+      colours[i] = c;
+    }
   };
   const hourVal = (key) => lerp(HOURS[HA][key], HOURS[HB][key], PF);
   const bi = (x, y) => ((y & 3) << 2) | (x & 3);
-  const roleColor = (x, y, r) => {
-    let color = BAY[bi(x, y)] < PF ? CB[r] : CA[r];
-    const seasonThreshold = BAY[bi(x + 2, y + 1)];
-    const autumn = AUTUMN_COLORS[r], winter = WINTER_COLORS[r];
-    if (autumn != null && seasonThreshold < fallWeight) color = U32[autumn];
-    if (winter != null && seasonThreshold < snowWeight) color = U32[winter];
-    return color;
-  };
+  const roleColor = (x, y, r) => colours[r];
   const put = (x, y, r) => { if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = roleColor(x, y, r); };
   const raw = (x, y, c) => { if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = U32[c]; };
   let FOGK = 0; // fog on the sprite being drawn
@@ -351,9 +359,9 @@ import { paintCottage } from './assets/seed/cottage.js';
     for (let y = 0; y < top; y++) {
       const bp = clamp((y / span) * 4, 0, 3.999), k = Math.floor(bp), tt = smooth(0.05, 0.95, bp - k);
       for (let x = 0; x < W; x++) {
-        const th = BAY[bi(x, y)], th2 = BAY[bi(x + 1, y + 2)];
+        const th = BAY[bi(x, y)];
         const cA = th < tt ? A[k + 1] : A[k], cB = th < tt ? B[k + 1] : B[k];
-        buf[y * W + x] = U32[th2 < PF ? cB : cA];
+        buf[y * W + x] = mixInk(U32[cA], U32[cB], PF);
       }
     }
   }
@@ -384,7 +392,7 @@ import { paintCottage } from './assets/seed/cottage.js';
   }
   function drawSun(amt) {
     if (amt <= 0.05) return;
-    const sx = Math.round(W * 0.24), sy = HY - Math.round(HY0 * 0.12), r = Math.max(4, Math.round(Math.min(W, H) * 0.06));
+    const sx = Math.round(W * 0.24), sy = HY - Math.round(HY0 * (0.2 + amt * 0.6)), r = Math.max(4, Math.round(Math.min(W, H) * 0.06));
     for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
       if (dx * dx + dy * dy > r * r + r * 0.3 || sy + dy >= HY) continue;
       if (BAY[bi(sx + dx, sy + dy)] < amt * 1.2) raw(sx + dx, sy + dy, P.sun);
@@ -439,7 +447,7 @@ import { paintCottage } from './assets/seed/cottage.js';
       const role = S[L.r], pan = Math.floor(CZ * L.sp + CX * (li + 1));
       for (let x = 0; x < W; x++) {
         const xw = (((x + pan) % WWH) + WWH) % WWH;
-        const mountain = inRange(CZ, 275, 338, 18);
+        const mountain = inRange(CZ, 68, 124, 18);
         const ridge = Math.abs(Math.sin((TAU * (L.k1 + 1) * xw) / WWH + L.ph));
         const round = L.base + L.a1 * Math.sin((TAU * L.k1 * xw) / WWH + L.ph) + L.a2 * Math.sin((TAU * L.k2 * xw) / WWH + L.ph * 2.3) + 0.012 * Math.sin((TAU * 13 * xw) / WWH);
         const crag = L.base - 0.22 + ridge * 0.25 + 0.02 * Math.sin(xw * 0.11);
@@ -490,6 +498,13 @@ import { paintCottage } from './assets/seed/cottage.js';
     const h = Math.max(1, Math.round(r * 0.8)), cx = Math.round(sx), cy = Math.round(sy - h - r * 0.55), tw = Math.max(0, Math.round(r * 0.13));
     for (let i = 0; i <= h + Math.round(r * 0.3); i++) for (let k = -tw; k <= tw + 1; k++) fput(cx + k, sy - i, k > 0 ? S.TRKL : S.TRK);
     const sw = anim ? Math.round(Math.sin(t * 0.9 + seed) * Math.min(2, r * 0.08)) : 0;
+    // Branch forks follow Claude's tree anatomy. The canopy sheds individual
+    // clusters through autumn; winter leaves the same tree's branches visible.
+    for (const [dx, dy] of [[-0.8, -0.35], [-0.5, -0.95], [0.5, -1], [0.85, -0.3]]) {
+      const bx = cx + dx * r, by = cy + dy * r;
+      fline([[cx, sy - h * 0.65], [cx + dx * r * 0.4, cy + r * 0.3], [bx, by]], S.TRK, Math.max(1, r * 0.05));
+      fline([[bx, by], [bx + dx * r * 0.25, by - r * 0.25]], S.TRKL, Math.max(1, r * 0.025));
+    }
     const blobs = [[0, 0, r], [-r * 0.55, r * 0.28, r * 0.7], [r * 0.55, r * 0.3, r * 0.68], [0, -r * 0.5, r * 0.66]];
     const cell = Math.max(1, Math.round(r / 14));
     for (let y = Math.floor(cy - r * 1.3); y <= Math.ceil(cy + r * 0.95); y++) {
@@ -502,10 +517,17 @@ import { paintCottage } from './assets/seed/cottage.js';
         const lt = (-(x - cx) * 0.5 - (y - cy) * 0.85) / r;
         let lv = lt > 0.62 ? 3 : lt > 0.0 ? 2 : lt > -0.55 ? 1 : 0;
         const hh = hash(Math.floor((x - cx) / cell), Math.floor((y - cy) / cell), seed + 60);
+        if (hh > 1 - fallWeight * 0.55 - snowWeight * 0.97) continue;
         if (hh < 0.14 && lv < 3) lv++; else if (hh > 0.92 && lv > 0) lv--;
         if (anim && hash(Math.floor(x / cell), Math.floor(y / cell), tick + seed) < 0.03 && lv < 3) lv++;
         fput(x + shear, y, lv === 3 ? S.T3 : lv === 2 ? S.T2 : lv === 1 ? S.T1 : S.T0);
       }
+    }
+    if (anim && fallWeight > 0.1 && snowWeight < 0.5) for (let i = 0; i < 8; i++) {
+      const phase = (t * 0.13 + hash(i, seed, 72)) % 1;
+      const lx = cx + (hash(i, seed, 73) - 0.5) * r * 2 + Math.sin(phase * 6 + seed) * r * 0.16;
+      const ly = cy - r * 0.4 + phase * (sy - cy + r * 0.4);
+      fput(Math.round(lx), Math.round(ly), i % 2 ? S.T3 : S.TUFT);
     }
   }
   function drawPine(sx, sy, hp) {
@@ -679,7 +701,7 @@ import { paintCottage } from './assets/seed/cottage.js';
 
   /* ------------------------------------------------------------------ the orchard, painted by its own code
      landscape.js's valley, broad tree and dog, ported line for line to whole pixels in a second buffer, so the
-     walk can dissolve into the orchard by dither and the orchard never arrives as a block with an edge. */
+     walk can ease into the orchard in whole pixels and it never arrives as a block with an edge. */
   const HEXU = new Map();
   const hu = (h) => { let v = HEXU.get(h); if (v === undefined) { v = (0xff000000 | (parseInt(h.slice(5, 7), 16) << 16) | (parseInt(h.slice(3, 5), 16) << 8) | parseInt(h.slice(1, 3), 16)) >>> 0; HEXU.set(h, v); } return v; };
   let OB = null;
@@ -746,11 +768,16 @@ import { paintCottage } from './assets/seed/cottage.js';
   function drawOrchardScene(t, night) {
     OB = buf2;
     const w = W, h = H, band = Math.round(h * (h / w > 1.3 ? 0.78 : 0.86));
-    oValley(w, band, t, night);
-    for (let y = band; y < h; y++) { const k = (y - band) / Math.max(1, h - band); for (let x = 0; x < w; x++) { const th = B16[(y % 4) * 4 + (x % 4)] / 16; orect(k < 0.16 ? (th > 0.5 ? '#5d6040' : '#545738') : k < 0.45 ? (th > 0.5 ? '#4d4a30' : '#464427') : k < 0.75 ? (th > 0.6 ? '#3b3a25' : '#353420') : (th > 0.7 ? '#2c2c1c' : '#272817'), x, y, 1, 1); } }
+    oValley(w, h, t, night);
     const x = w * 0.74, y = band * 0.9, sc = Math.max(1, Math.round(Math.min(w / 260, band / 120) * 2) / 2);
     oTree(x, y, sc, t); oDog(x - 39 * sc, y + 2 * sc, sc, t, hello);
-    for (let i = 0; i < 40; i++) { const gx = (i * w) / 39; oline(i % 2 ? '#566b3e' : '#859355', [[gx, band], [gx + Math.sin(t + i) * 2, band - 4 - (i % 5)]], 1); }
+    // Shade the existing valley, keeping its river and texture continuous.
+    // There is no second ground painting or grass row to expose a section edge.
+    for (let yy = Math.floor(h * 0.72); yy < h; yy++) for (let xx = 0; xx < w; xx++) {
+      const a = smooth(h * 0.72, h, yy + Math.sin(xx * 0.03) * 3) * 0.42;
+      const k = yy * w + xx, c = OB[k], ia = 1 - a;
+      OB[k] = (0xff000000 | ((((c >>> 16) & 255) * ia + 23 * a) << 16) | ((((c >>> 8) & 255) * ia + 31 * a) << 8) | ((c & 255) * ia + 23 * a)) >>> 0;
+    }
     if (night > 0.01) {
       const a = night * 0.75, ia = 1 - a, dr = 6 * a, dg = 19 * a, db = 22 * a;
       for (let k = 0; k < w * h; k++) { const c = OB[k]; OB[k] = (0xff000000 | ((((c >>> 16) & 255) * ia + db) << 16) | ((((c >>> 8) & 255) * ia + dg) << 8) | ((c & 255) * ia + dr)) >>> 0; }
@@ -763,6 +790,7 @@ import { paintCottage } from './assets/seed/cottage.js';
   /* ------------------------------------------------------------------ the story: stations along the walk
      [selector, z on arrival, z on leaving, hour, look up (0..1), fog (0..1)] */
   const STATIONS = [
+    ['#the-meeting', -12, -4, 0, 0, 0],
     ['#the-seed', 0, 4, 0, 0, 0],
     ['#roots', 44, 52, 1, 0, 0],
     ['#partial-view', 92, 104, 2, 0, 1],
@@ -799,14 +827,17 @@ import { paintCottage } from './assets/seed/cottage.js';
       keys.push([a, s[1], s[3], s[4], s[5]], [b, s[2], s[3], s[4], s[5]]);
     }
     if (!keys.length) return null;
-    const on = stEls[0][0].getBoundingClientRect().top < vh * 0.85;
+    // Leave the village through its closing reflection, before the field-guide
+    // toolbar arrives. The meeting is part of the same walk as the seed.
+    const entrance = doc.querySelector('.grove-thought') || stEls[0][0];
+    const on = entrance.getBoundingClientRect().top < vh * 0.85;
     let i = 0;
     while (i < keys.length - 1 && sy > keys[i + 1][0]) i++;
     const A = keys[i], B = keys[Math.min(i + 1, keys.length - 1)];
     const f = B === A ? 0 : sat((sy - A[0]) / Math.max(1, B[0] - A[0]));
     const e = smooth(0, 1, f);
     const oe = doc.getElementById('similar-trees'), ae = doc.getElementById('afterward');
-    const orch = oe ? smooth(vh * 1.15, vh * 0.2, oe.getBoundingClientRect().top) : 0;
+    const orch = oe ? smooth(vh * 1.6, -vh * 0.15, oe.getBoundingClientRect().top) : 0;
     const dusk = ae ? smooth(vh * 0.9, -vh * 0.6, ae.getBoundingClientRect().top) * 0.8 : 0;
     return { on, z: lerp(A[1], B[1], sy < keys[0][0] ? 0 : f), ha: A[2], hb: B[2], hf: e, look: lerp(A[3], B[3], e), fog: lerp(A[4], B[4], e), orch, dusk };
   }
@@ -840,7 +871,10 @@ import { paintCottage } from './assets/seed/cottage.js';
     for (const p of props) {
       if (p.k === 'rail') continue;
       // The chapter's original close ship tells this story; keep its distant approach out of the text.
-      if (p.k === 'ship') { const r = doc.getElementById('the-crew')?.getBoundingClientRect(); if (r && r.bottom > 0 && r.top < innerHeight) continue; }
+      if (p.k === 'ship') {
+        const chapter = doc.getElementById('the-crew'), r = chapter?.getBoundingClientRect();
+        if (chapter?.dataset.shipDeparted === 'true' || (r && r.bottom > 0 && r.top < innerHeight)) continue;
+      }
       if (p.z < CZ - 3 || p.z > CZ + GMAX) continue;
       const q = project(p.d, p.z, p.k === 'fly' ? p.y + (anim ? Math.sin(t * 0.8 + p.ph) * 0.1 : 0) : 0);
       if (!q || q.y - q.s * 6 > H) continue;
@@ -894,7 +928,12 @@ import { paintCottage } from './assets/seed/cottage.js';
     if (oa > 0.001) {
       drawOrchardScene(anim ? t : 0.4, st.dusk || 0);
       if (oa >= 0.999) buf.set(buf2);
-      else for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const k = y * W + x; if (BAY[bi(x, y)] < oa) buf[k] = buf2[k]; }
+      else for (let y = 0; y < H; y++) {
+        // The sky arrives first, then the hills and foreground. Mix each whole
+        // pixel's colour instead of interleaving two roads in a checkerboard.
+        const blend = smooth(0, 1, sat(oa * 1.7 - y / H * 0.7));
+        for (let x = 0; x < W; x++) { const k = y * W + x; buf[k] = mixInk(buf[k], buf2[k], blend); }
+      }
     }
     ctx.putImageData(img, 0, 0);
   }
@@ -945,7 +984,10 @@ import { paintCottage } from './assets/seed/cottage.js';
   doc.addEventListener('visibilitychange', wake);
   if (reduced.addEventListener) reduced.addEventListener('change', () => { lastKey = ''; wake(); });
   new MutationObserver(() => { lastKey = ''; wake(); }).observe(doc.body, { attributes: true, attributeFilter: ['class'] });
-  doc.getElementById('greet-dog')?.addEventListener('click', () => { hello = 2.4; wake(); });
+  // The field's toggle changes its own state, not the cinema's body class.
+  // Wake the stopped landscape when motion is restored without a scroll.
+  const fieldMotion = doc.querySelector('[data-motion-toggle]');
+  if (fieldMotion) new MutationObserver(() => { lastKey = ''; wake(); }).observe(fieldMotion, { attributes: true, attributeFilter: ['aria-pressed'] });
 
   world.insertBefore(canvas, world.firstChild);
   addInterludes(); collect(); layout(); wake();
