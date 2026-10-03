@@ -1,0 +1,26 @@
+/* The pixel journey: one fixed canvas behind everything after the film. Shown only once the story leaves the film. */
+.pj-canvas{position:fixed;left:0;top:0;z-index:-1;display:block;pointer-events:none;background:#0f1814;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;image-rendering:pixelated;opacity:0;transition:opacity .9s ease}
+html.pj-on .pj-canvas{opacity:1}
+@media (prefers-reduced-motion:reduce){.pj-canvas{transition:none}}
+/* the journey replaces the old endless-river backdrop and draws the orchard's sunset itself */
+html.pj-on .pb-canvas{visibility:hidden}
+html.pj-on #orchardCanvas{opacity:0}
+.pj-on .source-window,.pj-on .evidence-folio,.pj-on .afterward{background:none}
+/* the journey now carries the meeting's tree people and the ghost ship's build (driven by scroll, no hidden button) */
+html.pj-on .meeting-stage .meeting-frame,html.pj-on .ship-sea,html.pj-on .crew-controls{display:none}
+html.pj-on .scene-meeting,html.pj-on .ghost-harbor,html.pj-on .orchard{background:transparent}
+/* the orchard's bookshelf: spines like end-credits, quiet, in the credits' own type */
+.repo-nolink{display:flex;gap:16px;align-items:flex-start}
+.bookshelf{margin-top:40px}
+.book-spines{list-style:none;margin:16px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.book-spines a,.book-nolink{display:flex;flex-direction:column;gap:2px;min-height:44px;padding:10px 12px 10px 14px;border-left:4px solid #5B4638;background:#17231bd9;color:#F2EEE4;text-decoration:none;box-shadow:inset 0 -1px 0 #2E3B33}
+.book-spines li:nth-child(3n+2) a,.book-spines li:nth-child(3n+2) .book-nolink{border-left-color:#2E6B45}
+.book-spines li:nth-child(3n) a,.book-spines li:nth-child(3n) .book-nolink{border-left-color:#8A968D}
+.book-spines a:hover,.book-spines a:focus-visible{background:#1F2C24;outline:2px solid #F2EEE4;outline-offset:2px}
+.book-title{font-family:'Newsreader',Georgia,serif;font-style:italic;font-size:17px;line-height:1.25}
+.book-by{font-size:13px;color:#B8C2BA}
+.book-kind{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8A968D}
+/* the orchard: the journey's sunset shows through; credits read like end-credits over a darkened band of the picture */
+html.pj-on .orchard-vista{background:transparent}
+html.pj-on .orchard-lower{background:linear-gradient(180deg,rgba(23,31,23,0) 0,rgba(23,31,23,.55) 140px,rgba(23,31,23,.78) 360px)}
+html.pj-on .orchard-credits{background:rgba(15,24,20,.62);padding:24px clamp(16px,3vw,32px);box-shadow:0 0 60px 20px rgba(15,24,20,.45)}
