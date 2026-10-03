@@ -1,5 +1,6 @@
 /* Mobile floors and the visible prompt (UX audit rows 8, 16, 17; owner: "the pick-the-lock instructions aka the prompt are visible").
    Loaded last on purpose. Text floor 11px, touch targets 44px, display type never hyphenates. */
+@media (max-width:650px){.prompt-persist{top:auto;bottom:19%;left:24px;right:24px;justify-content:flex-start}}
 .prompt-card{margin-top:18px;max-width:30ch;padding:12px 14px;border:1px solid #2e3b33;background:rgba(8,13,13,.62);color:#f2eee4;font-family:'Geist Mono',monospace;font-size:13px;line-height:1.6;letter-spacing:.02em}
 .prompt-card .prompt-tag{display:block;margin-bottom:6px;color:#8a968d;font-size:11px;letter-spacing:.14em}
 @media (max-width:650px){
