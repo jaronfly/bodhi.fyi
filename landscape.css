@@ -138,13 +138,13 @@
 .deck-lantern{position:absolute;left:76%;top:62%;width:5px;height:7px;background:#e8982a;box-shadow:0 0 24px #e8982a88}
 .ghost-harbor .sea{position:absolute;height:90px;left:0;right:0;bottom:0;background:repeating-linear-gradient(175deg,#34584b 0 2px,#294c41 2px 14px,#6f938066 15px 16px,#193e34 17px 30px);background-size:160% 100%;animation:crew-sea 16s linear infinite;z-index:3;opacity:.86}
 .ship-log{max-width:850px;padding:50px 7vw 90px;box-sizing:content-box;margin:auto}.ship-log h3{font-weight:400;font-size:30px;line-height:1.2;letter-spacing:-.04em;margin:23px 0}
-#crew-entry{font:italic 30px/1.4 var(--serif);min-height:90px;color:#d0decc;max-width:670px}
+:is(#crew-entry,.crew-entry){font:italic 30px/1.4 var(--serif);min-height:90px;color:#d0decc;max-width:670px}
 #pass-log{font:11px var(--mono);margin:25px 0 35px;padding:15px 0;background:transparent;color:#e5ecd8;border:0;border-bottom:1px solid #93b093}
 .ship-log .ship-explanation{font-size:12px;color:#a6bca7;max-width:650px;line-height:1.9}
 @keyframes crew-bob{50%{transform:translate(-50%,5px) rotate(1deg)}}@keyframes crew-sea{to{background-position:100% 0}}
 .still-frames .ghost-harbor .ship,.still-frames .ghost-harbor .sea{animation:none}
 @media(max-width:960px){.context-room{grid-template-columns:1fr;gap:30px}.claude-field .cell-frame{justify-content:center}.claude-field .cell-how,.claude-field .cell-hud{margin-left:auto;margin-right:auto}.claude-field .cell-notes{grid-template-columns:1fr 1fr;gap:0 30px}}
-@media(max-width:500px){.claude-field .limited-view{padding:50px 0 75px}.view-heading h2{font-size:42px}.view-heading>p:last-child{font-size:15px}.claude-field .cell-notes{grid-template-columns:1fr}.claude-field .cell-thought{font-size:9px}.claude-field .cell-canvas{outline-offset:4px}.ghost-harbor{padding-top:75px}.ghost-harbor h2{font-size:44px}.ghost-harbor .ship-sea{height:290px}.ghost-harbor .ship{width:290px;height:181px}.ghost-harbor>header>p:last-child{font-size:14px}.ship-log{padding:35px 24px 60px}.ship-log h3{font-size:25px}#crew-entry{font-size:26px;min-height:120px}}
+@media(max-width:500px){.claude-field .limited-view{padding:50px 0 75px}.view-heading h2{font-size:42px}.view-heading>p:last-child{font-size:15px}.claude-field .cell-notes{grid-template-columns:1fr}.claude-field .cell-thought{font-size:9px}.claude-field .cell-canvas{outline-offset:4px}.ghost-harbor{padding-top:75px}.ghost-harbor h2{font-size:44px}.ghost-harbor .ship-sea{height:290px}.ghost-harbor .ship{width:290px;height:181px}.ghost-harbor>header>p:last-child{font-size:14px}.ship-log{padding:35px 24px 60px}.ship-log h3{font-size:25px}:is(#crew-entry,.crew-entry){font-size:26px;min-height:120px}}
 /* Claude's river world and original seed/ancestry engines, recomposed into the journey. */
 /* The night scroll is a fixed canvas inside this isolated, z-indexed wrapper. Clip the wrapper so the canvas can only show
    where the wrapper is, otherwise it paints over the film above. */
@@ -260,3 +260,5 @@
   .site-footer .colophon{flex-direction:column;gap:8px}
 }
 
+
+.crew-fallback-log{margin-top:44px;padding-top:24px;border-top:1px solid #516151}
