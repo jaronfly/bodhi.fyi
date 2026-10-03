@@ -11,9 +11,9 @@
 
 /* the statement card: kicker, two-voice headline, the honest-limit line */
 .claude-field .meeting-head {
-  max-width: 700px;
-  background: rgba(23, 35, 27, .95);
-  border: 1px solid var(--moss);
+  max-width: 900px;
+  background: transparent;
+  border: 0;
   padding: clamp(24px, 3.4vw, 44px);
 }
 .claude-field .meeting-head h2 { margin-bottom: 28px; }
@@ -37,14 +37,14 @@
 /* the cast labels: small-caps mono names over one honest-limit line each */
 .claude-field .meeting-cast {
   list-style: none;
-  margin: 0 auto;
+  margin: 72px auto 36px;
   padding: 20px 26px;
   max-width: 1040px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 24px;
-  background: rgba(23, 35, 27, .95);
-  border: 1px solid var(--moss);
+  background: transparent;
+  border: 0;
   text-align: center;
 }
 .claude-field .meeting-cast .px {
@@ -62,12 +62,18 @@
 }
 .claude-field .meeting-cast .cast-sprite {
   display: block;
-  margin: 0 auto 10px;
+  margin: auto auto 24px;
   image-rendering: pixelated;
-  width: 32px;
-  height: 32px;
+  width: auto;
+  height: auto;
   object-fit: contain;
 }
+.claude-field .meeting-cast li {display:grid;grid-template-rows:180px auto auto;align-content:end;min-width:0}
+.claude-field .meeting-cast li:nth-child(1) .cast-sprite{width:44px;height:60px}
+.claude-field .meeting-cast li:nth-child(2) .cast-sprite{width:72px;height:72px}
+.claude-field .meeting-cast li:nth-child(3) .cast-sprite{width:52px;height:80px}
+.claude-field .meeting-cast li:nth-child(4) .cast-sprite{width:128px;height:152px}
+.claude-field .meeting-cast li:nth-child(5) .cast-sprite{width:56px;height:80px}
 
 /* without script: the same copy as plain text on the same plate */
 .claude-field .meeting-still {

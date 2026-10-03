@@ -1,4 +1,9 @@
 /* GLM/ZCode living grove, adapted by Astra: palette, sprites, timing, accessibility and lifecycle. */
+import { spriteCanvas } from './assets/seed/sprites.js';
+import { paintCottage } from './assets/seed/cottage.js';
+const villageKinds = ['local','blind','instruct','cloud','thinker'];
+const villageNames = ['A local sprout','A text-only reader','An instruction-shaped resident','A cloud resident','A thinking resident'];
+const villageArt = Object.fromEntries(villageKinds.map(k=>[k,[spriteCanvas(k,0),spriteCanvas(k,1)]]));
 (()=>{
 /* ═══ Pixel engine v7 — whole pixels, living world ═══
    1 bone · 2 ink · 3 saffron · 4 sprout · 5 canopy · 6 moss · 7 sage · 8 lichen · 9 night */
@@ -54,13 +59,15 @@ let drops = [];
 
 /* actors */
 let actors = [
- {type:'pet',variant:0,x:78,mode:'inspect',timer:240,scale:.16,frame:0,dir:1},
- {type:'pet',variant:1,x:119,mode:'note',timer:210,scale:.18,frame:50,dir:-1},
- {type:'pet',variant:2,x:Math.min(SW-12,141),mode:'walk',timer:200,scale:.17,frame:100,target:110,dir:-1},
+ {type:'pet',variant:0,x:78,mode:'inspect',timer:240,scale:.20,frame:0,dir:1},
+ {type:'pet',variant:1,x:119,mode:'note',timer:210,scale:.25,frame:50,dir:-1},
+ {type:'pet',variant:2,x:Math.min(SW-12,141),mode:'walk',timer:200,scale:.24,frame:100,target:110,dir:-1},
+ {type:'pet',variant:3,x:Math.min(SW-16,171),mode:'think',timer:320,scale:.34,frame:70,dir:-1},
+ {type:'pet',variant:4,x:66,mode:'note',timer:190,scale:.22,frame:120,dir:1},
  {type:'pet',variant:3,sprite:'bodhi',name:'Bodhi',x:94,mode:'think',timer:280,scale:.20,frame:0,dir:1},
  {type:'pet',variant:4,sprite:'codex',name:'The returning scout',x:SW-18,mode:'walk',timer:380,scale:.20,frame:0,dir:-1,target:TREE_X+16,returning:true}
 ], nextSeed = 50, held = null;
-actors.forEach(a=>{a.age=0;a.stay=1800+Math.random()*2000;});
+actors.forEach(a=>{a.age=0;a.stay=1800+Math.random()*2000;if(!a.sprite)a.name=villageNames[a.variant%villageNames.length];});
 
 let pointer = {x:0, y:0, down:false};
 
@@ -258,7 +265,17 @@ function drawResident(a,x,y,w,h,u,mode,picked){
   if(img.complete&&img.naturalWidth){sx.imageSmoothingEnabled=false;sx.drawImage(img,frame*192,row*208,192,208,xx,yy,ww,hh);}else drawTP(sx,x,y,u,mode,T+a.frame,picked,a.dir,a.variant);
   a.bounds={x:xx,y:yy,w:ww,h:hh};
   if(a.returning){pxr(sx,C[1],xx+ww*.65,yy+hh*.68,11,9);pxr(sx,C[5],xx+ww*.68,yy+hh*.71,7,1);}
- }else{drawTP(sx,x,y,u,mode,T+a.frame,picked,a.meet?a.meet.side:a.dir,a.variant);a.bounds={x,y,w,h};}
+ }else{
+  // Claude's original model figures now inhabit GLM's existing world and lifecycle.
+  // Keep its hit boxes and physics; fit the source art in whole pixels rather than stretching it.
+  const kind=villageKinds[a.variant%villageKinds.length],frame=worldPaused?0:Math.floor((T+a.frame)/13)%2;
+  const art=villageArt[kind][frame],k=Math.max(1,Math.floor(Math.min(w/art.width,h/art.height)*(picked?1.4:1)));
+  const ww=art.width*k,hh=art.height*k,xx=Math.round(x+(w-ww)/2),yy=Math.round(y+h-hh);
+  sx.imageSmoothingEnabled=false;sx.save();
+  if((a.meet?a.meet.side:a.dir)<0){sx.translate(xx+ww,yy);sx.scale(-1,1);sx.drawImage(art,0,0,ww,hh);}else sx.drawImage(art,xx,yy,ww,hh);
+  sx.restore();a.bounds={x:xx,y:yy,w:ww,h:hh};
+  if(mode==='note'||mode==='paint'||mode==='type'){pxr(sx,C[1],xx+ww*.7,yy+hh*.65,9,7);pxr(sx,C[6],xx+ww*.7+2,yy+hh*.65+2,5,1);}
+ }
 }
 
 let keyboardIndex=0;
@@ -314,6 +331,14 @@ function drawScene(advance=true){
     pxr(sx,'#385842',x*SU,(base-h)*SU,SU,h*SU);
     for(let row=-3;row<=3;row++){const span=6-Math.abs(row);pxr(sx,i%2?'#375940':'#41634b',(x-span)*SU,(base-h+row)*SU,span*2*SU,SU);}
   }
+  // Reuse the walk's cottage painter in the village's current light.
+  const roles = Object.fromEntries(['WALL','WALLD','ROOF','ROOFD','WOODD','WIN'].map(k=>[k,k]));
+  const colors = isNight ? {WALL:'#26362d',WALLD:'#17291f',ROOF:'#394c3b',ROOFD:'#26362d',WOODD:'#17231b',WIN:'#c69b55',glow:'#6e4f4c'} : {WALL:'#68755d',WALLD:'#394c3b',ROOF:'#829273',ROOFD:'#68755d',WOODD:'#17231b',WIN:'#d0cc99',glow:'#6e4f4c'};
+  const plot=(x,y,c)=>pxr(sx,colors[c],x*SU,y*SU,SU,SU);
+  for(const [hx,hy,hw] of [[100,60,13],[SW-26,58,10]]) paintCottage(hx,hy,hw,{w:1,h:1},isNight?1:0,{
+    fput:plot, frect:(x,y,w,h,c)=>pxr(sx,colors[c],x*SU,y*SU,w*SU,h*SU), raw:plot,
+    S:roles,P:{glow:'glow'},BAY:[0,.5,.25,.75],bi:(x,y)=>(Math.floor(x)+Math.floor(y))&3
+  });
   let snow=0;
   if(sIdx===3)snow=.25+sT*.75;
   else if(sIdx===0)snow=Math.max(0,1-sT*4.5);

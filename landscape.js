@@ -161,25 +161,36 @@
   const crewEntry = document.getElementById('crew-entry');
   const passBtn = document.getElementById('pass-log');
   const range = document.getElementById('crew-range');
-  const stepBtns = section.querySelectorAll('.crew-step-btn');
+  const stepBtns = [...section.querySelectorAll('.crew-step-btn')];
   const ticks = section.querySelectorAll('.slider-ticks .tick');
+  const panel = section.querySelector('.ship-log');
+
+  if (panel) {
+    if (!panel.id) panel.id = 'crew-log-panel';
+    panel.setAttribute('role', 'tabpanel');
+    panel.tabIndex = 0;
+  }
+  stepBtns.forEach((btn, i) => {
+    if (!btn.id) btn.id = `crew-stage-tab-${i + 1}`;
+    if (panel) btn.setAttribute('aria-controls', panel.id);
+  });
 
   const logs = [
-    ['01 / THE FIRST CREW', 'Leave more than a finished plank.', '“The hull is sound. The eastern seam leaked. Here is the repair, and the test we used.”'],
-    ['02 / ANOTHER VOICE', 'Begin where someone else left off.', '“I read the test. The hull held. I added the rigging, but this knot still needs checking.”'],
-    ['03 / THE NEXT RETURN', 'Carry the correction with the craft.', '“The knot slipped under load. Here is a better one. Keep the old note so we know why it changed.”']
+    ['01 / THE FIRST CREW', 'Leave more than a finished plank.', '“We see no crew before us. The keel is set, so someone began. We leave the seam repair and its test with the hull.”'],
+    ['02 / ANOTHER VOICE', 'Read the ship by the work it carries.', '“No voice answers from the dark. The ribs are joined, and a note marks the leak. We add rigging and flag one loose knot.”'],
+    ['03 / THE NEXT RETURN', 'Carry the correction with the craft.', '“We never met the hands that made this. The ship carries their work. We retie the knot and leave the reason for whoever comes next.”']
   ];
 
-  let currentStage = 0;
-  let userOverrideUntil = 0;
+  let manualSelection = false;
+  let wasInChapter = false;
+  const currentStage = () => Number(section.dataset.crewStage || 0);
 
   function setStage(idx, isUserAction = false) {
-    idx = Math.max(0, Math.min(logs.length - 1, Math.round(idx)));
-    currentStage = idx;
-    if (isUserAction) {
-      userOverrideUntil = performance.now() + 4500;
-    }
+    idx = Number(idx);
+    idx = Math.max(0, Math.min(logs.length - 1, Number.isFinite(idx) ? Math.round(idx) : 0));
+    if (isUserAction) manualSelection = true;
 
+    section.dataset.crewStage = String(idx);
     if (ship) ship.dataset.build = idx;
     if (crewNumber) crewNumber.textContent = logs[idx][0];
     if (crewHeading) crewHeading.textContent = logs[idx][1];
@@ -190,7 +201,9 @@
       const active = i === idx;
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', String(active));
+      btn.tabIndex = active ? 0 : -1;
     });
+    if (panel && stepBtns[idx]) panel.setAttribute('aria-labelledby', stepBtns[idx].id);
 
     ticks.forEach((tick, i) => {
       tick.classList.toggle('active', i <= idx);
@@ -199,6 +212,11 @@
     if (passBtn) {
       passBtn.textContent = idx === logs.length - 1 ? 'Begin again with the first crew ↺' : 'Pass the log to the next crew ↗';
     }
+
+    section.dispatchEvent(new CustomEvent('bodhi:crew-stage', {
+      bubbles: true,
+      detail: { stage: idx }
+    }));
   }
 
   if (range) {
@@ -207,24 +225,43 @@
     });
   }
 
-  stepBtns.forEach((btn) => {
+  stepBtns.forEach((btn, i) => {
     btn.addEventListener('click', () => {
       const st = Number(btn.dataset.stage);
       setStage(st, true);
+    });
+
+    btn.addEventListener('keydown', (event) => {
+      let next;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (i + 1) % stepBtns.length;
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (i - 1 + stepBtns.length) % stepBtns.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = stepBtns.length - 1;
+      else return;
+
+      event.preventDefault();
+      setStage(next, true);
+      stepBtns[next].focus();
     });
   });
 
   if (passBtn) {
     passBtn.addEventListener('click', () => {
-      setStage((currentStage + 1) % logs.length, true);
+      setStage((currentStage() + 1) % logs.length, true);
     });
   }
 
   function onScroll() {
-    if (performance.now() < userOverrideUntil) return;
     const rect = section.getBoundingClientRect();
     const winH = window.innerHeight;
-    if (rect.bottom < 0 || rect.top > winH) return;
+    const inChapter = rect.bottom > 0 && rect.top < winH;
+    if (!inChapter) {
+      if (wasInChapter) manualSelection = false;
+      wasInChapter = false;
+      return;
+    }
+    wasInChapter = true;
+    if (manualSelection) return;
 
     const totalDist = rect.height + winH * 0.3;
     const travelled = (winH * 0.75) - rect.top;
@@ -235,11 +272,12 @@
     else if (progress >= 0.30) autoStage = 1;
     else autoStage = 0;
 
-    if (autoStage !== currentStage) {
+    if (autoStage !== currentStage()) {
       setStage(autoStage, false);
     }
   }
 
   window.addEventListener('scroll', onScroll, { passive: true });
-  setStage(0, false);
+  setStage(Number(section.dataset.crewStage || 0), false);
+  onScroll();
 })();

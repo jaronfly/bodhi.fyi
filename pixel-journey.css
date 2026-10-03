@@ -13,17 +13,26 @@ html.pj-on #the-seed,html.pj-on #partial-view,html.pj-on #the-practice,html.pj-o
 html.pj-on .ghost-harbor,html.pj-on .orchard,html.pj-on .orchard-vista,html.pj-on .afterward{background:transparent}
 /* One world, no blocks arriving with edges: the walk paints the night sky when you look up, and dissolves into the
    orchard itself (its own code, in the walk's canvas), so the sky's and the orchard's own panels rest. */
-html.pj-on #sky .sky-bg{visibility:hidden}
+/* Keep Claude's full sky painting. The walk looks up into it, rather than replacing it. */
+html.pj-on #sky .sky-bg{visibility:visible;mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent)}
 html.pj-on #orchardCanvas{opacity:0}
 
 /* The ghost ship assembles on the walk's horizon as the harbour scrolls; the harbour's own stage and stepper rest. */
-html.pj-on .ship-sea,html.pj-on .crew-controls{display:none}
+html.pj-on .ship-sea{display:none}
+html.pj-on .crew-controls{display:block}
 
 /* Legibility over the living world: a soft soil halo behind running text. */
 html.pj-on #outside-world .scene :is(h2,h3,p,li,blockquote,figcaption),
 html.pj-on #outside-world :is(.source-window,.evidence-folio,.ghost-harbor,.afterward) :is(h2,h3,p,li){
   text-shadow:0 0 2px rgba(12,18,14,.95),0 0 8px rgba(12,18,14,.85),0 0 18px rgba(12,18,14,.6);
 }
+/* Small source labels need the same protection as paragraphs on the lighter alpine ground. */
+html.pj-on .source-records>a{
+  background:radial-gradient(ellipse closest-side at 48% 50%,rgba(15,24,20,.94),rgba(15,24,20,.84) 58%,transparent 100%);
+  text-shadow:0 0 2px rgba(12,18,14,.95),0 0 8px rgba(12,18,14,.85);
+}
+/* Keep actual record points distinguishable from the sky's ambient stars. */
+html.pj-on .plane-frame{background:radial-gradient(ellipse,rgba(15,24,20,.92),rgba(15,24,20,.78) 48%,transparent 72%)}
 
 /* The citizen census, under the simulator: the grove's residents out walking, counted. */
 .claude-field .census-canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}

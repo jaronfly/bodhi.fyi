@@ -12,13 +12,16 @@
    the sky, moon, stars, aurora and three ranges of hills turn with the path's heading.
 
    What it reuses, literally: the night scroll's 23-colour palette, Bayer dither, star field, moon,
-   aurora, cloud puffs, hill ranges and blob trees (pixel-backdrop.js), and the orchard's broad tree and
-   tricolour dog (landscape.js), whose colours are added to the palette so the walk arrives in the
+   aurora, cloud puffs, hill ranges and blob trees (pixel-backdrop.js), and the orchard's broad tree (landscape.js) and
+   original seed puppy (assets/seed/sprites.js), whose colours are added to the palette so the walk arrives in the
    orchard's light. Colours are authored per hour of the day as a table of roles, and two hours blend by
    dither, never by alpha.
 
    Motion: still when the system asks for reduced motion, when the film's Stillness is on, or when the
    field guide's ambient-motion switch is off. Pauses when hidden. No storage, no network. */
+import { spriteCanvas } from './assets/seed/sprites.js';
+import { paintCottage } from './assets/seed/cottage.js';
+
 (() => {
   'use strict';
   const doc = document, win = window, root = doc.documentElement;
@@ -49,6 +52,13 @@
     'WALL', 'WALLD', 'WIN', 'BLOOM1', 'BLOOM2', 'REED', 'CLOUD', 'CLOUDL'];
   const S = {};
   ROLES.forEach((r, i) => { S[r] = i; });
+  const AUTUMN_COLORS = {
+    [S.T1]: P.earth, [S.T2]: P.reed, [S.T3]: P.clay, [S.TUFT]: P.earthL, [S.BLOOM1]: P.clay
+  };
+  const WINTER_COLORS = {
+    [S.G0]: P.lichen, [S.G1]: P.moss, [S.G2]: P.sage, [S.TUFT]: P.bone,
+    [S.ROCK0]: P.soil, [S.ROCK1]: P.moss, [S.ROCKHI]: P.sage
+  };
   const night = {
     G0: 'under', G1: 'soil', G2: 'moss', TUFT: 'canopyDk', P0: 'earth', P1: 'soil', PEB: 'earthL', BANK: 'earth', BANKL: 'earthL',
     W0: 'water', W1: 'wDeep', WHI: 'wHi', SAND: 'earth', T0: 'soil', T1: 'under', T2: 'moss', T3: 'canopyDk', TRK: 'earth', TRKL: 'earthL',
@@ -116,6 +126,10 @@
   for (let i = 0; i < PXT.length; i++) { const z = i / 4 - 2; PXT[i] = 7 * Math.sin(z * 0.043) + 2.6 * Math.sin(z * 0.117 + 1.3); }
   const PX = (z) => { const u = (z + 2) * 4, i = clamp(Math.floor(u), 0, PXT.length - 2), f = clamp(u - i, 0, 1); return PXT[i] + (PXT[i + 1] - PXT[i]) * f; };
   const PW = 0.6;                                      // half-width of the path
+  const inRange = (z, a, b, edge = 8) => smooth(a - edge, a, z) * (1 - smooth(b, b + edge, z));
+  const autumnAt = (z) => inRange(z, 25, 65);
+  const winterAt = (z) => inRange(z, 298, 335, 12);
+  const pathWidth = (z) => PW - 0.22 * inRange(z, 76, 128, 12) + 0.5 * inRange(z, 202, 234, 12) - 0.28 * inRange(z, 304, 329, 12);
   const RIV0 = 236, RIV1 = 292, RIVZ = 264, RW = 0.9;  // the river crosses the path diagonally at RIVZ
   const riverD = (z) => (z - RIVZ) * 0.9;
   const POND = { d: -4.6, z: 141, rx: 2.6, rz: 1.6 };
@@ -127,7 +141,7 @@
     if (z > RIV0 && z < RIV1 && Math.abs(d - riverD(z)) * 0.743 < RW + 0.5) return 'water';
     const pu = (d - POND.d) / POND.rx, pv = (z - POND.z) / POND.rz;
     if (pu * pu + pv * pv < 1.6) return 'water';
-    if (Math.abs(d) < PW + 0.6) return 'path';
+    if (Math.abs(d) < pathWidth(z) + 0.6) return 'path';
     return 'grass';
   }
 
@@ -153,10 +167,29 @@
       if (pr < 1) return pr > 0.8 ? S.W1 : S.W0;
       if (pr < 1.3) return hash(Math.floor(wx * 4), Math.floor(wz * 4), 9) < 0.3 ? S.BANKL : S.BANK;
     }
-    const ad = Math.abs(d);
-    if (ad < PW) {
+    const ad = Math.abs(d), width = pathWidth(wz);
+    // A narrow trail opens gradually onto shingle; no straight cross-map cutoff.
+    const shore = inRange(wz, 366, 390, 24);
+    const shoreWidth = lerp(width, 3.2, shore);
+    const irregularEdge = (vnoise(wx * 1.1, wz * 0.9, 38) - 0.5) * 0.32;
+    const shingle = shore * (1 - smooth(shoreWidth - 0.55, shoreWidth + 0.2 + irregularEdge, ad));
+    const surfaceMix = hash(Math.floor(wx * 7), Math.floor(wz * 7), 37);
+    if (surfaceMix < shingle) {
+      const h = hash(Math.floor(wx * 7), Math.floor(wz * 7), 33);
+      return h < 0.08 ? S.ROCK1 : h < 0.25 ? S.PEB : S.SAND;
+    }
+    // The shared clearing has a circular garden walk, not a road running through the meeting.
+    if (wz > 202 && wz < 240 && ad < 6) {
+      const ring = (d / 3.5) ** 2 + ((wz - 224) / 15) ** 2;
+      if (ring > 0.65 && ring < 0.92) return hash(Math.floor(wx * 5), Math.floor(wz * 5), 36) < 0.2 ? S.PEB : S.P1;
+      if (ad < width && ring < 0.65) return S.G0;
+    }
+    // Alpine ground uses the same stone painter and palette as the older walk.
+    const snow = winterAt(wz);
+    if (ad > width && vnoise(wx * 0.9, wz * 0.7, 43) > 1 - 0.56 * snow) return S.ROCK1;
+    if (ad < width) {
       if (zc < 9 && hash(Math.floor(wx * 9), Math.floor(wz * 9), 3) < 0.05) return S.PEB;
-      return ad > PW - 0.16 ? S.P1 : S.P0;
+      return ad > width - 0.16 ? S.P1 : S.P0;
     }
     if (zc < 9) {
       const h = hash(Math.floor(wx * 8), Math.floor(wz * 8), 5);
@@ -181,6 +214,10 @@
     add('tree', 2.6, 50, { r: 1.3 });                                   // the old tree where it started
     add('tree', 2.0, 158, { r: 2.1 });                                  // the great tree you sit under
     add('bench', -1.15, 210, { face: 1 }); add('bench', 1.15, 210, { face: -1 }); // a clearing: room on both sides
+    add('cottage', -3.8, 214, { w: 1.7, h: 1.25 }); // the shared workbench, using the first home's own painter
+    add('cottage', 5.2, 218, { w: 1.2, h: 0.9 });
+    add('cottage', -4.0, 234, { w: 1.5, h: 1.1 });
+    add('cottage', 4.6, 239, { w: 1.2, h: 0.9 });
     add('lantern', 0.95, 261.3);
     add('rail', 0, 0, { a: [0.8, 261.6], b: [0.8, 266.4] }); add('rail', 0, 0, { a: [-0.8, 261.6], b: [-0.8, 266.4] });
     add('post', 0.8, 261.6); add('post', 0.8, 266.4); add('post', -0.8, 261.6); add('post', -0.8, 266.4);
@@ -189,15 +226,22 @@
     add('orchard', 3.0, 450); add('dog', 1.9, 449.7);
     // the countryside
     for (let z = 2; z < 470; z += 0.45) {
-      const pine = z > 70 && z < 134, clearing = z > 196 && z < 222, coast = z > 340 && z < 406, gold = z > 406;
-      let p = pine ? 0.85 : clearing ? 0.2 : coast ? 0.16 : gold ? 0.28 : 0.34;
+      const pine = z > 70 && z < 134, clearing = inRange(z, 196, 240, 12), alpine = inRange(z, 298, 338, 12), coast = z > 340 && z < 406, gold = z > 406;
+      let p = pine ? 0.85 : coast ? 0.16 : gold ? 0.28 : 0.34;
+      p = lerp(p, 0.2, clearing);
+      p = lerp(p, 0.58, alpine);
       if (z < 12) p = 0.1;
       if (R() > p) continue;
       const side = coast ? -1 : (R() < 0.5 ? -1 : 1);
-      let d = side * (pine ? 1.3 + Math.pow(R(), 1.3) * 8 : 1.7 + Math.pow(R(), 1.4) * 13);
-      if (clearing) d = side * (6.5 + R() * 7);
+      const distanceRoll = R();
+      let d = side * (pine ? 1.3 + Math.pow(distanceRoll, 1.3) * 8 : 1.7 + Math.pow(distanceRoll, 1.4) * 13);
+      if (clearing > 0) {
+        const clearingDistance = 6.5 + (clearing >= 1 ? R() : hash(Math.round(z * 100), 0, 73)) * 7;
+        d = side * lerp(Math.abs(d), clearingDistance, clearing);
+      }
       if (kind(d, z) !== 'grass') continue;
-      if (pine) add('pine', d, z, { h: 1.6 + R() * 1.3 });
+      if (alpine >= 1 || (alpine > 0 && hash(Math.round(d * 16), Math.round(z * 16), 74) < alpine)) add('rock', d, z, { r: 0.45 + R() * 1.0 });
+      else if (pine) add('pine', d, z, { h: 1.6 + R() * 1.3 });
       else if (R() < 0.18) add('rock', d, z, { r: 0.16 + R() * 0.2 });
       else if (R() < 0.3) add('bush', d, z, { r: 0.24 + R() * 0.18 });
       else add('tree', d, z, { r: gold ? 0.45 + R() * 0.25 : 0.6 + R() * 0.45 });
@@ -238,20 +282,34 @@
     for (let y = H - 1; y > HY0; y--) { const u = (y - HY0) / (H - HY0); SC[y] = PXW * (0.26 + 0.74 * Math.pow(u, 0.8)); G[y] = g; g += 1 / SC[y]; }
     GMAX = g; G[HY0] = g; SC[HY0] = PXW * 0.26;
     img = ctx.createImageData(W, H); buf = new Uint32Array(img.data.buffer); buf2 = new Uint32Array(W * H);
-    stars = Array.from({ length: 110 }, (_, i) => ({ x: hash(i, 1, 7), y: Math.pow(hash(i, 2, 7), 0.8) * 0.94, th: hash(i, 3, 7), b: hash(i, 4, 7), ph: hash(i, 5, 7) * 40 }));
+    stars = Array.from({ length: 320 }, (_, i) => ({ x: hash(i, 1, 7), y: Math.pow(hash(i, 2, 7), 0.8) * 0.94, th: hash(i, 3, 7), b: hash(i, 4, 7), ph: hash(i, 5, 7) * 40 }));
     clouds = Array.from({ length: 6 }, (_, i) => ({ x: hash(i, 1, 9) * (W + 90), y: 0.12 + hash(i, 2, 9) * 0.62, w: 24 + hash(i, 3, 9) * 30, v: 1.2 + hash(i, 4, 9) * 1.6 }));
   }
 
   /* ------------------------------------------------------------------ per-frame colour state */
   const CA = new Uint32Array(ROLES.length), CB = new Uint32Array(ROLES.length);
-  let PF = 0, HA = 0, HB = 0;
-  const setHour = (a, b, f) => { HA = a; HB = b; PF = f; for (let i = 0; i < ROLES.length; i++) { CA[i] = U32[TAB[a][i]]; CB[i] = U32[TAB[b][i]]; } };
+  let PF = 0, HA = 0, HB = 0, fallWeight = 0, snowWeight = 0;
+  const setHour = (a, b, f) => {
+    HA = a; HB = b; PF = f;
+    for (let i = 0; i < ROLES.length; i++) { CA[i] = U32[TAB[a][i]]; CB[i] = U32[TAB[b][i]]; }
+    // Seasons belong to places in the story. Their palettes dither in as daylight changes independently.
+    fallWeight = autumnAt(CZ);
+    snowWeight = winterAt(CZ);
+  };
   const hourVal = (key) => lerp(HOURS[HA][key], HOURS[HB][key], PF);
   const bi = (x, y) => ((y & 3) << 2) | (x & 3);
-  const put = (x, y, r) => { if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = BAY[bi(x, y)] < PF ? CB[r] : CA[r]; };
+  const roleColor = (x, y, r) => {
+    let color = BAY[bi(x, y)] < PF ? CB[r] : CA[r];
+    const seasonThreshold = BAY[bi(x + 2, y + 1)];
+    const autumn = AUTUMN_COLORS[r], winter = WINTER_COLORS[r];
+    if (autumn != null && seasonThreshold < fallWeight) color = U32[autumn];
+    if (winter != null && seasonThreshold < snowWeight) color = U32[winter];
+    return color;
+  };
+  const put = (x, y, r) => { if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = roleColor(x, y, r); };
   const raw = (x, y, c) => { if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = U32[c]; };
   let FOGK = 0; // fog on the sprite being drawn
-  const fput = (x, y, r) => { x |= 0; y |= 0; if (x < 0 || x >= W || y < 0 || y >= H) return; const t = BAY[bi(x, y)]; buf[y * W + x] = t < FOGK ? (t < PF ? CB[S.FOG] : CA[S.FOG]) : (t < PF ? CB[r] : CA[r]); };
+  const fput = (x, y, r) => { x |= 0; y |= 0; if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = roleColor(x, y, BAY[bi(x, y)] < FOGK ? S.FOG : r); };
   const frect = (x, y, w, h, r) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) fput(x + i, y + j, r); };
   const fdisk = (cx, cy, rad, r) => { for (let j = -rad; j <= rad; j++) { const w = Math.floor(Math.sqrt(rad * rad - j * j)); for (let i = -w; i <= w; i++) fput(cx + i, cy + j, r); } };
   const fline = (pts, r, wd) => {
@@ -308,6 +366,7 @@
       let c = st.b > 0.97 ? P.bone : st.b > 0.8 ? P.sage : P.lichen;
       if (anim && ((tick + Math.floor(st.ph)) % 7 === 0) && st.b < 0.7) c = P.moss;
       raw(x, y, c);
+      if (st.b > 0.975) { raw(x - 1, y, P.lichen); raw(x + 1, y, P.lichen); raw(x, y - 1, P.lichen); raw(x, y + 1, P.lichen); }
     }
   }
   function drawMoon(amt) {
@@ -343,10 +402,13 @@
       const streak = (0.85 + 0.15 * Math.sin(x * 1.3 + 3 * Math.sin(t * 0.7 + x * 0.1))) * env;
       for (let y = Math.max(0, Math.floor(yb - L)); y <= Math.floor(yb) && y < HY; y++) {
         const d = (yb - y) / L, k = a * 1.05 * Math.pow(1 - d, 1.1) * streak, th = BAY[bi(x, y)];
-        if (k > 0.8 + th * 0.2) buf[y * W + x] = U32[P.canopy];
+        if (k > 0.86 + th * 0.12) buf[y * W + x] = U32[P.sprout];
+        else if (k > 0.8 + th * 0.2) buf[y * W + x] = U32[P.canopy];
         else if (k > 0.42 + th * 0.3) buf[y * W + x] = U32[P.canopyDk];
         else if (k > 0.08 + th * 0.45) buf[y * W + x] = U32[P.moss];
       }
+      // Claude's single warm thread returns with the original aurora, after the sun has set.
+      if (a > 0.65 && x > W * 0.1 && x < W * 0.9) raw(x, Math.round(yb) + 1, P.saffron);
     }
   }
   function drawClouds(t) {
@@ -377,9 +439,14 @@
       const role = S[L.r], pan = Math.floor(CZ * L.sp + CX * (li + 1));
       for (let x = 0; x < W; x++) {
         const xw = (((x + pan) % WWH) + WWH) % WWH;
-        const cy = DY + Math.round(HY0 * (L.base + L.a1 * Math.sin((TAU * L.k1 * xw) / WWH + L.ph) + L.a2 * Math.sin((TAU * L.k2 * xw) / WWH + L.ph * 2.3) + 0.012 * Math.sin((TAU * 13 * xw) / WWH)));
+        const mountain = inRange(CZ, 275, 338, 18);
+        const ridge = Math.abs(Math.sin((TAU * (L.k1 + 1) * xw) / WWH + L.ph));
+        const round = L.base + L.a1 * Math.sin((TAU * L.k1 * xw) / WWH + L.ph) + L.a2 * Math.sin((TAU * L.k2 * xw) / WWH + L.ph * 2.3) + 0.012 * Math.sin((TAU * 13 * xw) / WWH);
+        const crag = L.base - 0.22 + ridge * 0.25 + 0.02 * Math.sin(xw * 0.11);
+        const cy = DY + Math.round(HY0 * lerp(round, crag, mountain));
         const bottom = li === 2 ? HY + 2 + Math.round(1.5 * Math.sin(xw * 0.07) + 1.5 * Math.sin(xw * 0.19 + 1)) : HY + 1;
         for (let y = Math.max(0, cy); y < bottom && y < H; y++) put(x, y, role);
+        if (li === 0 && mountain > 0.5 && ridge < 0.28) for (let y = Math.max(0, cy); y < cy + 2 + (hash(xw, 3, 94) * 3 | 0) && y < H; y++) raw(x, y, P.sage);
         const h = hash(xw, li, 40);
         if (L.pines && h < L.pines) {
           const ph = 4 + ((hash(xw, li, 41) * 4) | 0);
@@ -410,7 +477,7 @@
         }
         const t = BAY[bi(x, y)];
         if (t < haze) r = S.HILL2; else if (t < fogk) r = S.FOG;
-        buf[y * W + x] = t < PF ? CB[r] : CA[r];
+        buf[y * W + x] = roleColor(x, y, r);
       }
     }
   }
@@ -470,27 +537,7 @@
     }
   }
   function drawCottage(sx, sy, s, o, lampAmt) {
-    const w = Math.round(o.w * s), h = Math.round(o.h * s * 0.55), rh = Math.round(o.h * s * 0.5), x0 = Math.round(sx - w / 2);
-    if (w < 3) { fput(sx, sy - 1, S.WALL); return; }
-    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) fput(x0 + i, sy - j, j === 0 || i === 0 || i === w - 1 ? S.WALLD : S.WALL);
-    const over = Math.max(1, Math.round(s * 0.25));
-    for (let j = 0; j < rh; j++) {
-      const half = Math.round((w / 2 + over) * ((j + 1) / rh)), y = sy - h - rh + j;
-      for (let i = -half; i <= half; i++) fput(Math.round(sx) + i, y, (j % Math.max(2, Math.round(s * 0.2)) === 0) ? S.ROOFD : S.ROOF);
-    }
-    const cw = Math.max(1, Math.round(w * 0.1));
-    frect(x0 + Math.round(w * 0.72), sy - h - Math.round(rh * 0.8), cw, Math.round(rh * 0.5), S.WALLD);
-    const dw = Math.max(1, Math.round(w * 0.18)), dh = Math.max(2, Math.round(h * 0.62));
-    frect(x0 + Math.round(w * 0.6), sy - dh, dw, dh, S.WOODD);
-    const ww = Math.max(1, Math.round(w * 0.12)), wy = sy - Math.round(h * 0.74);
-    frect(x0 + Math.round(w * 0.18), wy, ww, ww, S.WIN);
-    if (lampAmt > 0.3 && ww >= 2) { // the window throws a little light
-      for (let j = -ww; j < ww * 2; j++) for (let i = -ww; i < ww * 2; i++) {
-        const X = x0 + Math.round(w * 0.18) + i, Y = wy + j;
-        if (i >= 0 && i < ww && j >= 0 && j < ww) continue;
-        if (BAY[bi(X, Y)] < 0.2 * lampAmt && Y < sy) raw(X, Y, P.glow);
-      }
-    }
+    paintCottage(sx, sy, s, o, lampAmt, {fput, frect, raw, S, P, BAY, bi});
   }
   function drawSign(sx, sy, s) {
     const ph = Math.round(1.1 * s), pw = Math.max(1, Math.round(0.08 * s));
@@ -581,26 +628,26 @@
     for (let j = -f2; j <= f2; j++) { const w = Math.floor(Math.sqrt(f2 * f2 - j * j)); for (let i = -w; i <= w; i++) raw(Math.round(ax - s + i), Math.round(ay - s + j), P.saffron); }
     raw(Math.round(ax - 2 * s), Math.round(ay - 2 * s), P.fruitHi);
   }
-  // the orchard's tricolour dog (landscape.js dog), facing the tree, hopping at the fruit
-  const DOG = ['...............', '..........dd...', '.........dggd..', '........dgWWd..', '.......gggWgnd.', '........ggggd..', '.....lggggggl..', '..WWgggggggWW..', '.WdWgKKKKKgWd..', '.WdWWd...dWd...', '.ddWd....dWd...', '..dd......dd...'];
-  const DOGC = { d: P.dogD, g: P.dogG, l: P.dogL, n: P.dogN, K: P.dogN, W: P.bone };
-  function drawDog(x, y, s, t, hello) {
-    s = Math.max(1, Math.round(s));
+  // The original seed puppy: keep its two authored frames, including the upward gaze and wag.
+  const PET = [0, 1].map(frame => {
+    const c = spriteCanvas('puppy', frame);
+    return new Uint32Array(c.getContext('2d').getImageData(0, 0, 32, 24).data.buffer);
+  });
+  function paintPuppy(target, x, y, s, t, hi) {
+    const k = Math.max(1, Math.round(s * 0.75));
     const cyc = t % 1.5;
-    let hop = 0, crouch = false;
-    if (hello > 0) hop = Math.abs(Math.sin(hello * 6)) * 5;
-    else if (cyc < 0.16) crouch = true;
-    else if (cyc < 0.66) hop = Math.sin(((cyc - 0.16) / 0.5) * Math.PI) * 4.5;
-    const R = (c, X, Y, w, h) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) raw(Math.round(X) + i, Math.round(Y) + j, c); };
-    const wag = Math.floor(t * 5) % 3, ty = y - 8 * s - hop * s + (crouch ? s : 0);
-    if (wag === 0) { R(P.dogG, x + s, ty, 3 * s, 2 * s); R(P.dogG, x - s, ty - s, 2 * s, 2 * s); R(P.bone, x - 2 * s, ty - s, s, s); }
-    else if (wag === 1) { R(P.dogG, x + s, ty - s, 3 * s, 2 * s); R(P.dogG, x - s, ty - 3 * s, 2 * s, 3 * s); R(P.bone, x - 2 * s, ty - 4 * s, s, 2 * s); }
-    else { R(P.dogG, x + s, ty, 3 * s, 2 * s); R(P.dogG, x - 2 * s, ty - 2 * s, 2 * s, 2 * s); R(P.bone, x - 3 * s, ty - 3 * s, s, 2 * s); }
-    const yy = y - 12 * s - hop * s + (crouch ? s : 0);
-    DOG.forEach((row, j) => [...row].forEach((a, i) => { if (a !== '.') R(DOGC[a], x + i * s, yy + j * s, s, s); }));
-    R(P.soil, x + 10 * s, yy + 2 * s, s, s);
-    if (hello > 0 || hop > 3) { for (let i = 0; i < 3; i++) { R(P.bone, x + (13 + i) * s, yy + (2 - i * 0.7) * s, s, s); R(P.bone, x + (13 + i) * s, yy + 5 * s, s, s); } }
+    const hop = hi > 0 ? Math.abs(Math.sin(hi * 6)) * 5 : cyc > 0.16 && cyc < 0.66 ? Math.sin((cyc - 0.16) / 0.5 * Math.PI) * 4.5 : 0;
+    const frame = hi > 0 || hop > 3 ? 1 : Math.floor(t * 5) % 2;
+    const src = PET[frame], x0 = Math.round(x), y0 = Math.round(y - 23 * k - hop * s);
+    for (let j = 0; j < 24; j++) for (let i = 0; i < 32; i++) {
+      const c = src[j * 32 + i]; if (!(c >>> 24)) continue;
+      for (let dy = 0; dy < k; dy++) for (let dx = 0; dx < k; dx++) {
+        const X = x0 + i * k + dx, Y = y0 + j * k + dy;
+        if (X >= 0 && X < W && Y >= 0 && Y < H) target[Y * W + X] = c;
+      }
+    }
   }
+  function drawDog(x, y, s, t, hi) { paintPuppy(buf, x, y, s, t, hi); }
 
   // the ghost ship: the harbour's own drawing, read once from the page, revealed hull first as the section scrolls
   let SHIP = null;
@@ -695,20 +742,7 @@
     odisk('#9d5529', Math.round(ax), Math.round(ay), Math.round(4 * s)); odisk('#e8982a', Math.round(ax - s), Math.round(ay - s), Math.round(3 * s)); orect('#ffe0a0', ax - 2 * s, ay - 2 * s, s, 2 * s);
     for (let i = 0; i < 3; i++) { const k = (t * 0.035 + i * 0.31) % 1; orect(i % 2 ? '#8d9c5d' : '#a9b56b', x + (Math.sin(k * 5 + i) * 18 - 24) * s, y - (76 - k * 72) * s, 2 * s, s); }
   }
-  function oDog(x, y, s, t, hi) {
-    const cyc = t % 1.5; let hop = 0, crouch = false;
-    if (hi > 0) hop = Math.abs(Math.sin(hi * 6)) * 5; else if (cyc < 0.16) crouch = true; else if (cyc < 0.66) hop = Math.sin(((cyc - 0.16) / 0.5) * Math.PI) * 4.5;
-    const col = { d: '#704c2c', B: '#c38b46', g: '#c38b46', l: '#e4b668', n: '#263728', K: '#263728', W: '#f2eee4' };
-    const wag = Math.floor(t * 5) % 3, ty = y - 8 * s - hop * s + (crouch ? s : 0);
-    if (wag === 0) { orect('#c38b46', x + s, ty, 3 * s, 2 * s); orect('#c38b46', x - s, ty - s, 2 * s, 2 * s); orect('#f2eee4', x - 2 * s, ty - s, s, s); }
-    else if (wag === 1) { orect('#c38b46', x + s, ty - s, 3 * s, 2 * s); orect('#c38b46', x - s, ty - 3 * s, 2 * s, 3 * s); orect('#f2eee4', x - 2 * s, ty - 4 * s, s, 2 * s); }
-    else { orect('#c38b46', x + s, ty, 3 * s, 2 * s); orect('#c38b46', x - 2 * s, ty - 2 * s, 2 * s, 2 * s); orect('#f2eee4', x - 3 * s, ty - 3 * s, s, 2 * s); }
-    const yy = y - 12 * s - hop * s + (crouch ? s : 0);
-    DOG.forEach((row, j) => [...row].forEach((a, i) => { if (a !== '.') orect(col[a], x + i * s, yy + j * s, s, s); }));
-    orect('#17231b', x + 10 * s, yy + 2 * s, s, s);
-    if (hi > 0 || hop > 3) { oline('#f2eee4', [[x + 13 * s, yy + 2 * s], [x + 16 * s, yy]], s); oline('#f2eee4', [[x + 13 * s, yy + 5 * s], [x + 17 * s, yy + 5 * s]], s); }
-    else if (Math.floor(t * 2) % 4 === 1) oline('#f2eee4', [[x + 13 * s, yy + 5 * s], [x + 16 * s, yy + 5 * s]], s);
-  }
+  function oDog(x, y, s, t, hi) { paintPuppy(OB, x, y, s, t, hi); }
   function drawOrchardScene(t, night) {
     OB = buf2;
     const w = W, h = H, band = Math.round(h * (h / w > 1.3 ? 0.78 : 0.86));
@@ -734,6 +768,7 @@
     ['#partial-view', 92, 104, 2, 0, 1],
     ['#tree', 150, 161, 2, 0, 0],
     ['#the-practice', 204, 213, 2, 0, 0],
+    ['#questions', 224, 232, 2, 0.2, 0],
     ['#influences', 250, 271, 3, 0, 0],
     ['#sky', 290, 294, 3, 1, 0],
     ['#ancestors', 294, 297, 3, 1, 0],
@@ -744,7 +779,7 @@
     ['#afterward', 437, 443, 0, 0, 0]
   ];
   // room to breathe: a stretch of the walk with nothing over it, after each of these
-  const INTERLUDE_AFTER = ['#the-seed', '#roots', '#partial-view', '#tree', '#the-practice', '#influences', '#ancestors', '.evidence-folio', '#the-crew'];
+  const INTERLUDE_AFTER = ['#the-seed', '#roots', '#partial-view', '#tree', '#the-practice', '#questions', '#influences', '#ancestors', '.evidence-folio', '#the-crew'];
   function addInterludes() {
     INTERLUDE_AFTER.forEach((sel) => {
       const el = doc.querySelector(sel);
@@ -776,15 +811,14 @@
     return { on, z: lerp(A[1], B[1], sy < keys[0][0] ? 0 : f), ha: A[2], hb: B[2], hf: e, look: lerp(A[3], B[3], e), fog: lerp(A[4], B[4], e), orch, dusk };
   }
   const crewBuild = () => {
-    const el = doc.getElementById('the-crew'); if (!el) return 1;
-    const r = el.getBoundingClientRect(), vh = win.innerHeight;
-    return r.top > vh ? 0 : sat((vh * 0.85 - r.top) / Math.max(1, r.height * 0.6));
+    const stage = Number(doc.getElementById('the-crew')?.dataset.crewStage ?? 0);
+    return [0.45, 0.78, 1][Math.max(0, Math.min(2, stage))];
   };
 
   /* ------------------------------------------------------------------ draw */
   let hello = 0;
   function drawWalk(st, t, anim, tick) {
-    CZ = st.z; CX = lerp(CX, PX(CZ + GMAX * 0.3), 1);
+    CZ = st.z; CX = PX(CZ + GMAX * 0.3) + inRange(CZ, 220, 237, 5) * 1.5 - inRange(CZ, 138, 149, 5) * 1.2;
     DY = Math.round(st.look * (H - HY0 + 8)); HY = HY0 + DY;
     FOG = st.fog;
     setHour(st.ha, st.hb, st.hf);
@@ -805,6 +839,8 @@
     const lampAmt = hourVal('lamp'), build = crewBuild(), vis = [];
     for (const p of props) {
       if (p.k === 'rail') continue;
+      // The chapter's original close ship tells this story; keep its distant approach out of the text.
+      if (p.k === 'ship') { const r = doc.getElementById('the-crew')?.getBoundingClientRect(); if (r && r.bottom > 0 && r.top < innerHeight) continue; }
       if (p.z < CZ - 3 || p.z > CZ + GMAX) continue;
       const q = project(p.d, p.z, p.k === 'fly' ? p.y + (anim ? Math.sin(t * 0.8 + p.ph) * 0.1 : 0) : 0);
       if (!q || q.y - q.s * 6 > H) continue;
@@ -888,7 +924,7 @@
     if (!visible || doc.hidden) { last = 0; return; }
     const still = motionOff();
     if (still) {
-      const zq = Math.round(st.z / 3) * 3, key = zq + '|' + st.ha + st.hb + Math.round(st.hf * 4) + '|' + Math.round(st.look * 4) + '|' + Math.round(st.orch * 4) + Math.round(st.dusk * 4) + '|' + W + 'x' + H;
+      const zq = Math.round(st.z / 3) * 3, key = zq + '|' + st.ha + st.hb + Math.round(st.hf * 4) + '|' + Math.round(st.look * 4) + '|' + Math.round(st.orch * 4) + Math.round(st.dusk * 4) + '|' + W + 'x' + H + '|' + crewBuild();
       if (key !== lastKey) { lastKey = key; draw(Object.assign({}, st, { z: zq, hf: Math.round(st.hf * 4) / 4, orch: Math.round(st.orch * 4) / 4 }), 0, false); api.frames++; }
       api.z = zq;
       return;
@@ -905,6 +941,7 @@
   let rz = 0;
   win.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { layout(); lastKey = ''; wake(); }, 150); }, { passive: true });
   win.addEventListener('scroll', wake, { passive: true });
+  doc.addEventListener('bodhi:crew-stage', () => { lastKey = ''; wake(); });
   doc.addEventListener('visibilitychange', wake);
   if (reduced.addEventListener) reduced.addEventListener('change', () => { lastKey = ''; wake(); });
   new MutationObserver(() => { lastKey = ''; wake(); }).observe(doc.body, { attributes: true, attributeFilter: ['class'] });
