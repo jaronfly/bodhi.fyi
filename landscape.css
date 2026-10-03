@@ -122,9 +122,9 @@
 .claude-field .cell-how{font:10px/1.7 var(--mono);margin-top:22px;max-width:450px;color:#b7c5ad}
 .claude-field .cell-hud{justify-content:space-between;max-width:600px;font:10px var(--mono)}
 .claude-field .cell-thought{height:32px;font:11px/1.7 var(--mono);color:#d7bc88;text-align:left}
-.claude-field .cell-notes{border:0;grid-template-columns:1fr;background:#12261aaf}
+.claude-field .cell-notes{border:0;grid-template-columns:1fr;background:rgba(23,35,27,.95);padding:6px clamp(16px,3vw,28px);box-shadow:0 -4px 0 0 #2e3b33,0 4px 0 0 #2e3b33,-4px 0 0 0 #2e3b33,4px 0 0 0 #2e3b33;position:relative;isolation:isolate}
 .claude-field .cell-notes>.note{box-shadow:none;border-top:1px solid #839b6744;padding:19px 0;background:transparent}
-.claude-field .note-btn{font:400 15px var(--sans)}.claude-field .note-state{font:8px var(--mono)}
+.claude-field .note-btn{font:400 15px var(--sans)}.claude-field .note-state{font:11px var(--mono);white-space:nowrap}
 .claude-field .note-body{font-size:13px;color:#c3cfb9;line-height:1.8}.claude-field .note-body p{margin-top:15px}
 .context-room{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:60px;align-items:start}.context-room+.src{margin-top:30px;max-width:700px}
 .ghost-harbor{position:relative;padding:100px 0 0;background:#0d201ccc}
