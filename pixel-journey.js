@@ -1,18 +1,24 @@
-/* Bodhi · the pixel journey · pixel-journey.js
-   One world behind everything after the film, drawn by one camera that moves as you read.
-   It keeps the function of the cloud session's WebGL journey (a director: every parameter is a pure function of
-   where you are in the story) and redraws it in the page's pixel language: a palette, Bayer dither, whole pixels.
+/* Bodhi · the pixel journey · pixel-journey.js  (v2, the vast world)
+   One world behind everything after the film, drawn by one camera that moves as you read. It keeps the function of
+   the cloud session's WebGL journey (a director: every parameter is a pure function of where you are in the story)
+   and redraws it in the page's pixel language: one palette, Bayer dither, whole pixels.
 
-   The camera travels vertically through a single world, so the sections are places, not slides:
-     the seed ....... underground, a cut face of soil strata; one saffron seed glows
-     roots .......... roots grow down from it and light up; a sprout breaks the soil line
-     partial view ... an iris opens on the leaf: a field of cells, seen a little at a time (Caves of Qud)
-     the tree ....... the surface; the tree grows through spring, summer, autumn, winter; birds, a deer, rain, snow
-     sky ............ golden hour, sunset, dusk, night; the moon, stars, a little aurora
+   The camera rises and falls, and travels sideways, through one world:
+     the seed ....... home, underground: a cut face of soil; one saffron seed glows
+     roots .......... roots grow down from it and light up; the digital underworld wakes (a root network, pulsing)
+     partial view ... an iris opens on the leaf: a field of cells, seen a little at a time
+     the tree ....... the surface; the tree grows through the seasons; a stream, birds, a deer
+     the practice ... the same tree, summer into autumn
+     the meeting .... east to the village: tree people of every kind (local, blind, instruct, cloud, thinker) and pets
+     influences ..... on to the lake: a rowboat, frogs, fish under the surface, rain, then the first snow
+     sky ............ sunset over the water, dusk, night, the moon, a little aurora
      ancestors ...... the camera rises into the night: one star per real commit, in a golden-angle spiral
-     the orchard .... back down at sunset, to the same tree, now bearing one glowing fruit; the dog has found it
+     the crew ....... down to the coast at dusk: the ghost ship builds itself as you scroll, its crew appearing
+     the orchard .... the last stop, at sunset: an orchard of similar trees, one glowing fruit, and the dog
+   Underneath it all runs a tree underworld, the digital version of one: roots joined into a network carrying light,
+   old machines buried like fossils, a chest of loot on the sea floor.
    Motion follows the page's switches (reduced motion, Stillness, data-motion="off"): then every place is one still.
-   No storage, no network, no globals besides window.BodhiPixelJourney (state for tests). */
+   No storage, no network. window.BodhiPixelJourney exposes state for tests. */
 (() => {
   'use strict';
   const doc = document, win = window, root = doc.documentElement;
@@ -23,10 +29,10 @@
     '#0F1814', '#17231B', '#1F2C24', '#2E3B33', '#255039', '#2E6B45', '#8BCB8B', '#8A968D', '#B8C2BA', '#F2EEE4',
     '#E8982A', '#D9674F', '#19352D', '#355749', '#637C60', '#A5B58A', '#655263', '#9C6971', '#C6856C', '#DFA075',
     '#E9BB82', '#38344A', '#6E4F4C', '#3A2E27', '#5B4638', '#2A211C', '#4A4A44', '#36606F', '#A86F85', '#B5683A',
-    '#C99A4A', '#22404F'
+    '#C99A4A', '#22404F', '#162D38', '#5E7A84'
   ];
   const [INK, SOIL, UNDER, MOSS, CDK, CANOPY, SPROUT, LICHEN, SAGE, BONE, SAFF, CLAY, D0, D1, D2, D3, S0, S1, S2, S3,
-    S4, DUSK, GLOW, EARTH, EARTHL, EARTHD, ROCK, WATER, ROSE, RUST, GOLD, DEEPW] = HEX.map((_, i) => i);
+    S4, DUSK, GLOW, EARTH, EARTHL, EARTHD, ROCK, WATER, ROSE, RUST, GOLD, WMID, WDEEP, WHI] = HEX.map((_, i) => i);
   const U32 = HEX.map((h) => (0xff000000 | (parseInt(h.slice(5, 7), 16) << 16) | (parseInt(h.slice(3, 5), 16) << 8) | parseInt(h.slice(1, 3), 16)) >>> 0);
   const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
 
@@ -41,7 +47,6 @@
     h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296;
   };
   const vnoise = (x, s) => { const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f); return lerp(hash(i, 0, s), hash(i + 1, 0, s), u); };
-  // eased piecewise track over the canonical position c (holds at each knot), as in the WebGL director
   const track = (knots) => (c) => {
     if (c <= knots[0][0]) return knots[0][1];
     for (let i = 1; i < knots.length; i++) if (c <= knots[i][0]) {
@@ -51,25 +56,27 @@
     return knots[knots.length - 1][1];
   };
 
-  /* ------------------------------------------------------------------ the story clock
-     Each lower section is a place; c = its index + progress through it. */
-  const PLACES = ['the-seed', 'roots', 'partial-view', 'tree', 'the-practice', 'the-meeting', 'influences', 'sky', 'ancestors', 'similar-trees', 'the-crew', 'afterward'];
-  // camera altitude in screen heights (negative = underground, 0 = ground line at the horizon line)
+  /* ------------------------------------------------------------------ the story clock */
+  const PLACES = ['the-seed', 'roots', 'partial-view', 'tree', 'the-practice', 'the-meeting', 'influences', 'sky', 'ancestors', 'the-crew', 'similar-trees', 'afterward'];
+  // world positions, in screen widths, of each biome's centre
+  const X = { home: 0, village: 1.3, lake: 2.45, coast: 3.75, orchard: 5.0 };
   const T = {
-    alt:    track([[0, -0.78], [0.6, -0.7], [1.0, -0.55], [1.9, -0.32], [2.2, -0.05], [3.0, 0.0], [6.9, 0.0], [7.4, 0.25], [7.95, 0.55], [8.4, 2.4], [8.95, 2.4], [9.3, 0.0], [12, 0.0]]),
-    tod:    track([[0, 0.2], [2.6, 0.4], [3.0, 1.0], [5.6, 1.4], [6.6, 1.8], [7.15, 2.2], [7.5, 3.0], [7.85, 4.0], [8.1, 5.0], [8.95, 5.0], [9.25, 2.6], [10.2, 3.0], [11.2, 3.6], [12, 3.9]]),
-    season: track([[0, 0.0], [3.0, 0.0], [3.9, 1.0], [4.9, 1.6], [5.9, 2.3], [6.6, 3.2], [7.0, 3.6], [7.6, 1.4], [9.0, 1.4], [9.2, 1.9], [12, 1.9]]),
-    growth: track([[0, 0], [1.4, 0], [2.0, 0.08], [3.0, 0.3], [4.0, 0.62], [5.5, 0.92], [6.5, 1.0], [12, 1.0]]),
-    roots:  track([[0, 0.02], [0.5, 0.06], [1.0, 0.25], [1.85, 1.0], [12, 1.0]]),
-    rootLit:track([[0, 0], [1.2, 0], [1.9, 1], [2.4, 0.4], [12, 0.25]]),
+    alt:    track([[0, -0.46], [1.0, -0.42], [1.9, -0.28], [2.2, -0.06], [3.0, 0], [7.4, 0.2], [7.95, 0.5], [8.35, 2.3], [8.92, 2.3], [9.25, 0], [12, 0]]),
+    camX:   track([[0, 0], [4.55, 0], [5.25, X.village], [5.85, X.village], [6.4, X.lake], [7.9, X.lake], [8.9, X.lake + 0.5], [9.2, X.coast], [9.88, X.coast], [10.3, X.orchard], [12, X.orchard + 0.1]]),
+    tod:    track([[0, 0.2], [2.6, 0.4], [3.0, 1.0], [5.6, 1.3], [6.6, 1.7], [7.15, 2.2], [7.5, 3.0], [7.85, 4.0], [8.1, 5.0], [8.92, 5.0], [9.25, 4.0], [9.9, 3.4], [10.2, 2.7], [11.0, 3.0], [12, 3.5]]),
+    season: track([[0, 0], [3.0, 0], [3.9, 1.0], [4.9, 1.7], [5.6, 2.2], [6.55, 2.6], [6.85, 3.2], [7.2, 3.5], [7.6, 1.4], [12, 1.4]]),
+    growth: track([[0, 0], [1.4, 0], [2.0, 0.08], [3.0, 0.3], [4.0, 0.62], [4.8, 0.95], [5.2, 1.0], [12, 1]]),
+    roots:  track([[0, 0.02], [0.5, 0.06], [1.0, 0.25], [1.85, 1.0], [12, 1]]),
+    net:    track([[0, 0], [1.3, 0], [1.95, 1], [12, 1]]),
     iris:   track([[0, 0], [1.75, 0], [2.15, 1], [2.75, 1], [3.05, 0]]),
     zoom:   track([[0, 0], [1.8, 0], [2.5, 1], [2.8, 1.2]]),
-    rain:   track([[0, 0], [6.0, 0], [6.35, 1], [6.75, 0.8], [7.05, 0]]),
+    lights: track([[0, 0], [5.15, 0], [5.85, 1], [12, 1]]),
+    rain:   track([[0, 0], [6.15, 0], [6.4, 1], [6.7, 0.8], [6.9, 0]]),
     snow:   track([[0, 0], [6.85, 0], [7.0, 0.9], [7.3, 0]]),
     aurora: track([[0, 0], [7.9, 0], [8.15, 1], [8.8, 0.6], [9.1, 0]]),
-    spiral: track([[0, 0], [8.1, 0], [8.55, 1], [8.95, 1], [9.2, 0]]),
-    fruit:  track([[0, 0], [9.1, 0], [9.5, 1]]),
-    dog:    track([[0, 0], [9.15, 0], [9.45, 1]]),
+    spiral: track([[0, 0], [8.1, 0], [8.5, 1], [8.92, 1], [9.15, 0]]),
+    ship:   track([[0, 0], [9.08, 0], [9.85, 1], [12, 1]]),
+    fruit:  track([[0, 0], [10.0, 0], [10.35, 1]]),
   };
 
   /* ------------------------------------------------------------------ canvas */
@@ -81,62 +88,74 @@
   const world = doc.getElementById('outside-world');
   (world || doc.body).insertBefore(canvas, (world || doc.body).firstChild);
 
-  let W = 0, H = 0, img = null, buf = null, cssPer = 4;
-  let stars = [], clouds = [], rootSegs = [], branches = [], leaves = [], cells = null, commits = [], hills = [];
-  const SEED = { x: 0, d: 22 }; // seed position: x in px, depth below ground in px
+  let W = 0, H = 0, img = null, buf = null, cssPer = 4, K = 1, SZ = 1;
+  let stars = [], clouds = [], rootSegs = [], branches = [], leaves = [], cells = null, commits = [];
+  const SEED_D = 20;
+  let camX = 0, GY = 0; // camera x (px) and ground line (px), per frame
 
-  const put = (x, y, c) => { x |= 0; y |= 0; if (x >= 0 && x < W && y >= 0 && y < H) buf[y * W + x] = U32[c]; };
-  const mix = (x, y, a, b, t) => put(x, y, BAY[((y & 3) << 2) | (x & 3)] < t ? b : a);
+  let ZX = 0, ZY = 0, ZS = 1; // sprite zoom: points are scaled about (ZX, ZY) and drawn as ZS x ZS blocks
+  const put = (x, y, c) => {
+    if (ZS > 1) {
+      const bx = Math.round(ZX + (x - ZX) * ZS), by = Math.round(ZY + (y - ZY) * ZS);
+      for (let j = 0; j < ZS; j++) for (let i = 0; i < ZS; i++) { const X2 = bx + i, Y2 = by + j; if (X2 >= 0 && X2 < W && Y2 >= 0 && Y2 < H) buf[Y2 * W + X2] = U32[c]; }
+      return;
+    }
+    x |= 0; y |= 0; if (x >= 0 && x < W && y >= 0 && y < H) buf[y * W + x] = U32[c];
+  };
+  const zoom = (x, y, z, fn) => { ZX = x; ZY = y; ZS = Math.max(1, z); fn(); ZS = 1; };
+  const get = (x, y) => buf[(y | 0) * W + (x | 0)];
+  const dith = (x, y, t) => BAY[((y & 3) << 2) | (x & 3)] < t;
+  const mix = (x, y, a, b, t) => put(x, y, dith(x | 0, y | 0, t) ? b : a);
   const rect = (x, y, w, h, c) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(x + i, y + j, c); };
   const disk = (cx, cy, r, c) => { for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * 0.6) put(cx + x, cy + y, c); };
+  const sx = (wx) => Math.round(wx * W - camX + W * 0.5); // world (screen widths) to screen x
+  const onScreen = (px, m) => px > -m && px < W + m;
+
+  // the land/water mask, in world units (screen widths): 0 dry land, 1 stream, 2 lake, 3 ocean
+  const waterAt = (wx) => {
+    if (wx > X.lake - 0.42 && wx < X.lake + 0.38) return 2;
+    if (wx > X.coast - 0.18 && wx < X.coast + 0.62) return 3;
+    if (Math.abs(wx - 0.62) < 0.035) return 1;
+    return 0;
+  };
+  const beachAt = (wx) => (wx > X.coast - 0.32 && wx <= X.coast - 0.18) || (wx >= X.coast + 0.62 && wx < X.coast + 0.74);
 
   function layout() {
     const vw = Math.max(320, win.innerWidth || 0), vh = Math.max(320, win.innerHeight || 0), dpr = win.devicePixelRatio || 1;
     const sCss = clamp(Math.round(vw / 340), 2, 6), sDev = Math.max(1, Math.round(sCss * dpr));
     cssPer = sDev / dpr;
     W = Math.ceil((vw * dpr) / sDev); H = Math.ceil((vh * dpr) / sDev);
+    K = Math.min(1.25, H / 260); SZ = W > 300 ? 2 : 1;
     canvas.width = W; canvas.height = H;
     canvas.style.width = W * cssPer + 'px'; canvas.style.height = H * cssPer + 'px';
     img = ctx.createImageData(W, H); buf = new Uint32Array(img.data.buffer);
     build();
   }
 
-  /* ------------------------------------------------------------------ the world, built once per size */
+  /* ------------------------------------------------------------------ built once per size */
   function build() {
-    SEED.x = Math.round(W * (W > H ? 0.62 : 0.5));
-    stars = Array.from({ length: 160 }, (_, i) => ({ x: hash(i, 1, 7), y: hash(i, 2, 7), b: hash(i, 3, 7), ph: hash(i, 4, 7) * 30 }));
-    clouds = Array.from({ length: 7 }, (_, i) => ({ x: hash(i, 1, 9), y: 0.08 + hash(i, 2, 9) * 0.32, w: 18 + hash(i, 3, 9) * 34, v: 0.6 + hash(i, 4, 9) }));
-    hills = [0, 1, 2].map((k) => Array.from({ length: W + 1 }, (_, x) => {
-      const n = vnoise(x / (60 - k * 14), 30 + k) * 0.7 + vnoise(x / (18 - k * 3), 40 + k) * 0.3;
-      return Math.round((10 - k * 3) + n * (14 - k * 3));
-    }));
-    // roots: stochastic branching with gravitropism, revealed by arc length
+    stars = Array.from({ length: 170 }, (_, i) => ({ x: hash(i, 1, 7), y: hash(i, 2, 7), b: hash(i, 3, 7), ph: hash(i, 4, 7) * 30 }));
+    clouds = Array.from({ length: 9 }, (_, i) => ({ x: hash(i, 1, 9) * 6, y: 0.06 + hash(i, 2, 9) * 0.34, w: 18 + hash(i, 3, 9) * 36, v: 0.6 + hash(i, 4, 9) }));
     rootSegs = [];
     const grow = (x, y, ang, len, depth, s0) => {
       let px = x, py = y, s = s0;
-      const steps = Math.round(len);
-      for (let i = 0; i < steps; i++) {
+      for (let i = 0; i < Math.round(len); i++) {
         ang += (hash(i, depth, s0 * 7 + 3) - 0.5) * 0.5; ang = lerp(ang, Math.PI / 2, 0.05);
-        const nx = px + Math.cos(ang), ny = py + Math.sin(ang);
-        rootSegs.push({ x: nx, y: ny, s: s / 160, d: depth });
-        px = nx; py = ny; s++;
+        px += Math.cos(ang); py += Math.sin(ang); s++;
+        rootSegs.push({ x: px, y: py, s: s / 160, d: depth });
         if (depth < 3 && i > 4 && hash(i, depth, s0 + 11) < 0.07) grow(px, py, ang + (hash(i, 5, s0) < 0.5 ? -1 : 1) * (0.7 + hash(i, 6, s0) * 0.6), len * 0.55, depth + 1, s);
       }
     };
-    grow(0, 0, Math.PI / 2, 46, 0, 0);
-    grow(0, 2, Math.PI * 0.82, 26, 1, 20);
-    grow(0, 2, Math.PI * 0.2, 28, 1, 22);
-    // the tree: branches as segments (built at full size, scaled by growth)
+    grow(0, 0, Math.PI / 2, 46, 0, 0); grow(0, 2, Math.PI * 0.82, 26, 1, 20); grow(0, 2, Math.PI * 0.2, 28, 1, 22);
     branches = []; leaves = [];
     const limb = (x, y, ang, len, w, depth) => {
       const ex = x + Math.cos(ang) * len, ey = y + Math.sin(ang) * len;
       branches.push({ x, y, ex, ey, w, depth });
-      if (depth >= 5) { for (let k = 0; k < 7; k++) leaves.push({ x: ex + (hash(k, depth, x * 13) - 0.5) * 14, y: ey + (hash(k, 9, y * 7) - 0.5) * 10, r: 2 + (hash(k, 2, ex) * 3) | 0, s: hash(k, 3, ey) }); return; }
+      if (depth >= 5) { for (let k = 0; k < 7; k++) leaves.push({ x: ex + (hash(k, depth, x * 13) - 0.5) * 14, y: ey + (hash(k, 9, y * 7) - 0.5) * 10, r: 2 + ((hash(k, 2, ex) * 3) | 0), s: hash(k, 3, ey) }); return; }
       const n = depth < 2 ? 2 : 3;
       for (let k = 0; k < n; k++) limb(ex, ey, ang + (k - (n - 1) / 2) * (0.55 + hash(k, depth, len) * 0.25) + (hash(depth, k, 3) - 0.5) * 0.2, len * (0.7 + hash(k, depth, 9) * 0.12), w * 0.66, depth + 1);
     };
     limb(0, 0, -Math.PI / 2, 15, 4, 0);
-    // the leaf's cells, a Voronoi field cached once (walls, interior, chloroplasts)
     const CW = 160, CH = 120; cells = { w: CW, h: CH, px: new Uint8Array(CW * CH) };
     const sites = Array.from({ length: 70 }, (_, i) => [hash(i, 1, 51) * CW, hash(i, 2, 51) * CH]);
     for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
@@ -154,322 +173,412 @@
       else if (d1 < 4 && id % 9 === 0) c = BONE;
       cells.px[y * CW + x] = c;
     }
-    // commits for the ancestors' spiral: one per real commit when the page carries the data
-    const A = win.BODHI_ANCESTRY;
-    const n = A && A.kinds ? A.kinds.length : 987;
+    const A = win.BODHI_ANCESTRY, n = A && A.kinds ? A.kinds.length : 987;
     const KIND = { b: SPROUT, f: CLAY, w: BONE, o: SAGE, a: LICHEN };
-    commits = Array.from({ length: n }, (_, i) => ({ r: Math.sqrt(i / n), a: i * 2.39996, c: A && A.kinds ? KIND[A.kinds[i]] || SAGE : (i % 5 === 0 ? SPROUT : SAGE) }));
+    commits = Array.from({ length: n }, (_, i) => ({ r: Math.sqrt(i / n), a: i * 2.39996, c: A && A.kinds ? KIND[A.kinds[i]] || SAGE : (i % 5 ? SAGE : SPROUT) }));
   }
 
-  /* ------------------------------------------------------------------ sky: authored per time of day, dithered between */
+  /* ------------------------------------------------------------------ light of the hour */
   // tod: 0 predawn · 1 day · 2 golden hour · 3 sunset · 4 dusk · 5 night. Five stops, horizon to zenith.
   const SKY = [
-    [DUSK, MOSS, UNDER, SOIL, INK],
-    [D3, D2, D2, D1, D0],
-    [S4, S3, D2, D1, D0],
-    [S4, S3, S2, S1, S0],
-    [S1, GLOW, DUSK, SOIL, INK],
-    [MOSS, UNDER, SOIL, INK, INK],
+    [DUSK, MOSS, UNDER, SOIL, INK], [D3, D2, D2, D1, D0], [S4, S3, D2, D1, D0],
+    [S4, S3, S2, S1, S0], [S1, GLOW, DUSK, SOIL, INK], [MOSS, UNDER, SOIL, INK, INK],
   ];
-  // the land's three grades of light (far hill, near hill, ground) per time of day
-  const LAND = [
-    [UNDER, SOIL, UNDER], [D1, CDK, CDK], [S0, GLOW, EARTHL], [S0, GLOW, EARTH], [DUSK, SOIL, UNDER], [SOIL, INK, SOIL],
-  ];
+  const LAND = [[UNDER, SOIL, UNDER], [D1, CDK, CDK], [S0, GLOW, EARTHL], [S0, GLOW, EARTH], [DUSK, SOIL, UNDER], [SOIL, INK, SOIL]];
   function skyColor(tod, f, x, y) {
     const i = clamp(Math.floor(tod), 0, 4), k = tod - i;
-    const pick = (row) => {
-      const p = clamp(f, 0, 0.999) * 4, j = Math.floor(p), t = p - j;
-      return BAY[((y & 3) << 2) | (x & 3)] < t ? row[j + 1] : row[j];
-    };
+    const pick = (row) => { const p = clamp(f, 0, 0.999) * 4, j = Math.floor(p); return dith(x, y, p - j) ? row[j + 1] : row[j]; };
     const a = pick(SKY[i]), b = pick(SKY[i + 1]);
     return BAY[(((y + 1) & 3) << 2) | ((x + 2) & 3)] < k ? b : a;
   }
-  const landColor = (tod, layer) => LAND[clamp(Math.round(tod), 0, 5)][layer];
+  let TOD = 1, NIGHT = 0;
+  const landColor = (layer) => LAND[clamp(Math.round(TOD), 0, 5)][layer];
+  // sprites read in the hour: a lit colour by day, a silhouette at night, warm at sunset
+  const lit = (c) => (NIGHT > 0.6 ? (c === BONE || c === SAFF || c === GOLD || c === SPROUT ? c : INK) : NIGHT > 0.3 ? (c === BONE || c === SAFF ? c : c === EARTH || c === EARTHL ? EARTHD : SOIL) : c);
+
+  /* ------------------------------------------------------------------ sprites */
+  // a tree person: a trunk body with root feet, a canopy head with two eyes, arms mid-gesture; types differ by model kind
+  function citizen(px, gy, type, t, still, lamp) {
+    const bob = still ? 0 : Math.round(Math.sin(t * 1.4 + px) * 0.6);
+    const SPEC = {
+      local:    { h: 9,  w: 3, can: 5, cc: SPROUT, extra: 'satchel' },
+      blind:    { h: 12, w: 4, can: 7, cc: CANOPY, extra: 'blindfold' },
+      instruct: { h: 14, w: 3, can: 6, cc: CDK,    extra: 'gag' },
+      cloud:    { h: 22, w: 6, can: 11, cc: SAGE,  extra: 'cloud' },
+      thinker:  { h: 12, w: 3, can: 6, cc: D3,     extra: 'lantern' },
+    }[type];
+    const top = gy - SPEC.h + bob;
+    rect(px - (SPEC.w >> 1), top, SPEC.w, SPEC.h, lit(EARTH));               // trunk body
+    put(px - (SPEC.w >> 1) - 1, gy - 1, lit(EARTH)); put(px + (SPEC.w >> 1) + 1, gy - 1, lit(EARTH)); // root feet
+    const arm = still ? 0 : Math.round(Math.sin(t * 2 + px * 0.3));
+    for (let i = 1; i <= 3 + (type === 'cloud' ? 3 : 0); i++) { put(px - (SPEC.w >> 1) - i, top + 4 + (i > 2 ? -1 + arm : 0), lit(EARTHL)); put(px + (SPEC.w >> 1) + i, top + 4 + (i > 2 ? -1 - arm : 0), lit(EARTHL)); }
+    if (type === 'cloud') for (let i = 1; i <= 4; i++) { put(px - 3 - i, top + 8 - (i >> 1), lit(EARTHL)); put(px + 3 + i, top + 8 - (i >> 1), lit(EARTHL)); }
+    const r = SPEC.can, cy = top - Math.round(r * 0.6);
+    for (let y = -r; y <= r; y++) for (let x = -r - 1; x <= r + 1; x++) {
+      const inside = type === 'instruct' ? Math.abs(x) <= r - 1 && Math.abs(y) <= r - 2 : x * x * 0.8 + y * y <= r * r + (type === 'cloud' ? (hash(x, y, 3) * 8) : 0);
+      if (inside) put(px + x, cy + y, lit(type === 'cloud' ? (hash(x + px, y, 5) < 0.3 ? BONE : SAGE) : (y < -r * 0.3 && hash(x, y, px) < 0.4 ? SPROUT : SPEC.cc)));
+    }
+    if (type === 'blind') { rect(px - r - 2, cy - 1, 2, 3, lit(SPEC.cc)); rect(px + r + 1, cy - 1, 2, 3, lit(SPEC.cc)); }
+    const ey = top + 2;
+    if (type === 'blind') rect(px - (SPEC.w >> 1) - 1, ey, SPEC.w + 2, 1, BONE);
+    else { put(px - 1, ey, BONE); put(px + 1, ey, BONE); }
+    if (type === 'instruct') rect(px - (SPEC.w >> 1), ey + 2, SPEC.w, 1, BONE);
+    if (type === 'local') { rect(px + 2, top + 5, 2, 2, lit(CLAY)); }
+    if (type === 'thinker') { put(px + 4, top + 6, lit(EARTHL)); put(px + 4, top + 7, lamp > 0.5 ? SAFF : lit(GOLD)); }
+    // canopy light: lit one by one when the meeting comes together ("every voice a light")
+    if (lamp > 0) { const ly = cy - r + 1; put(px, ly, lamp > 0.5 ? GOLD : lit(SPEC.cc)); if (lamp > 0.8) { put(px - 1, ly + 1, GOLD); put(px + 1, ly + 1, GOLD); } }
+  }
+  // the dog: side view, ears, muzzle, white-tipped tail; wags and jumps toward the fruit; barks
+  const DOG = ['......oo......', '.....oooo.....', '....ooKooo.ww.', '...oooooooowww', '.ooooooooooo..', 'oowoooooooo...', 'woo.oo..oo....', '....oo..oo....'];
+  const CAT = ['.o.o', '.ooo', '.oKo', 'oooo', 'oooo.', 'oo.o', '....'];
+  let hello = 0;
+  function sprite(rows, x, y, map, flip) {
+    for (let j = 0; j < rows.length; j++) for (let i = 0; i < rows[j].length; i++) {
+      const ch = rows[j][i]; if (ch === '.' || !map[ch]) continue;
+      put(flip ? x + (rows[j].length - 1 - i) : x + i, y + j, map[ch]);
+    }
+  }
+  function dog(x, gy, t, still, excited) {
+    const jump = still ? 0 : Math.max(0, Math.sin(t * 3.2)) * (hello > 0 ? 6 : excited ? 3 : 0);
+    const wag = still ? 0 : Math.round(Math.sin(t * 14));
+    const y0 = gy - DOG.length - Math.round(jump);
+    for (let j = 0; j < DOG.length; j++) for (let i = 0; i < DOG[j].length; i++) {
+      const ch = DOG[j][i]; if (ch === '.') continue;
+      const tail = i <= 2 && j >= 4;
+      put(x + (13 - i), y0 + j + (tail ? wag : 0), ch === 'K' ? INK : ch === 'w' ? BONE : lit(RUST));
+    }
+    if (!still && excited && (jump > 2 || hello > 0) && ((t * 4) | 0) % 2) { put(x + 15, y0 + 1, BONE); put(x + 16, y0, BONE); put(x + 15, y0 - 1, BONE); }
+  }
+  function cat(x, gy, t, still) {
+    sprite(CAT, x, gy - CAT.length, { o: lit(ROCK), K: SPROUT });
+    const flick = still ? 0 : Math.round(Math.sin(t * 2.2) * 1.2);
+    put(x + 4, gy - 3, lit(ROCK)); put(x + 5, gy - 4 + flick, lit(ROCK)); put(x + 5, gy - 5 + flick, lit(ROCK));
+  }
+  function lizard(x, gy, t, still) {
+    rect(x - 3, gy - 2, 7, 2, lit(ROCK)); rect(x - 2, gy - 3, 5, 1, lit(ROCK)); // the rock
+    const dx = still ? 0 : Math.round(Math.sin(t * 0.6) * 1);
+    rect(x - 1 + dx, gy - 4, 4, 1, lit(CANOPY)); put(x + 3 + dx, gy - 4, lit(SPROUT)); put(x - 2 + dx, gy - 3, lit(CANOPY)); put(x - 3 + dx, gy - 3, lit(CANOPY));
+  }
+  function boat(x, y, t, still) {
+    const rock = still ? 0 : Math.round(Math.sin(t * 1.1));
+    rect(x - 6, y - 1 + rock, 13, 1, lit(EARTHL)); rect(x - 5, y + rock, 11, 1, lit(EARTH)); rect(x - 4, y + 1 + rock, 9, 1, lit(EARTHD));
+    rect(x - 1, y - 4 + rock, 2, 3, lit(SAGE)); put(x, y - 5 + rock, lit(CANOPY)); // a rower with a leaf on top (a tree person off duty)
+    const oar = still ? 0 : Math.round(Math.sin(t * 1.6) * 2);
+    put(x + 2, y - 2 + rock, lit(EARTHL)); put(x + 4, y - 1 + oar + rock, lit(EARTHL)); put(x + 5, y + oar + rock, lit(EARTHL));
+  }
+  // the ghost ship: hull, masts, then sails, one by one, as you scroll; the crew, faint, each at their post
+  function ghostShip(x, y, b, t, still) {
+    if (b <= 0) return;
+    const ghost = (px, py, c, a) => { if (dith(px | 0, py | 0, a)) put(px, py, c); };
+    const bob = still ? 0 : Math.sin(t * 0.9) * 1;
+    const hull = sstep(0, 0.2, b), masts = sstep(0.15, 0.35, b);
+    const yy = Math.round(y + bob);
+    for (let i = -18; i <= 18; i++) { const d = Math.round(Math.abs(i) / 6); for (let j = 0; j < 4 - d; j++) ghost(x + i, yy - j, j === 3 - d ? SAGE : LICHEN, hull * 0.9); }
+    for (let i = -14; i <= 14; i += 4) ghost(x + i, yy - 2, BONE, hull * 0.7);
+    const mastX = [-9, 0, 9], mastH = [14, 20, 13];
+    mastX.forEach((m, k) => { for (let j = 0; j < Math.round(mastH[k] * masts); j++) ghost(x + m, yy - 4 - j, LICHEN, 0.9); });
+    const sails = [[-9, 4, 6], [-9, 10, 5], [0, 4, 8], [0, 11, 7], [0, 17, 4], [9, 4, 6], [9, 9, 4]];
+    sails.forEach(([m, hgt, w], k) => {
+      const a = sstep(0.3 + k * 0.07, 0.38 + k * 0.07, b);
+      if (a <= 0) return;
+      for (let j = 0; j < 4; j++) for (let i = -w; i <= w; i++) ghost(x + m + i + (j === 2 ? 1 : 0), yy - 4 - hgt + j, j === 0 ? BONE : SAGE, a * 0.85);
+    });
+    const crew = sstep(0.82, 1, b);
+    if (crew > 0) [-12, -4, 5, 13].forEach((cx, k) => { ghost(x + cx, yy - 5, SAGE, crew * 0.6); ghost(x + cx, yy - 6, BONE, crew * 0.6); if (k === 1) ghost(x + cx, yy - 7, BONE, crew * 0.6); });
+    // its reflection, in broken lines
+    for (let i = -16; i <= 16; i += 2) ghost(x + i, yy + 3 + ((i >> 2) & 1), WHI, hull * 0.4);
+  }
+
+  /* ------------------------------------------------------------------ the Bodhi tree (and its similar trees) */
+  function tree(tx, ty, scale, g, season, t, still, variant) {
+    const wind = still ? 0 : Math.sin(t * 0.9 + variant) * 0.6;
+    const flip = variant % 2 ? -1 : 1;
+    for (const b of branches) {
+      if (b.depth > g * 6.5) continue;
+      const sway = wind * (b.depth / 6);
+      const x0 = tx + flip * b.x * scale * 3.2 + sway * b.depth * 0.4, y0 = ty + b.y * scale * 3.2;
+      const x1 = tx + flip * b.ex * scale * 3.2 + sway * (b.depth + 1) * 0.4, y1 = ty + b.ey * scale * 3.2;
+      const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0))), wpx = Math.max(1, Math.round(b.w * scale * 1.4));
+      for (let i = 0; i <= steps; i++) {
+        const px = x0 + (x1 - x0) * (i / steps), py = y0 + (y1 - y0) * (i / steps);
+        for (let k = 0; k < wpx; k++) put(px + k - (wpx >> 1), py, lit(k === 0 && TOD < 3.5 ? EARTHL : EARTH));
+      }
+    }
+    const s4 = season % 4;
+    if (s4 < 3) {
+      const lc = s4 < 1 ? [CANOPY, SPROUT, ROSE] : s4 < 2 ? [CDK, CANOPY, SPROUT] : [RUST, GOLD, CLAY];
+      const shade = NIGHT > 0.5 ? [INK, SOIL, CDK] : TOD > 2.6 && TOD < 3.8 ? [S0, GLOW, lc[1]] : lc;
+      const leafA = sstep(0.25, 0.7, g) * (s4 > 2.6 ? 1 - sstep(2.6, 3.0, s4) : 1);
+      for (const l of leaves) {
+        if (l.s > leafA) continue;
+        const lx = tx + flip * l.x * scale * 3.2 + wind * 1.4, ly = ty + l.y * scale * 3.2;
+        const r = Math.max(1, Math.round(l.r * scale * 1.3));
+        for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r) {
+          const h = hash(Math.round(lx + x), Math.round(ly + y), 7 + variant);
+          put(lx + x, ly + y, y < -r * 0.3 ? (shade[2] === ROSE && h < 0.15 ? ROSE : shade[h < 0.3 ? 2 : 1]) : shade[h < 0.5 ? 0 : 1]);
+        }
+      }
+      if (s4 >= 2 && !still) for (let i = 0; i < 8; i++) {
+        const fx = tx + (hash(i, 1, 33 + variant) - 0.5) * 60 * scale + Math.sin(t + i) * 3, fy = ty - 50 * scale + ((t * 9 + i * 17) % (50 * scale + 10));
+        put(fx, fy, i % 2 ? RUST : GOLD);
+      }
+    } else for (const l of leaves) if (l.s < 0.3) put(tx + flip * l.x * scale * 3.2, ty + l.y * scale * 3.2 - 1, BONE);
+  }
 
   /* ------------------------------------------------------------------ one frame */
   const S = { c: 0 };
   function draw(c, t, still) {
     for (const k in T) S[k] = T[k](c);
-    S.c = c;
-    const gy = Math.round(H * (0.66 + S.alt)); // ground line on screen
-    const night = sstep(3.6, 4.8, S.tod), tod = S.tod;
+    S.c = c; TOD = S.tod; NIGHT = sstep(3.6, 4.8, TOD);
+    camX = S.camX * W;
+    const gy = (GY = Math.round(H * (0.66 + S.alt)));
     const skySpan = H * 0.66;
+    const wxAt = (x) => (x + camX - W * 0.5) / W; // screen x to world (screen widths)
 
-    // sky and stars
-    for (let y = 0; y < Math.min(gy, H); y++) {
-      const f = clamp((gy - y) / skySpan, 0, 1);
-      for (let x = 0; x < W; x++) buf[y * W + x] = U32[skyColor(tod, f, x, y)];
-    }
-    const starA = Math.max(night, sstep(0.6, 1.8, S.alt));
+    // sky
+    for (let y = 0; y < Math.min(gy, H); y++) { const f = clamp((gy - y) / skySpan, 0, 1); for (let x = 0; x < W; x++) buf[y * W + x] = U32[skyColor(TOD, f, x, y)]; }
+    const starA = Math.max(NIGHT, sstep(0.6, 1.8, S.alt));
     if (starA > 0.02) for (const s of stars) {
-      const sy = Math.round(s.y * (gy - 4) - (S.alt > 0.5 ? (S.alt - 0.5) * H * 0.4 * (s.b + 0.3) : 0) % H);
-      const yy = ((sy % H) + H) % H;
+      const yy = ((Math.round(s.y * (gy - 4) - (S.alt > 0.5 ? (S.alt - 0.5) * H * 0.4 * (s.b + 0.3) : 0)) % H) + H) % H;
       if (yy >= gy - 2) continue;
       const tw = still ? 1 : 0.6 + 0.4 * Math.sin(t * 1.7 + s.ph);
-      if (s.b * tw > 1 - starA) put(s.x * W, yy, s.b > 0.85 ? BONE : s.b > 0.6 ? SAGE : LICHEN);
+      if (s.b * tw > 1 - starA) put(((s.x * W - camX * 0.05) % W + W) % W, yy, s.b > 0.85 ? BONE : s.b > 0.6 ? SAGE : LICHEN);
     }
-    // sun and moon
-    const sunUp = 1 - sstep(2.8, 3.6, tod);
-    if (sunUp > 0.02 && tod >= 0.6) {
-      const sx = Math.round(W * 0.22), sy = Math.round(gy - skySpan * lerp(0.75, 0.04, sstep(1.2, 3.4, tod)));
-      if (sy < gy + 4) { disk(sx, sy, Math.max(4, Math.round(W / 46)), tod > 2.2 ? S4 : BONE); }
+    if (TOD >= 0.6 && TOD < 3.7) {
+      const sxp = Math.round(W * 0.22), syp = Math.round(gy - skySpan * lerp(0.75, 0.02, sstep(1.2, 3.5, TOD)));
+      if (syp < gy + 4) disk(sxp, syp, Math.max(4, Math.round(W / 46)), TOD > 2.2 ? S4 : BONE);
     }
-    const moonA = sstep(3.9, 4.8, tod) * (1 - sstep(8.95, 9.2, c));
+    const moonA = sstep(3.9, 4.8, TOD) * (1 - sstep(8.95, 9.2, c));
     if (moonA > 0.02) {
       const mx = Math.round(W * 0.74), my = Math.round(gy - skySpan * lerp(0.15, 0.62, sstep(7.8, 8.4, c))), mr = Math.max(5, Math.round(W / 34));
       for (let y = -mr - 4; y <= mr + 4; y++) for (let x = -mr - 4; x <= mr + 4; x++) {
         const d = Math.sqrt(x * x + y * y);
         if (d <= mr) put(mx + x, my + y, hash(x + 9, y + 9, 3) < 0.06 && d < mr - 1 ? SAGE : BONE);
-        else if (d <= mr + 4 && my + y < gy) mix(mx + x, my + y, buf[(my + y) * W + mx + x] === U32[INK] ? INK : SOIL, MOSS, (1 - (d - mr) / 4) * 0.6 * moonA);
+        else if (d <= mr + 4 && my + y >= 0 && my + y < gy && mx + x >= 0 && mx + x < W) mix(mx + x, my + y, get(mx + x, my + y) === U32[INK] ? INK : SOIL, MOSS, (1 - (d - mr) / 4) * 0.6 * moonA);
       }
     }
-    // aurora: curtains of sprout and canopy, folded by noise
     if (S.aurora > 0.02) for (let x = 0; x < W; x++) {
-      const base = gy - skySpan * (0.45 + 0.2 * vnoise(x / 40 + (still ? 0 : t * 0.05), 71));
-      const len = skySpan * (0.12 + 0.18 * vnoise(x / 25, 72)) * S.aurora;
-      for (let y = Math.max(0, Math.round(base - len)); y < Math.min(gy - 6, Math.round(base)); y++) {
-        const k = 1 - (base - y) / len;
-        mix(x, y, buf[y * W + x] === U32[INK] ? INK : SOIL, k > 0.7 ? SPROUT : CANOPY, k * 0.55 * S.aurora);
-      }
+      const base = gy - skySpan * (0.45 + 0.2 * vnoise(x / 40 + (still ? 0 : t * 0.05), 71)), len = skySpan * (0.12 + 0.18 * vnoise(x / 25, 72)) * S.aurora;
+      for (let y = Math.max(0, Math.round(base - len)); y < Math.min(gy - 6, Math.round(base)); y++) { const k = 1 - (base - y) / len; mix(x, y, get(x, y) === U32[INK] ? INK : SOIL, k > 0.7 ? SPROUT : CANOPY, k * 0.55 * S.aurora); }
     }
-    // the ancestors: one star per commit in a golden-angle spiral, centred high in the sky
     if (S.spiral > 0.02) {
-      const cx = W * 0.5, cy = H * 0.42, R = Math.min(W, H) * 0.42;
-      const show = Math.floor(commits.length * sstep(8.1, 8.6, c));
-      for (let i = 0; i < show; i++) {
-        const p = commits[i];
-        put(cx + Math.cos(p.a) * p.r * R, cy + Math.sin(p.a) * p.r * R * 0.9, i === commits.length - 1 ? SAFF : p.c);
-      }
+      const cx = W * 0.5, cy = H * 0.42, R = Math.min(W, H) * 0.42, show = Math.floor(commits.length * sstep(8.1, 8.55, c));
+      for (let i = 0; i < show; i++) { const p = commits[i]; put(cx + Math.cos(p.a) * p.r * R, cy + Math.sin(p.a) * p.r * R * 0.9, i === commits.length - 1 ? SAFF : p.c); }
     }
-    // clouds: flat pixel shapes, lit by the hour
     if (S.alt < 1.2) for (const cl of clouds) {
-      const x0 = Math.round(((cl.x * (W + 80) + (still ? 0 : t * cl.v * 2)) % (W + 80)) - 40), y0 = Math.round(gy - skySpan * (1 - cl.y));
-      const col = tod < 1.5 ? D2 : tod < 2.6 ? S3 : tod < 3.6 ? S2 : tod < 4.5 ? DUSK : UNDER;
+      const x0 = Math.round(((cl.x * W - camX * 0.25 + (still ? 0 : t * cl.v * 2)) % (W * 1.6) + W * 1.6) % (W * 1.6) - W * 0.3), y0 = Math.round(gy - skySpan * (1 - cl.y));
+      const col = TOD < 1.5 ? D2 : TOD < 2.6 ? S3 : TOD < 3.6 ? S2 : TOD < 4.5 ? DUSK : UNDER;
       for (let i = 0; i < cl.w; i++) {
         const hgt = Math.round(3 + 3 * Math.sin((i / cl.w) * Math.PI) + vnoise(i / 5 + cl.x * 9, 81) * 3);
-        for (let j = 0; j < hgt; j++) if (y0 - j < gy - 8) put(x0 + i, y0 - j, j === hgt - 1 && tod > 2 && tod < 3.6 ? S4 : col);
+        for (let j = 0; j < hgt; j++) if (y0 - j < gy - 8) put(x0 + i, y0 - j, j === hgt - 1 && TOD > 2 && TOD < 3.6 ? S4 : col);
       }
     }
 
-    // hills and the ground line
-    if (gy - 30 < H) for (let k = 0; k < 3; k++) {
-      const col = landColor(tod, k === 2 ? 1 : 0), off = k === 0 ? 0.06 : 0.12;
+    // hills, in parallax; far mountains stay, near hills give way to water
+    if (gy - 40 < H) for (let k = 0; k < 3; k++) {
+      const par = [0.3, 0.6, 1][k], col = landColor(k === 2 ? 1 : 0), hi = landColor(1);
       for (let x = 0; x < W; x++) {
-        const top = gy - Math.round(hills[k][x] * (k === 2 ? 0.5 : 1)) - (k === 0 ? 6 : 0);
-        for (let y = Math.max(0, top); y < Math.min(H, gy); y++) put(x, y, k === 2 ? col : (y < top + 1 ? landColor(tod, 1) : col));
+        const wx = (x + camX * par) / W;
+        const water = k === 0 ? 0 : waterAt((x + camX - W * 0.5) / W);
+        if (k > 0 && water >= 2) continue;
+        const n = vnoise(wx * (5 + k * 4), 30 + k) * 0.7 + vnoise(wx * (16 + k * 8), 40 + k) * 0.3;
+        let h = Math.round(((10 - k * 3) + n * (14 - k * 3)) * (k === 2 ? 0.5 : 1)) + (k === 0 ? 6 : 0);
+        if (k === 2 && beachAt(wxAt(x))) h = 1;
+        for (let y = Math.max(0, gy - h); y < Math.min(H, gy); y++) put(x, y, k === 2 ? col : y < gy - h + 1 ? hi : col);
       }
-      void off;
     }
-    // underground: strata, pebbles, the seed and its roots
-    for (let y = Math.max(0, gy); y < H; y++) {
-      const d = y - gy;
-      for (let x = 0; x < W; x++) {
-        let col = d < 2 ? landColor(tod, 2) : d < 9 ? EARTHL : d < 40 ? EARTH : d < 90 ? EARTHD : SOIL;
-        const band = vnoise(x / 30 + d / 9, 91);
-        if (d >= 9 && d < 40 && band > 0.82) col = EARTHL;
-        if (d >= 40 && band > 0.86) col = EARTH;
-        if (d > 3 && hash(x >> 1, y >> 1, 93) < 0.012) col = d > 60 ? ROCK : LICHEN;
-        if (d < 2 && hash(x, 0, 95) < 0.35) col = S.season > 2.9 && S.season < 3.8 ? BONE : CDK;
+
+    // the ground, the water and the underworld, column by column
+    const wave = still ? 0 : t;
+    for (let x = 0; x < W; x++) {
+      const wx = wxAt(x), water = waterAt(wx), beach = beachAt(wx);
+      const shore = water ? Math.min(Math.abs(wx - (water === 2 ? X.lake - 0.42 : water === 3 ? X.coast - 0.18 : 0.585)), Math.abs(wx - (water === 2 ? X.lake + 0.38 : water === 3 ? X.coast + 0.62 : 0.655))) : 1;
+      const depthMax = water === 3 ? 999 : water === 2 ? Math.round(clamp(shore * 260, 2, 46)) : water === 1 ? 5 : 0;
+      const wob = Math.round(vnoise(wx * 8, 90) * 6);
+      for (let y = Math.max(0, gy); y < H; y++) {
+        const d = y - gy;
+        let col;
+        if (d < depthMax) {
+          // water: surface glints, then darker with depth; fish; weeds
+          col = d === 0 ? (dith(x, ((x + Math.round(wave * 6)) >> 2), 0.3) ? WHI : TOD > 2.4 && TOD < 3.8 && Math.abs(x - W * 0.22) < 10 ? S4 : WMID) : d < 6 ? WMID : d < 30 ? WATER : d < 80 ? WDEEP : INK;
+          if (NIGHT > 0.6 && d === 0 && Math.abs(x - W * 0.74) < 6 && dith(x, Math.round(wave * 3), 0.5)) col = BONE; // moon on water
+        } else {
+          const dd = d - depthMax + wob;
+          col = d === depthMax && depthMax === 0 ? (beach ? GOLD : landColor(2)) : beach && dd < 6 ? (d < 3 ? GOLD : EARTHL) : dd < 9 ? EARTHL : dd < 40 ? EARTH : dd < 70 ? EARTHD : dd < 76 ? (dith(x, y, 0.5) ? EARTHD : ROCK) : dd < 96 ? (vnoise((x + camX) / 14 + dd / 30, 88) > 0.62 ? ROCK : UNDER) : dd < 100 ? WDEEP : (vnoise((x + camX) / 22, 89 + (dd >> 3)) > 0.55 ? MOSS : SOIL);
+          if (dd >= 96 && dd < 100 && !still && dith(x, y, 0.15) && ((x + Math.round(wave * 8)) & 7) === 0) col = WMID; // an underground stream
+          if (dd > 3 && hash(x + (camX | 0), y, 93) < 0.012) col = dd > 60 ? ROCK : LICHEN;
+          if (depthMax === 0 && d < 2 && hash(x + (camX | 0), 0, 95) < 0.35) col = S.season % 4 > 2.9 ? BONE : CDK;
+        }
         buf[y * W + x] = U32[col];
       }
-    }
-    // grass tufts on the line
-    for (let x = 0; x < W; x += 1) if (hash(x, 1, 97) < 0.25) {
-      const h = 1 + ((hash(x, 2, 97) * 3) | 0), sway = still ? 0 : Math.round(Math.sin(t * 1.3 + x * 0.2) * 0.6);
-      for (let j = 1; j <= h; j++) put(x + (j === h ? sway : 0), gy - j, S.season > 2.9 && S.season < 3.8 ? SAGE : night > 0.5 ? INK : CDK);
-    }
-    // roots, revealed by arc length; lit in a travelling pulse
-    const sx = SEED.x, sy = gy + SEED.d;
-    for (const r of rootSegs) {
-      if (r.s > S.roots) continue;
-      const lit = S.rootLit > 0 && Math.abs(r.s - ((t * 0.12) % 1)) < 0.06 * S.rootLit;
-      put(sx + r.x, sy + r.y, lit ? SPROUT : r.d === 0 ? SAGE : LICHEN);
-    }
-    // the seed: one saffron pixel, a warm halo in the soil
-    if (sy < H + 4 && sy > -4 && S.growth < 0.2) {
-      for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) { const d = Math.hypot(x, y); if (d > 1 && d < 5.5) mix(sx + x, sy + y, EARTH, GLOW, (1 - d / 5.5) * 0.7); }
-      put(sx, sy, SAFF); put(sx + 1, sy, SAFF);
+      // grass tufts and reeds
+      if (!water && !beach && hash(x + (camX | 0), 1, 97) < 0.25) {
+        const h = 1 + ((hash(x + (camX | 0), 2, 97) * 3) | 0), sway = still ? 0 : Math.round(Math.sin(t * 1.3 + x * 0.2) * 0.6);
+        for (let j = 1; j <= h; j++) put(x + (j === h ? sway : 0), gy - j, S.season % 4 > 2.9 ? SAGE : NIGHT > 0.5 ? INK : CDK);
+      }
+      if (water === 2 && shore < 0.05 && hash(x + (camX | 0), 3, 99) < 0.5) for (let j = 1; j <= 5; j++) put(x, gy - j, lit(j === 5 ? EARTHL : REEDC));
     }
 
-    // the tree (at the seed's spot), grown and dressed by the season
-    const g = S.growth;
-    if (g > 0.01) {
-      const scale = lerp(0.12, 1, g) * Math.min(1.25, H / 260);
-      const tx = sx, ty = gy;
-      const season = S.season % 4; // 0 spring 1 summer 2 autumn 3 winter
-      const wind = still ? 0 : Math.sin(t * 0.9) * 0.6;
-      for (const b of branches) {
-        if (b.depth > g * 6.5) continue;
-        const sway = wind * (b.depth / 6);
-        const x0 = tx + b.x * scale * 3.2 + sway * b.depth * 0.4, y0 = ty + b.y * scale * 3.2;
-        const x1 = tx + b.ex * scale * 3.2 + sway * (b.depth + 1) * 0.4, y1 = ty + b.ey * scale * 3.2;
-        const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
-        const wpx = Math.max(1, Math.round(b.w * scale * 1.4));
-        for (let i = 0; i <= steps; i++) {
-          const px = x0 + (x1 - x0) * (i / steps), py = y0 + (y1 - y0) * (i / steps);
-          for (let k = 0; k < wpx; k++) put(px + k - (wpx >> 1), py, k === 0 && tod < 3.5 ? EARTHL : EARTH);
-        }
+    // the underworld network: the roots of every tree joined, carrying light (the digital tree world under ours)
+    if (S.net > 0.02) {
+      const ny = gy + 34 * K;
+      for (let x = 0; x < W; x++) {
+        const wx = wxAt(x); if (waterAt(wx) >= 2) continue;
+        const y = Math.round(ny + Math.sin(wx * 9) * 5 + Math.sin(wx * 23) * 2);
+        if (y >= H || y < 0) continue;
+        const pulse = !still && Math.abs(((wx * 3 - t * 0.25) % 1 + 1) % 1 - 0.5) < 0.02;
+        if (dith(x, y, S.net)) put(x, y, pulse ? SPROUT : CDK);
+        if (hash(Math.round(wx * 40), 0, 77) < 0.25) for (let j = 1; j < 8; j++) if (dith(x, y - j, S.net * 0.7)) put(x + (j >> 2), y - j, CDK); // threads up to the roots
       }
-      if (season < 3 || season > 3.6) {
-        const lc = season < 1 ? [CANOPY, SPROUT, ROSE] : season < 2 ? [CDK, CANOPY, SPROUT] : [RUST, GOLD, CLAY];
-        const shade = night > 0.5 ? [INK, CDK, CDK] : tod > 2.6 && tod < 3.8 ? [S0, GLOW, lc[1]] : lc;
-        const leafA = sstep(0.25, 0.7, g) * (season > 2.6 ? 1 - sstep(2.6, 3.0, season) : 1);
-        for (const l of leaves) {
-          if (l.s > leafA) continue;
-          const lx = tx + l.x * scale * 3.2 + wind * 1.4, ly = ty + l.y * scale * 3.2;
-          const r = Math.max(1, Math.round(l.r * scale * 1.3));
-          for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r) {
-            const h = hash(Math.round(lx + x), Math.round(ly + y), 7);
-            put(lx + x, ly + y, y < -r * 0.3 ? shade[2] === ROSE && h < 0.15 ? ROSE : shade[h < 0.3 ? 2 : 1] : shade[h < 0.5 ? 0 : 1]);
-          }
-        }
-        // autumn: a few leaves falling
-        if (season >= 2 && season < 3 && !still) for (let i = 0; i < 10; i++) {
-          const fx = tx + (hash(i, 1, 33) - 0.5) * 60 * scale + Math.sin(t + i) * 3, fy = ty - 50 * scale + (((t * 9 + i * 17) % (60 * scale + 10)));
-          put(fx, fy, i % 2 ? RUST : GOLD);
-        }
-      } else if (S.snow > 0 || season >= 3) {
-        for (const l of leaves) if (l.s < 0.3) put(tx + l.x * scale * 3.2, ty + l.y * scale * 3.2 - 1, BONE); // snow resting on the limbs
+      // fossils: machines buried like bones
+      const fossils = [[0.35, 'disk'], [0.95, 'crt'], [1.75, 'bones'], [3.25, 'disk'], [4.6, 'crt']];
+      for (const [fx, kind] of fossils) {
+        const px = sx(fx), py = Math.round(gy + 58 * K);
+        if (!onScreen(px, 20) || py >= H) continue;
+        if (kind === 'disk') { rect(px, py, 7, 7, ROCK); rect(px + 2, py, 3, 2, LICHEN); rect(px + 1, py + 4, 5, 2, EARTH); }
+        else if (kind === 'crt') { rect(px, py, 10, 8, ROCK); rect(px + 1, py + 1, 8, 5, EARTHD); put(px + 3, py + 3, CDK); rect(px + 3, py + 8, 4, 1, ROCK); }
+        else for (let i = 0; i < 9; i++) put(px + i, py + (i % 2), SAGE);
       }
-      // the one fruit, at the orchard
+    }
+    // the seed and its roots, at home
+    const hx = sx(X.home), hy = gy + SEED_D;
+    if (onScreen(hx, 80)) {
+      for (const r of rootSegs) {
+        if (r.s > S.roots) continue;
+        const litR = !still && S.net > 0 && Math.abs(r.s - ((t * 0.12) % 1)) < 0.05;
+        put(hx + r.x, hy + r.y, litR ? SPROUT : r.d === 0 ? SAGE : LICHEN);
+      }
+      if (S.growth < 0.2) {
+        for (let y = -9; y <= 9; y++) for (let x = -9; x <= 9; x++) { const d = Math.hypot(x, y); if (d > 1 && d < 9.5) mix(hx + x, hy + y, EARTH, d < 5 ? GLOW : EARTHL, (1 - d / 9.5) * 0.75); }
+        put(hx, hy, SAFF); put(hx + 1, hy, SAFF);
+      }
+      if (S.growth > 0.01) tree(hx, gy, lerp(0.12, 1, S.growth) * K, S.growth, S.season, t, still, 0);
+    }
+    // small lives in the soil: worms that wander, a mole in its burrow
+    if (onScreen(hx, 160)) for (let i = 0; i < 4; i++) {
+      const wxp = hx - 120 + i * 70 + (still ? 0 : Math.round(Math.sin(t * 0.3 + i) * 6)), wyp = gy + 14 + i * 9;
+      for (let k = 0; k < 5; k++) put(wxp + k, wyp + Math.round(Math.sin(k + (still ? 0 : t * 2) + i)), CLAY);
+    }
+    if (onScreen(hx + 90, 30)) { const mx = hx + 90, my = gy + 44; rect(mx - 6, my - 3, 14, 7, EARTHD); rect(mx - 3, my - 1, 7, 3, ROCK); put(mx + 4, my - 1, BONE); put(mx + 3, my, ROSE); }
+    // a stream crossing near home, with a cat watching it and a lizard on a rock
+    if (onScreen(sx(0.7), 60)) { zoom(sx(0.7), gy, SZ, () => cat(sx(0.7), gy, t, still)); zoom(sx(0.5), gy, SZ, () => lizard(sx(0.5), gy, t, still)); }
+    // the village: tree people of every kind, met in a loose circle; pets at the edge
+    const vx = sx(X.village);
+    if (onScreen(vx, 120)) {
+      const cast = [['local', -46], ['blind', -24], ['cloud', 0], ['instruct', 24], ['thinker', 44], ['local', 64]];
+      cast.forEach(([type, off], k) => { const px = vx + Math.round(off * K * SZ); zoom(px, gy, SZ, () => citizen(px, gy, type, t, still, sstep(k / cast.length, (k + 0.6) / cast.length, S.lights))); });
+      { const px = vx - Math.round(92 * K * SZ); zoom(px, gy, SZ, () => dog(px, gy, t, still, false)); }
+      { const px = vx + Math.round(90 * K * SZ); zoom(px, gy, SZ, () => cat(px, gy, t, still)); }
+      tree(vx + Math.round(110 * K), gy, 0.55 * K, 1, S.season, t, still, 3);
+      tree(vx - Math.round(118 * K), gy, 0.45 * K, 1, S.season, t, still, 4);
+    }
+    // the lake: a rowboat, frogs on the shore, fish below
+    const lx = sx(X.lake);
+    if (onScreen(lx, W * 0.5)) {
+      { const bx = lx + Math.round((still ? 0 : Math.sin(t * 0.05) * 30) * K); zoom(bx, gy - 1, SZ, () => boat(bx, gy - 1, t, still)); }
+      if (!still) for (let i = 0; i < 6; i++) { const fx = lx + Math.round(((t * (4 + i) + i * 40) % 160) - 80), fy = gy + 12 + i * 5; if (fy < H) { put(fx, fy, lit(i % 2 ? CLAY : SAGE)); put(fx - 1, fy, lit(LICHEN)); } }
+      const frog = sx(X.lake - 0.45); rect(frog, gy - 2, 3, 2, lit(CANOPY)); put(frog, gy - 3, lit(SPROUT)); put(frog + 2, gy - 3, lit(SPROUT));
+    }
+    // the coast: the ghost ship builds itself as you read; a chest of loot on the sea floor
+    const cx2 = sx(X.coast + 0.25);
+    if (onScreen(cx2, W * 0.6)) {
+      zoom(cx2, gy - 1, SZ, () => ghostShip(cx2, gy - 1, S.ship, t, still));
+      const chx = sx(X.coast + 0.1), chy = gy + 92 * K;
+      if (chy < H - 6) { rect(chx, chy, 9, 6, EARTH); rect(chx, chy, 9, 2, EARTHL); put(chx + 4, chy + 2, GOLD); if (!still && ((t * 2) | 0) % 3 === 0) put(chx + 2, chy - 1, GOLD); }
+    }
+    // the orchard of similar trees at sunset; the one fruit; the dog has found it
+    const ox = sx(X.orchard);
+    if (onScreen(ox, W)) {
+      [[-150, 0.5, 5], [-95, 0.62, 6], [95, 0.58, 7], [150, 0.48, 8]].forEach(([off, s, v]) => tree(ox + Math.round(off * K), gy, s * K, 1, 1.4, t, still, v));
+      tree(ox, gy, 0.95 * K, 1, 1.4, t, still, 2);
       if (S.fruit > 0.02) {
-        const fx = tx + Math.round(10 * scale), fy = ty - Math.round(30 * scale);
-        put(fx, fy, SAFF); put(fx + 1, fy, SAFF); put(fx, fy + 1, SAFF); put(fx + 1, fy + 1, GOLD); put(fx, fy - 1, CDK);
+        const fx = ox + Math.round(10 * K), fy = gy - Math.round(31 * K);
+        put(fx, fy - 1, CDK); rect(fx, fy, 2, 2, SAFF); put(fx + 1, fy + 1, GOLD);
         if (!still) for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) { const d = Math.hypot(x, y); if (d > 1.5 && d < 3.5 && hash(x, y, (t * 4) | 0) < 0.12 * S.fruit) put(fx + x, fy + y, GOLD); }
       }
+      { const px = ox - Math.round(34 * K * SZ); zoom(px, gy, SZ, () => dog(px, gy, t, still, true)); }
     }
 
-    // fauna and weather
+    // weather and creatures of the air
     if (!still && S.alt < 0.6 && S.alt > -0.2) {
-      // birds by day: little Vs that cross the sky
-      if (tod > 0.8 && tod < 3.3) for (let i = 0; i < 4; i++) {
-        const bx = ((t * (6 + i * 2) + i * 97) % (W + 40)) - 20, by = gy - skySpan * (0.45 + i * 0.08) + Math.sin(t * 2 + i) * 2;
-        const flap = ((t * 6 + i) | 0) % 2;
+      if (TOD > 0.8 && TOD < 3.3) for (let i = 0; i < 4; i++) {
+        const bx = ((t * (6 + i * 2) + i * 97) % (W + 40)) - 20, by = gy - skySpan * (0.45 + i * 0.08) + Math.sin(t * 2 + i) * 2, flap = ((t * 6 + i) | 0) % 2;
         put(bx, by, INK); put(bx - 1, by - 1 + flap, INK); put(bx + 1, by - 1 + flap, INK);
       }
-      // a deer at the treeline, autumn into winter
-      if (c > 4.2 && c < 6.2) {
-        const dx = Math.round(W * 0.16 + Math.sin(t * 0.1) * 4), dy = gy - 1, col = tod < 2.6 ? D0 : INK;
-        rect(dx, dy - 4, 6, 2, col); put(dx, dy - 2, col); put(dx + 5, dy - 2, col); put(dx, dy - 1, col); put(dx + 5, dy - 1, col);
-        put(dx + 6, dy - 5, col); put(dx + 6, dy - 6, col); put(dx + 7, dy - 6, col); put(dx + 6, dy - 8, col); put(dx + 7, dy - 9, col);
+      if (c > 4.0 && c < 4.9) { // a deer at the treeline near home
+        const dx = sx(-0.3), col = TOD < 2.6 ? D0 : INK;
+        rect(dx, gy - 5, 6, 2, col); put(dx, gy - 3, col); put(dx + 5, gy - 3, col); put(dx, gy - 2, col); put(dx + 5, gy - 2, col);
+        put(dx + 6, gy - 6, col); put(dx + 6, gy - 7, col); put(dx + 7, gy - 7, col); put(dx + 6, gy - 9, col); put(dx + 7, gy - 10, col);
       }
-      // fireflies at dusk near the ground
-      if (tod > 3.2 && tod < 4.9) for (let i = 0; i < 14; i++) {
+      if (TOD > 3.2 && TOD < 4.9) for (let i = 0; i < 14; i++) {
         const fx = W * hash(i, 1, 41) + Math.sin(t * 0.7 + i) * 6, fy = gy - 3 - hash(i, 2, 41) * 18 + Math.cos(t * 0.9 + i) * 2;
         if (Math.sin(t * 3 + i * 7) > 0.4) put(fx, fy, i === 0 ? SAFF : SPROUT);
       }
-      // rain and snow
-      if (S.rain > 0.02) for (let i = 0; i < 220 * S.rain; i++) {
-        const rx = (hash(i, 1, 5) * W + t * 40) % W, ry = (hash(i, 2, 5) * H + t * 160) % H;
-        if (ry < gy) { put(rx, ry, LICHEN); put(rx - 1, ry - 1, D3); }
-      }
-      if (S.snow > 0.02) for (let i = 0; i < 160 * S.snow; i++) {
-        const rx = (hash(i, 1, 6) * W + Math.sin(t + i) * 3) % W, ry = (hash(i, 2, 6) * H + t * 14) % H;
-        if (ry < gy) put(rx, ry, BONE);
-      }
+      if (S.rain > 0.02) for (let i = 0; i < 220 * S.rain; i++) { const rx = (hash(i, 1, 5) * W + t * 40) % W, ry = (hash(i, 2, 5) * H + t * 160) % H; if (ry < gy) { put(rx, ry, LICHEN); put(rx - 1, ry - 1, D3); } }
+      if (S.snow > 0.02) for (let i = 0; i < 160 * S.snow; i++) { const rx = (hash(i, 1, 6) * W + Math.sin(t + i) * 3) % W, ry = (hash(i, 2, 6) * H + t * 14) % H; if (ry < gy) put(rx, ry, BONE); }
     }
 
-    // the dog, at the orchard: a wag, a jump at the fruit, a bark
-    if (S.dog > 0.02) drawDog(sx - Math.round(26 * Math.min(1.25, H / 260)), gy, t, still);
-
-    // the leaf: an iris opens on its cells (seen a little at a time)
+    // the leaf: an iris opens on its cells
     if (S.iris > 0.01) {
       const R = Math.round(Math.min(W, H) * 0.34 * S.iris), cx = W >> 1, cy = Math.round(H * 0.5);
-      const z = 1 + Math.round(S.zoom * 2), ox = Math.round((still ? 0 : t * 3) + S.zoom * 40), oy = Math.round(S.zoom * 25);
+      const z = 1 + Math.round(S.zoom * 2), ox2 = Math.round((still ? 0 : t * 3) + S.zoom * 40), oy = Math.round(S.zoom * 25);
       for (let y = -R - 2; y <= R + 2; y++) for (let x = -R - 2; x <= R + 2; x++) {
         const d = Math.hypot(x, y);
-        if (d <= R) {
-          const u = (((Math.floor((x + ox) / z) % cells.w) + cells.w) % cells.w), v = (((Math.floor((y + oy) / z) % cells.h) + cells.h) % cells.h);
-          put(cx + x, cy + y, d > R - 1 ? SPROUT : cells.px[v * cells.w + u]);
-        } else if (d <= R + 2) put(cx + x, cy + y, INK);
+        if (d <= R) { const u = ((Math.floor((x + ox2) / z) % cells.w) + cells.w) % cells.w, v = ((Math.floor((y + oy) / z) % cells.h) + cells.h) % cells.h; put(cx + x, cy + y, d > R - 1 ? SPROUT : cells.px[v * cells.w + u]); }
+        else if (d <= R + 2) put(cx + x, cy + y, INK);
       }
-      // the world outside the iris dims to night
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        const d = Math.hypot(x - cx, y - cy);
-        if (d > R + 2 && BAY[((y & 3) << 2) | (x & 3)] < 0.7 * S.iris) buf[y * W + x] = U32[INK];
-      }
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (Math.hypot(x - cx, y - cy) > R + 2 && dith(x, y, 0.7 * S.iris)) buf[y * W + x] = U32[INK];
     }
     ctx.putImageData(img, 0, 0);
   }
+  const REEDC = CDK;
 
-  // a readable dog: side view, white-tipped tail, ears, muzzle; wags; jumps toward the fruit
-  const DOG = [
-    '......oo......',
-    '.....oooo.....',
-    '....ooKooo.ww.',
-    '...oooooooowww',
-    '.ooooooooooo..',
-    'oowoooooooo...',
-    'woo.oo..oo....',
-    '....oo..oo....',
-  ];
-  let hello = 0;
-  function drawDog(x, gy, t, still) {
-    const jump = still ? 0 : Math.max(0, Math.sin(t * 3.2)) * (hello > 0 ? 6 : 3);
-    const wag = still ? 0 : Math.round(Math.sin(t * 14));
-    const rows = DOG.length, y0 = gy - rows - Math.round(jump);
-    for (let j = 0; j < rows; j++) for (let i = 0; i < DOG[j].length; i++) {
-      const ch = DOG[j][i];
-      if (ch === '.') continue;
-      // the tail (left end) wags; the dog faces right, toward the tree
-      const tail = i <= 2 && j >= 4;
-      const px = x + (13 - i), py = y0 + j + (tail ? wag : 0);
-      put(px, py, ch === 'K' ? INK : ch === 'w' ? BONE : RUST);
-    }
-    // bark: little marks in front of the muzzle while jumping
-    if (!still && (jump > 2 || hello > 0) && ((t * 4) | 0) % 2) { put(x + 15, y0 + 1, BONE); put(x + 16, y0, BONE); put(x + 15, y0 - 1, BONE); }
-  }
-
-  /* ------------------------------------------------------------------ the clock: where are we in the story */
+  /* ------------------------------------------------------------------ where are we in the story */
   let els = [];
   const collect = () => { els = PLACES.map((id) => doc.getElementById(id)).filter(Boolean); };
   function clockC() {
     if (!els.length) return { c: 0, on: false };
-    const line = win.innerHeight * 0.5;
-    const first = els[0].getBoundingClientRect();
+    const line = win.innerHeight * 0.5, first = els[0].getBoundingClientRect();
     const on = first.top < win.innerHeight * 0.85;
     let i = 0, r = first;
     for (let k = 0; k < els.length; k++) { const b = els[k].getBoundingClientRect(); if (k === 0 || b.top <= line) { i = k; r = b; } }
-    const p = sat((line - r.top) / Math.max(1, r.height));
-    return { c: PLACES.indexOf(els[i].id) + p, on };
+    return { c: PLACES.indexOf(els[i].id) + sat((line - r.top) / Math.max(1, r.height)), on };
   }
 
   /* ------------------------------------------------------------------ loop */
   const reduced = win.matchMedia ? win.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
   const motionOff = () => reduced.matches || doc.body.classList.contains('still-frames') || root.dataset.motion === 'off';
-  let cS = null, target = 0, visible = false, raf = 0, last = 0, time = 0, lastDraw = -1, lastStill = '';
-  const api = (win.BodhiPixelJourney = { c: 0, on: false, frames: 0 });
+  let cS = null, visible = false, raf = 0, last = 0, time = 0, lastDraw = -1, lastStill = '', lastT = 0;
+  const api = (win.BodhiPixelJourney = { c: 0, on: false, frames: 0, snap: () => { cS = null; } });
 
   function frame(now) {
     raf = 0;
     const dt = last ? Math.min(0.1, (now - last) / 1000) : 1 / 60; last = now;
-    const st = clockC(); target = st.c;
+    const st = clockC();
     if (st.on !== visible) { visible = st.on; root.classList.toggle('pj-on', visible); }
     api.on = visible;
     if (!visible || doc.hidden) { last = 0; return; }
     const still = motionOff();
-    if (cS === null || Math.abs(target - cS) > 1.5) cS = target;
-    cS += (target - cS) * (1 - Math.exp(-dt * 6));
+    if (cS === null || Math.abs(st.c - cS) > 1.5) cS = st.c;
+    cS += (st.c - cS) * (1 - Math.exp(-dt * 5));
     if (still) {
-      const key = Math.round(target * 4) + '|' + W + 'x' + H;
-      if (key !== lastStill) { lastStill = key; draw(Math.round(target * 4) / 4, 20, true); api.frames++; }
+      const q = Math.round(st.c * 4) / 4, key = q + '|' + W + 'x' + H;
+      if (key !== lastStill) { lastStill = key; draw(q, 20, true); api.frames++; }
     } else {
-      time += dt;
-      // ambient life at ~15 fps, camera moves at full rate
-      if (Math.abs(cS - lastDraw) > 0.0005 || now - api.t > 66) { draw(cS, time, false); lastDraw = cS; api.t = now; api.frames++; }
+      time += dt; if (hello > 0) hello = Math.max(0, hello - dt);
+      if (Math.abs(cS - lastDraw) > 0.0005 || now - lastT > 66) { draw(cS, time, false); lastDraw = cS; lastT = now; api.frames++; }
     }
     api.c = cS;
     raf = requestAnimationFrame(frame);
   }
-  api.t = 0;
   const wake = () => { if (!raf) raf = requestAnimationFrame(frame); };
   let rz = 0;
   win.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { layout(); lastStill = ''; wake(); }, 150); }, { passive: true });
   win.addEventListener('scroll', wake, { passive: true });
   doc.addEventListener('visibilitychange', wake);
   if (reduced.addEventListener) reduced.addEventListener('change', () => { lastStill = ''; wake(); });
-  doc.getElementById('greet-dog')?.addEventListener('click', () => { hello = 2.4; setTimeout(() => { hello = 0; }, 2400); wake(); });
+  doc.getElementById('greet-dog')?.addEventListener('click', () => { hello = 2.4; wake(); });
 
   collect(); layout(); wake();
-  if (doc.readyState !== 'complete') win.addEventListener('load', () => { collect(); wake(); }, { once: true });
+  if (doc.readyState !== 'complete') win.addEventListener('load', () => { collect(); build(); wake(); }, { once: true });
 })();

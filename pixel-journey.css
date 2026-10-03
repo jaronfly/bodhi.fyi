@@ -6,3 +6,6 @@ html.pj-on .pj-canvas{opacity:1}
 html.pj-on .pb-canvas{visibility:hidden}
 html.pj-on #orchardCanvas{opacity:0}
 .pj-on .source-window,.pj-on .evidence-folio,.pj-on .afterward{background:none}
+/* the journey now carries the meeting's tree people and the ghost ship's build (driven by scroll, no hidden button) */
+html.pj-on .meeting-stage .meeting-frame,html.pj-on .ship-sea,html.pj-on .crew-controls{display:none}
+html.pj-on .scene-meeting,html.pj-on .ghost-harbor,html.pj-on .orchard{background:transparent}
