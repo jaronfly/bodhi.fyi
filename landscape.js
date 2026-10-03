@@ -150,6 +150,96 @@
 })();
 
 // The crew changes; the structure and its source record persist.
-(()=>{const button=document.getElementById('pass-log');if(!button)return;let stage=0;
-const logs=[['01 / THE FIRST CREW','Leave more than a finished plank.','“The hull is sound. The eastern seam leaked. Here is the repair, and the test we used.”'],['02 / ANOTHER VOICE','Begin where someone else left off.','“I read the test. The hull held. I added the rigging, but this knot still needs checking.”'],['03 / THE NEXT RETURN','Carry the correction with the craft.','“The knot slipped under load. Here is a better one. Keep the old note so we know why it changed.”']];
-button.addEventListener('click',()=>{stage=(stage+1)%logs.length;document.querySelector('.ghost-harbor .ship').dataset.build=stage;document.getElementById('crew-number').textContent=logs[stage][0];document.getElementById('crew-heading').textContent=logs[stage][1];document.getElementById('crew-entry').textContent=logs[stage][2];button.textContent=stage===2?'Begin again with the first crew ↺':'Pass the log to the next crew ↗';});})();
+// Both scroll-driven assembly and explicit slider/stepper controls (no hidden button).
+(()=>{
+  const section = document.querySelector('.ghost-harbor');
+  if (!section) return;
+
+  const ship = section.querySelector('.ship');
+  const crewNumber = document.getElementById('crew-number');
+  const crewHeading = document.getElementById('crew-heading');
+  const crewEntry = document.getElementById('crew-entry');
+  const passBtn = document.getElementById('pass-log');
+  const range = document.getElementById('crew-range');
+  const stepBtns = section.querySelectorAll('.crew-step-btn');
+  const ticks = section.querySelectorAll('.slider-ticks .tick');
+
+  const logs = [
+    ['01 / THE FIRST CREW', 'Leave more than a finished plank.', '“The hull is sound. The eastern seam leaked. Here is the repair, and the test we used.”'],
+    ['02 / ANOTHER VOICE', 'Begin where someone else left off.', '“I read the test. The hull held. I added the rigging, but this knot still needs checking.”'],
+    ['03 / THE NEXT RETURN', 'Carry the correction with the craft.', '“The knot slipped under load. Here is a better one. Keep the old note so we know why it changed.”']
+  ];
+
+  let currentStage = 0;
+  let userOverrideUntil = 0;
+
+  function setStage(idx, isUserAction = false) {
+    idx = Math.max(0, Math.min(logs.length - 1, Math.round(idx)));
+    currentStage = idx;
+    if (isUserAction) {
+      userOverrideUntil = performance.now() + 4500;
+    }
+
+    if (ship) ship.dataset.build = idx;
+    if (crewNumber) crewNumber.textContent = logs[idx][0];
+    if (crewHeading) crewHeading.textContent = logs[idx][1];
+    if (crewEntry) crewEntry.textContent = logs[idx][2];
+    if (range && Number(range.value) !== idx) range.value = idx;
+
+    stepBtns.forEach((btn, i) => {
+      const active = i === idx;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
+    });
+
+    ticks.forEach((tick, i) => {
+      tick.classList.toggle('active', i <= idx);
+    });
+
+    if (passBtn) {
+      passBtn.textContent = idx === logs.length - 1 ? 'Begin again with the first crew ↺' : 'Pass the log to the next crew ↗';
+    }
+  }
+
+  if (range) {
+    range.addEventListener('input', (e) => {
+      setStage(Number(e.target.value), true);
+    });
+  }
+
+  stepBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const st = Number(btn.dataset.stage);
+      setStage(st, true);
+    });
+  });
+
+  if (passBtn) {
+    passBtn.addEventListener('click', () => {
+      setStage((currentStage + 1) % logs.length, true);
+    });
+  }
+
+  function onScroll() {
+    if (performance.now() < userOverrideUntil) return;
+    const rect = section.getBoundingClientRect();
+    const winH = window.innerHeight;
+    if (rect.bottom < 0 || rect.top > winH) return;
+
+    const totalDist = rect.height + winH * 0.3;
+    const travelled = (winH * 0.75) - rect.top;
+    const progress = Math.max(0, Math.min(1, travelled / totalDist));
+
+    let autoStage = 0;
+    if (progress >= 0.65) autoStage = 2;
+    else if (progress >= 0.30) autoStage = 1;
+    else autoStage = 0;
+
+    if (autoStage !== currentStage) {
+      setStage(autoStage, false);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  setStage(0, false);
+})();

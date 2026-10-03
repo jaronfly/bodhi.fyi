@@ -60,6 +60,14 @@
   line-height: 1.6;
   color: var(--sage);
 }
+.claude-field .meeting-cast .cast-sprite {
+  display: block;
+  margin: 0 auto 10px;
+  image-rendering: pixelated;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
 
 /* without script: the same copy as plain text on the same plate */
 .claude-field .meeting-still {

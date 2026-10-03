@@ -216,3 +216,46 @@
  .shelf-items{grid-template-columns:1fr}
  .owner-voice blockquote p{font-size:17px}
 }
+
+/* Pixel sprites integration */
+.clearing-thinker-sprite{display:inline-block;vertical-align:middle;margin-right:8px;image-rendering:pixelated}
+.orchard-dog-sprite{display:inline-block;vertical-align:middle;margin-right:8px;image-rendering:pixelated}
+
+/* Ghost Harbor crew controls: interactive stepper + scrubbable slider */
+.crew-controls{max-width:850px;margin:30px auto 0;padding:0 7vw;box-sizing:content-box}
+.crew-stepper{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.crew-step-btn{min-height:48px;padding:12px 14px;background:#12291d;border:1px solid #3a4f41;color:#b8c2ba;font:11px/1.3 var(--mono);text-align:left;display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:border-color .2s,color .2s,background .2s}
+.crew-step-btn .step-num{font-size:10px;color:#8a968d;letter-spacing:.08em}
+.crew-step-btn .step-name{font-size:11px;letter-spacing:.04em;color:#e5ecd8}
+.crew-step-btn:hover{border-color:#8bcb8b;color:#f2eee4}
+.crew-step-btn.active{background:#1e3b2b;border-color:#8bcb8b;box-shadow:0 0 16px #8bcb8b28}
+.crew-step-btn.active .step-num{color:#8bcb8b}
+.crew-step-btn.active .step-name{color:#f2eee4;font-weight:600}
+.crew-slider-bar{position:relative;margin:16px 0 24px}
+.crew-range{width:100%;height:36px;accent-color:#e8982a;background:transparent;cursor:pointer;margin:0}
+.slider-ticks{display:flex;justify-content:space-between;padding:0 8px;margin-top:-6px;pointer-events:none}
+.slider-ticks .tick{width:6px;height:6px;border-radius:50%;background:#3a4f41;transition:background .2s,transform .2s}
+.slider-ticks .tick.active{background:#e8982a;transform:scale(1.3);box-shadow:0 0 8px #e8982a88}
+@media(max-width:700px){
+  .crew-stepper{grid-template-columns:1fr;gap:8px}
+  .crew-step-btn{min-height:44px;flex-direction:row;justify-content:space-between;align-items:center}
+}
+
+/* Restored Codex structured site-footer & colophon */
+.end-note{text-align:center;padding:110px 7vw 60px}
+.end-note .footer-lockup{image-rendering:pixelated;width:150px;height:50px;object-fit:contain;margin-bottom:24px}
+.end-note .end-epigraph{font:italic 400 clamp(24px,3.2vw,36px)/1.35 var(--serif);color:var(--bone);letter-spacing:-.03em}
+
+.site-footer{border-top:1px solid #2e3b33;padding:50px 7vw 40px;background:#0d1c15;color:var(--sage)}
+.site-footer .footer-wrap{max-width:1100px;margin:0 auto}
+.site-footer .footer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(30px,5vw,60px);padding-bottom:40px}
+.site-footer .footer-col{display:flex;flex-direction:column;gap:12px}
+.site-footer .footer-heading{font:10px/1.8 var(--mono);letter-spacing:.12em;color:var(--lichen);margin-bottom:6px;display:block}
+.site-footer .footer-col a{font:12px/1.6 var(--sans);color:var(--sage);transition:color .2s;text-underline-offset:4px}
+.site-footer .footer-col a:hover{color:var(--sprout);text-decoration:underline}
+.site-footer .colophon{border-top:1px solid #25382b;padding-top:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font:11px/1.6 var(--mono);color:var(--lichen);letter-spacing:.06em}
+@media(max-width:768px){
+  .site-footer .footer-grid{grid-template-columns:1fr;gap:32px}
+  .site-footer .colophon{flex-direction:column;gap:8px}
+}
+
