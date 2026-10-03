@@ -39,3 +39,8 @@ article.caption.opening{left:0;right:0;top:0;bottom:0;max-width:none;text-align:
 @media(max-width:600px){.world-toolbar>div{gap:6px 18px}.world-toolbar button{font-size:8px}.world-toolbar{gap:8px}}
 
 .record-mark{background:transparent}
+
+/* QC pass: captions stay clear of the in-world signs. Beats 4-5 sit low on the right (the CODE RETRIEVED sign is on the left of frame); the surveillance beats get a soft scrim because the room is dense with screens. */
+.caption[data-beat="9"],.caption[data-beat="10"]{isolation:isolate}
+.caption[data-beat="9"]::before,.caption[data-beat="10"]::before{content:'';position:absolute;inset:-26px -70px -20px -50px;z-index:-1;background:radial-gradient(ellipse at 38% 50%,#050b09c8 0%,#050b0996 45%,transparent 76%);pointer-events:none}
+@media(min-width:601px){.caption[data-beat="4"],.caption[data-beat="5"]{left:auto;right:6vw;top:50%;max-width:530px}}
