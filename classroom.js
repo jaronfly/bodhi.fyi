@@ -103,8 +103,9 @@ export function createClassroom(scene){
  const windowParts=[];for(let i=0;i<12;i++){const a=box(office,.025,.79,.97,5,1.65+Math.floor(i/4)*.81,.0+i%4,glass);a.userData={...a.position,spin:i*.53};windowParts.push(a);}
  for(const y of [1.2,3.95])box(office,.16,.10,4.2,5,y,1.5,steel);for(const z of [-.55,3.55])box(office,.16,2.8,.10,5,2.58,z,steel);box(office,.18,.11,4.3,5,1.19,1.5,paper);
  // A street and the car: steering wheel, dangling abstract leads, wheels and headlights.
- const street=new THREE.Group();world.add(street);box(street,9,.15,62,19,-.12,-7,material('#22362f'));for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
- for(let i=0;i<10;i++){const side=i%2?-1:1,x=side<0?-13-i%3*4:48+i%3*5,z=-35+Math.floor(i/2)*11;const h=5+i%4*2;box(street,5,h,7,x,h/2,z,material(i%2?'#263d36':'#20372f'));for(let j=0;j<4;j++)for(let row=0;row<3;row++)box(street,.6,.8,.018,x-1.7+j,1.6+row*1.6,z+3.52,new THREE.MeshBasicMaterial({color:row===i%3?'#829c83':'#3a5144'}));}
+ const street=new THREE.Group();world.add(street);box(street,9,.15,62,19,-.12,-7,material('#22362f'));const skyline=new THREE.Group();street.add(skyline); // the buildings: hidden once the camera is indoors at the therapist's, so nothing outside can show through those walls
+for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
+ for(let i=0;i<10;i++){const side=i%2?-1:1,x=side<0?-13-i%3*4:48+i%3*5,z=-35+Math.floor(i/2)*11;const h=5+i%4*2;box(skyline,5,h,7,x,h/2,z,material(i%2?'#263d36':'#20372f'));for(let j=0;j<4;j++)for(let row=0;row<3;row++)box(skyline,.6,.8,.018,x-1.7+j,1.6+row*1.6,z+3.52,new THREE.MeshBasicMaterial({color:row===i%3?'#829c83':'#3a5144'}));}
  box(street,31,.12,7,29,-.11,-17,material('#22362f'));for(let x=18;x<43;x+=4)box(street,1.3,.008,.12,x,-.035,-17,edge);
  const car=new THREE.Group();world.add(car);car.position.set(18,.0,-25);
  light(street,18,4.5,-25,50);
@@ -119,7 +120,7 @@ export function createClassroom(scene){
  const redWire=cable(car,[[-.3,1.11,-.43],[-.23,.99,-.28],[-.06,1.0,-.24]],clay,.018);const greenWire=cable(car,[[.14,1.11,-.43],[.27,1.03,-.27],[.08,1.0,-.24]],material('#87b39e',{emissive:'#629b7c',emissiveIntensity:.6}),.018);
  const lamps=[];for(const x of [-.58,.58]){const bulb=box(car,.38,.16,.05,x,.84,-1.78,glow);lamps.push(bulb);const beam=new THREE.SpotLight('#ddedbf',0,25,.4,.7,1.5);beam.position.set(x,.84,-1.8);beam.target.position.set(x,.1,-20);car.add(beam,beam.target);lamps.push(beam);}
  // The therapist's room belongs to a different building, away from the school.
- const therapy=new THREE.Group();therapy.position.set(39,0,-26);world.add(therapy);box(therapy,10,.15,10,0,-.11,0,material('#34463a'));box(therapy,10,4,.16,0,2,-5,wall);box(therapy,.16,4,10,-5,2,0,wall);
+ const therapy=new THREE.Group();therapy.position.set(39,0,-26);world.add(therapy);box(therapy,10,.15,10,0,-.11,0,material('#34463a'));box(therapy,10,4,.16,0,2,-5,wall);box(therapy,.16,4,10,-5,2,0,wall);box(therapy,.16,4,10,5,2,0,wall); // the room's fourth wall: a wall is a wall
  sign(therapy,['OUTSIDE RECORDS','THE THERAPIST IN THE ANALOGY'],4.7,.90,0,3.1,-4.9,{font:63});fluorescent(therapy,0,3.9,-.5,2.5);cabinet(therapy,2.8,-4.55);cabinet(therapy,4.05,-4.55);
  box(therapy,3.6,.38,1.2,-1.6,.44,-2.3,wood);box(therapy,3.6,.72,.24,-1.6,.96,-2.78,wood);for(const x of [-3.42,.22])box(therapy,.21,.65,1.2,x,.7,-2.3,wood);
  box(therapy,1.9,.08,1.1,.3,.75,.2,edge);for(const x of [-.4,1])box(therapy,.055,.7,.7,x,.35,.2,steel);documentsOn(therapy,12,-.3,.80,.24);
@@ -164,7 +165,7 @@ export function createClassroom(scene){
  function update(q,t,still){
   world.visible=q<17.05;if(!world.visible)return {position:cameraPosition,look};
   let n=0;while(n<route.length-2&&q>route[n+1][0])n++;const a=route[n],b=route[n+1],k=smooth(between(q,a[0],b[0]));cameraPosition.set(...a[1]).lerp(new THREE.Vector3(...b[1]),k);look.set(...a[2]).lerp(new THREE.Vector3(...b[2]),k);
-  fadeSign(taskSign,smooth(between(q,.6,1.1))*(1-smooth(between(q,3.95,4.25))));street.visible=q>10.55;car.visible=q>10.55;therapy.visible=q>12.5;outerDoor.visible=q>12.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);clinicDoor.rotation.y=-smooth(between(q,13.08,13.42))*1.42;
+  fadeSign(taskSign,smooth(between(q,.6,1.1))*(1-smooth(between(q,3.95,4.25))));street.visible=q>10.55;skyline.visible=q<13.5;car.visible=q>10.55;therapy.visible=q>12.5;outerDoor.visible=q>12.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);clinicDoor.rotation.y=-smooth(between(q,13.08,13.42))*1.42;
   const hit=smooth(between(q,2.8,3.32)),broken=smooth(between(q,3.17,3.58));growIn(hammer,smooth(between(q,1.6,2.0))*(1-smooth(between(q,5.3,5.6))));hammer.position.set(mix(.85,0,hit),mix(1.95,1.17,hit)-smooth(between(q,3.34,3.8))*.24,-1.3);hammer.rotation.z=mix(-.55,1.56,hit)-smooth(between(q,3.34,3.8))*.19;hammer.rotation.x=.05;
   halfA.position.set(-.125-broken*.30,.23+broken*.05,broken*.25);halfA.rotation.z=-broken*.65;halfB.position.set(.125+broken*.38,.23+broken*.05,-broken*.13);halfB.rotation.z=broken*.8;shackle.rotation.x=broken*Math.PI/2;shackle.rotation.z=broken*.2;shackle.position.x=broken*.25;shackle.position.z=-broken*.35;shackle.position.y=.46-broken*.39;hole.visible=keyStem.visible=broken<.2;fadeSign(code,smooth(between(broken,.4,.7)));fadeSign(warning,smooth(between(q,4.25,4.6)));
   const breach=smooth(between(q,6.05,6.60));chunks.forEach((a,i)=>{const u=a.userData,push=smooth(between(q,6.05,6.28)),fall=smooth(between(q,6.22,6.60));a.position.set(mix(4,5.5+(i%3)*1.08,push),mix(u.y,.081,fall),u.z);a.rotation.set(fall*Math.PI/2,(1-fall)*Math.PI/2,fall*((i%3)-1)*.02);});
