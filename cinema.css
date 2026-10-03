@@ -50,3 +50,5 @@ article.caption.opening{left:0;right:0;top:0;bottom:0;max-width:none;text-align:
 .caption[data-scrim]::before{content:'';position:absolute;inset:-70px -120px -60px -120px;z-index:-1;background:radial-gradient(closest-side,#0a1511c4 0%,#0a1511a6 48%,#0a151150 78%,transparent 100%);pointer-events:none}
 /* Hallway beats (bright walls): a tighter, darker halo instead of a scrim keeps white type legible. */
 .caption[data-beat="7"],.caption[data-beat="8"]{text-shadow:0 1px 2px #0b1812,0 2px 14px #10211a,0 0 34px #13231acc}
+
+#copy-brief[hidden],#brief-fallback[hidden]{display:none}

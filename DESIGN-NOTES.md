@@ -62,6 +62,12 @@ That pass validates 111 authored IDs, no missing local anchors, and all 26 direc
 
 ## Interaction and access
 
+The subsequent reading pass puts all three question answers in the HTML, verbatim from the earlier field essay, and shares one enhancement script between the story and the preserved essay. Without that script, all three answers remain visible. With it, pointer and keyboard tabs select one panel at a time. A native link opens the brief when scripts are unavailable; the copy button appears only after its handler is attached. The grove description now names its inherited Bodhi and Codex residents accurately.
+
+That pass checks ordinary pointer selection and Arrow/Home/End navigation, both pages with scripting disabled, native disclosure navigation to the brief, and a clipboard readback matching the displayed brief. Actual 390 and 320 px browser emulation shows no horizontal overflow in the updated question section; the preserved essay also fits at 320 px. The temporary overrides are cleared after review. Syntax and whitespace checks pass. The main page has 116 unique IDs and 33 unique local references; the essay has 38 IDs and 8 local references. No local anchor is missing and every checked local reference returns HTTP 200. No warning or error is captured in the reviewed normal main, essay, or compact run.
+
+An ordinary reload was observed using the new HTML with the earlier question script. The loaded script bytes were read back from the page to establish that mismatch. Content-hash queries on the changed styles and scripts make their version explicit; an ordinary reload then restores the enhanced controls. This is separate from the earlier debugger/base-style observation above.
+
 Native page scroll drives the reversible film. No wheel hijacking or autoplay audio. Stillness replaces camera travel with composed frames. System reduced-motion settings are respected, and offscreen or hidden canvas animation pauses. The afterword uses native disclosure elements. All story text remains available without JavaScript.
 
 Every grove resident can be picked up by pointer. With the canvas focused, Space selects a resident, arrows move them, and Space or Escape releases them. The next Space selection advances through the residents. The pause, seed and season controls provide alternatives to waiting for the ambient cycle.

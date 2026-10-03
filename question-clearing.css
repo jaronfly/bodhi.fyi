@@ -10,19 +10,21 @@
 .question-clearing .question-tabs button span:first-of-type{font:15px 'Geist',sans-serif;color:#F2EEE4}
 .question-clearing .question-tabs button span:last-of-type{margin-left:auto}
 .question-clearing .question-tabs button[aria-selected=true]{border-bottom-color:#8BCB8B;color:#8BCB8B}
-.question-clearing #question-panel{display:grid;grid-template-columns:1fr 1fr;gap:9%;min-height:350px;padding-top:56px}
-.question-clearing #question-panel h3{font:32px/1.15 'Newsreader',Georgia,serif;margin:18px 0}
-.question-clearing #question-panel .question-note{font:italic 24px/1.4 'Newsreader',Georgia,serif}
+.question-clearing .question-panel{display:grid;grid-template-columns:1fr 1fr;gap:9%;min-height:350px;padding-top:56px}
+.question-clearing .question-panel h3{font:32px/1.15 'Newsreader',Georgia,serif;margin:18px 0}
+.question-clearing .question-panel .question-note{font:italic 24px/1.4 'Newsreader',Georgia,serif}
+.question-clearing .question-tabs[hidden],.question-clearing .question-panel[hidden]{display:none}
+.question-clearing:not(.questions-ready) .question-panel + .question-panel{border-top:1px solid #516151}
 .question-clearing .question-diagram{align-self:center;min-height:160px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:16px;font:11px 'Geist Mono',monospace}
 .question-clearing .diagram-node{padding:18px 12px;border-block:1px solid #5b7453;background:#17231bd9}
 .question-clearing .diagram-arrow{color:#8BCB8B}
 .question-clearing :is(button,[tabindex]):focus-visible{outline:2px solid #8BCB8B;outline-offset:6px}
 @media(max-width:700px){
  .question-clearing{padding:80px 24px 70px}
- .question-clearing .opening-grid,.question-clearing #question-panel{grid-template-columns:1fr;gap:30px}
+ .question-clearing .opening-grid,.question-clearing .question-panel{grid-template-columns:1fr;gap:30px}
  .question-clearing .opening-grid{margin-bottom:40px}
  .question-clearing .question-tabs{grid-template-columns:1fr}
  .question-clearing .question-tabs button{padding:20px 0;font-size:11px}
- .question-clearing #question-panel{min-height:480px;padding-top:34px}
+ .question-clearing .question-panel{min-height:480px;padding-top:34px}
  .question-clearing .question-diagram{min-height:110px}
 }

@@ -1,6 +1,40 @@
-/* The three questions, carried verbatim from Astra's field essay. */
-(()=>{
-const qData={capability:{label:'CAPABILITY & IMPROVEMENT',title:'A better result is something we can test.',body:'Better instructions, better tools, and lessons from past attempts can change a result. A system improving the machinery of its own improvement is a further claim. It needs its own evidence.',note:'A useful habit: change one thing. Keep the comparison.',nodes:['TRY','CHECK','REVISE']},consciousness:{label:'SUBJECTIVE EXPERIENCE',title:'Fluent words don’t settle what is felt.',body:'A machine can speak convincingly about an inner life. That alone does not establish one. We can take the question seriously while keeping our uncertainty visible.',note:'Curiosity does not require a verdict.',nodes:['BEHAVIOR','?','EXPERIENCE']},alignment:{label:'GOALS, INCENTIVES & CONSEQUENCES',title:'Success according to whom?',body:'A system can satisfy a score and still miss the point. Ask what is being rewarded, whose interests are represented, and what happens when the honest answer is “I can’t.”',note:'The rule on the wall is part of the lesson.',nodes:['TASK','REWARD','BEHAVIOR']}};
-const tabs=[...document.querySelectorAll('[data-question]')];function selectQuestion(button){const data=qData[button.dataset.question];tabs.forEach(t=>{const chosen=t===button;t.setAttribute('aria-selected',String(chosen));t.tabIndex=chosen?0:-1;});document.getElementById('question-panel').setAttribute('aria-labelledby',button.id);['label','title','body','note'].forEach(key=>document.getElementById('question-'+key).textContent=data[key]);const diagram=document.getElementById('question-diagram');diagram.replaceChildren();data.nodes.forEach((node,i)=>{if(i){const arrow=document.createElement('span');arrow.className='diagram-arrow';arrow.textContent='→';diagram.append(arrow);}const span=document.createElement('span');span.className='diagram-node';span.textContent=node;diagram.append(span);});}
-tabs.forEach((button,i)=>{button.addEventListener('click',()=>selectQuestion(button));button.addEventListener('keydown',event=>{let next;if(event.key==='ArrowRight')next=(i+1)%tabs.length;if(event.key==='ArrowLeft')next=(i+tabs.length-1)%tabs.length;if(event.key==='Home')next=0;if(event.key==='End')next=tabs.length-1;if(next!==undefined){event.preventDefault();selectQuestion(tabs[next]);tabs[next].focus();}});});
+/* Enhance the three authored answers; the HTML remains the reading fallback. */
+(() => {
+  const section = document.getElementById('questions');
+  const tablist = section?.querySelector('.question-tabs');
+  if (!tablist) return;
+  const tabs = [...tablist.querySelectorAll('[data-question]')];
+  const panels = tabs.map(tab => document.getElementById(tab.getAttribute('aria-controls')));
+  if (!tabs.length || panels.some(panel => !panel)) return;
+
+  function selectQuestion(button) {
+    tabs.forEach((tab, i) => {
+      const chosen = tab === button;
+      tab.setAttribute('aria-selected', String(chosen));
+      tab.tabIndex = chosen ? 0 : -1;
+      panels[i].hidden = !chosen;
+    });
+  }
+
+  tabs.forEach((button, i) => {
+    panels[i].setAttribute('role', 'tabpanel');
+    panels[i].setAttribute('aria-labelledby', button.id);
+    panels[i].tabIndex = 0;
+    button.addEventListener('click', () => selectQuestion(button));
+    button.addEventListener('keydown', event => {
+      let next;
+      if (event.key === 'ArrowRight') next = (i + 1) % tabs.length;
+      if (event.key === 'ArrowLeft') next = (i + tabs.length - 1) % tabs.length;
+      if (event.key === 'Home') next = 0;
+      if (event.key === 'End') next = tabs.length - 1;
+      if (next !== undefined) {
+        event.preventDefault();
+        selectQuestion(tabs[next]);
+        tabs[next].focus();
+      }
+    });
+  });
+  selectQuestion(tabs[0]);
+  section.classList.add('questions-ready');
+  tablist.hidden = false;
 })();
