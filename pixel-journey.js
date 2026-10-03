@@ -125,7 +125,7 @@
     const sCss = clamp(Math.round(vw / 340), 2, 6), sDev = Math.max(1, Math.round(sCss * dpr));
     cssPer = sDev / dpr;
     W = Math.ceil((vw * dpr) / sDev); H = Math.ceil((vh * dpr) / sDev);
-    K = Math.min(1.25, H / 260); SZ = W > 300 ? 2 : 1;
+    K = Math.min(1.25, H / 260, W / 230); SZ = 2;
     canvas.width = W; canvas.height = H;
     canvas.style.width = W * cssPer + 'px'; canvas.style.height = H * cssPer + 'px';
     img = ctx.createImageData(W, H); buf = new Uint32Array(img.data.buffer);
@@ -404,7 +404,7 @@
           if (NIGHT > 0.6 && d === 0 && Math.abs(x - W * 0.74) < 6 && dith(x, Math.round(wave * 3), 0.5)) col = BONE; // moon on water
         } else {
           const dd = d - depthMax + wob;
-          col = d === depthMax && depthMax === 0 ? (beach ? GOLD : landColor(2)) : beach && dd < 6 ? (d < 3 ? GOLD : EARTHL) : dd < 9 ? EARTHL : dd < 40 ? EARTH : dd < 70 ? EARTHD : dd < 76 ? (dith(x, y, 0.5) ? EARTHD : ROCK) : dd < 96 ? (vnoise((x + camX) / 14 + dd / 30, 88) > 0.62 ? ROCK : UNDER) : dd < 100 ? WDEEP : (vnoise((x + camX) / 22, 89 + (dd >> 3)) > 0.55 ? MOSS : SOIL);
+          col = d === depthMax && depthMax === 0 ? (beach ? GOLD : landColor(2)) : beach && dd < 6 ? (d < 3 ? GOLD : EARTHL) : dd < 9 ? EARTHL : dd < 40 ? EARTH : dd < 70 ? EARTHD : dd < 76 ? (dith(x, y, 0.5) ? EARTHD : ROCK) : dd < 96 ? (vnoise((x + camX) / 14, 88) * 0.6 + vnoise(dd / 4, 87) * 0.4 > 0.6 ? ROCK : UNDER) : dd < 100 ? WDEEP : (vnoise((x + camX) / 22, 89) * 0.55 + vnoise(dd / 6, 86) * 0.45 > 0.62 ? UNDER : SOIL);
           if (dd >= 96 && dd < 100 && !still && dith(x, y, 0.15) && ((x + Math.round(wave * 8)) & 7) === 0) col = WMID; // an underground stream
           if (dd > 3 && hash(x + (camX | 0), y, 93) < 0.012) col = dd > 60 ? ROCK : LICHEN;
           if (depthMax === 0 && d < 2 && hash(x + (camX | 0), 0, 95) < 0.35) col = S.season % 4 > 2.9 ? BONE : CDK;
