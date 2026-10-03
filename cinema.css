@@ -40,7 +40,9 @@ article.caption.opening{left:0;right:0;top:0;bottom:0;max-width:none;text-align:
 
 .record-mark{background:transparent}
 
-/* QC pass: captions stay clear of the in-world signs. Beats 4-5 sit low on the right (the CODE RETRIEVED sign is on the left of frame); the surveillance beats get a soft scrim because the room is dense with screens. */
-.caption[data-beat="9"],.caption[data-beat="10"]{isolation:isolate}
-.caption[data-beat="9"]::before,.caption[data-beat="10"]::before{content:'';position:absolute;inset:-26px -70px -20px -50px;z-index:-1;background:radial-gradient(ellipse at 38% 50%,#050b09c8 0%,#050b0996 45%,transparent 76%);pointer-events:none}
-@media(min-width:601px){.caption[data-beat="4"],.caption[data-beat="5"]{left:auto;right:6vw;top:50%;max-width:530px}}
+/* QC pass: captions are composed per shot (CAPTION_PLACE in cinema.js sets position, width, alignment and scale inline). --cs scales the type for narrow calm spaces; data-scrim adds a soft shade only where a shot is busy behind the words. */
+.caption .whisper,.caption h1,.caption h2,.caption .subline{zoom:var(--cs,1)}
+.caption[data-scrim]{isolation:isolate}
+.caption[data-scrim]::before{content:'';position:absolute;inset:-70px -120px -60px -120px;z-index:-1;background:radial-gradient(closest-side,#0a1511c4 0%,#0a1511a6 48%,#0a151150 78%,transparent 100%);pointer-events:none}
+/* Hallway beats (bright walls): a tighter, darker halo instead of a scrim keeps white type legible. */
+.caption[data-beat="7"],.caption[data-beat="8"]{text-shadow:0 1px 2px #0b1812,0 2px 14px #10211a,0 0 34px #13231acc}

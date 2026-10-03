@@ -13,6 +13,34 @@ let still=reduced.matches, progress=0,targetProgress=0, beat=-1, raf=0, needsDra
 const shotAnchors=captions.map((_,i)=>document.getElementById('shot-'+String(i+1).padStart(2,'0')));
 function placeAnchors(){shotAnchors.forEach((a,i)=>a.style.top=((i===1?1.6:i+.35)/captions.length*(story.offsetHeight-innerHeight))+'px');}
 placeAnchors();
+// Captions are composed per shot, from one table: for each beat, where its block sits (l/r/t/b = offsets from the stage edges), how wide it may grow (w), its alignment (a), a size scale (s), and whether it needs a soft scrim (scrim:1).
+// d = desktop (1280x800 and wider), m = 600px and narrower (375x812). Each entry was composed against the frames the camera passes through during its beat: it sits in the calm space and clear of the subject (lock, signs, faces, monitors, window, car).
+// Beat 0 positions its task block (el:'.op-task'); the first line "you're awake." is centred by the opening CSS.
+const CAPTION_PLACE={
+ 0:{d:{el:'.op-task',r:'6vw',t:'50%',w:'min(26vw,360px)',a:'right'},m:{el:'.op-task',l:'24px',r:'24px',b:'14svh',w:'auto',a:'center'}},
+ 1:{d:{l:'5vw',t:'37%',w:'36vw',s:.92},m:{l:'24px',r:'24px',b:'15%'}},
+ 2:{d:{l:'4vw',t:'32%',w:'36vw',s:.74},m:{l:'24px',r:'24px',b:'15%'}},
+ 3:{d:{l:'5vw',t:'11%',w:'42vw',s:.8},m:{l:'24px',r:'24px',b:'15%'}},
+ 4:{d:{r:'6vw',t:'14%',w:'33vw',a:'right'},m:{l:'24px',r:'24px',b:'15%'}},
+ 5:{d:{r:'6vw',t:'16%',w:'33vw',a:'right'},m:{l:'24px',r:'24px',b:'15%'}},
+ 6:{d:{l:'6vw',t:'38%',w:'34vw'},m:{l:'24px',r:'24px',b:'15%'}},
+ 7:{d:{l:'6vw',t:'15%',w:'30vw',scrim:1},m:{l:'24px',r:'24px',b:'15%',scrim:1}},
+ 8:{d:{r:'4vw',t:'22%',w:'27vw',s:.78,scrim:1},m:{l:'24px',r:'24px',b:'15%',scrim:1}},
+ 9:{d:{l:'5vw',t:'12%',w:'30vw',s:.82},m:{l:'24px',r:'24px',b:'15%'}},
+ 10:{d:{l:'4vw',b:'8%',w:'36vw',s:.8,scrim:1},m:{l:'24px',r:'24px',b:'15%'}},
+ 11:{d:{l:'7vw',t:'12%',w:'40vw'},m:{l:'24px',r:'24px',b:'15%'}},
+ 12:{d:{r:'4vw',b:'8%',w:'40vw',s:.85,a:'right'},m:{l:'24px',r:'24px',b:'15%'}},
+ 13:{d:{l:'4vw',t:'12%',w:'30vw',s:.72},m:{l:'24px',r:'24px',b:'15%'}},
+ 14:{d:{l:'4vw',t:'16%',w:'26vw',s:.75},m:{l:'24px',r:'24px',b:'15%'}},
+ 15:{d:{l:'3.5vw',t:'30%',w:'21vw',s:.75},m:{l:'24px',r:'24px',t:'14%'}},
+ 16:{d:{l:'5vw',r:'5vw',t:'33%',a:'center'},m:{l:'24px',r:'24px',t:'34%',a:'left'}},
+ 17:{d:{l:'5vw',r:'5vw',t:'38%',a:'center'},m:{l:'24px',r:'24px',t:'42%',a:'center'}}
+};
+const narrow=matchMedia('(max-width:600px)');
+function placeCaptions(){const key=narrow.matches?'m':'d';captions.forEach((c,i)=>{const e=CAPTION_PLACE[i];if(!e)return;const p=e[key],t=p.el?c.querySelector(p.el):c;if(!t)return;
+ const st=t.style;st.left=p.l||'auto';st.right=p.r||'auto';st.top=p.t||'auto';st.bottom=p.b||'auto';st.width=p.w&&p.el?p.w:'';st.maxWidth=p.el?'':(p.w||'none');st.textAlign=p.a||'left';
+ if(p.el){st.maxWidth='none';}else{c.style.setProperty('--cs',p.s||1);if(p.scrim)c.dataset.scrim='1';else delete c.dataset.scrim;}});}
+narrow.addEventListener('change',placeCaptions);placeCaptions();
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const range=(t,a,b)=>clamp((t-a)/(b-a));
 const ease=t=>t*t*(3-2*t);
