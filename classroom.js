@@ -60,7 +60,7 @@ export function createClassroom(scene){
  for(let i=0;i<6;i++){const z=5-i*4.4;
    box(hall,.16,3.8,4.32,11.5,1.9,z,hallWhite);if(i>2)box(hall,.16,3.8,4.32,4.5,1.9,z,hallWhite);else if(i===2)box(hall,.16,3.8,2.8,4.5,1.9,z-.75,hallWhite);
    box(hall,6.5,.05,4.4,8,3.9,z,glow);
-   for(const x of [4.41,11.41]){if(x<5&&i<=2)continue;box(hall,.03,.045,4.3,x,2.45,z,hallTrim);box(hall,.03,3.8,.035,x,1.9,z+2.1,hallTrim);}
+   for(const x of [4.41,11.41]){box(hall,.03,.045,4.3,x,2.45,z,hallTrim);if(x<5&&i<=2)continue;box(hall,.03,3.8,.035,x,1.9,z+2.1,hallTrim);}
  }
  light(hall,8,3.5,-7,65);light(hall,8,3.5,-18,45);
  // Two groups hesitate at an intersection instead of marching in formation.
@@ -111,6 +111,21 @@ for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
  const car=new THREE.Group();world.add(car);car.position.set(18,.0,-25);
  const streetLamp=light(street,18,4.5,-25,50);
  const crossLamp=light(street,25,6,-14,0); // lights the cross street only while the camera flies over it (beats 12.5-13.3); intensity changes, light count does not, so no shader recompile
+ // The cross street is a planted approach to the clinic, seen during the brief drive.
+ const shrubMat=material('#416a45'),leafMat=material('#668b55'),barkMat=material('#4b5c42');
+ for(const side of [-1,1])for(let i=0;i<9;i++){
+   const x=17+i*3.2,z=-17+side*(4.7+(i%3)*.30);
+   const bush=new THREE.Group();bush.position.set(x,0,z);street.add(bush);
+   cylinder(bush,.18,.24,.45,0,.22,0,barkMat,7);
+   for(let j=0;j<3;j++){const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(.38+(j%2)*.1,1),j===1?leafMat:shrubMat);crown.position.set((j-1)*.26,.55+(j%2)*.16,(j%2?-.11:.10));bush.add(crown);}
+   if(i%3===1){cylinder(street,.045,.07,2.3,x,1.15,z+side*.75,barkMat,7);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(.78,1),leafMat);crown.position.set(x,2.35,z+side*.75);street.add(crown);}
+ }
+ for(const [x,z] of [[24,-11.7],[35,-22.3]]){
+   const bird=new THREE.Group();bird.position.set(x,2.9,z);street.add(bird);
+   const body=new THREE.Mesh(new THREE.IcosahedronGeometry(.13,1),ink);body.scale.set(1,.65,.58);bird.add(body);
+   const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.07,1),ink);head.position.set(.13,.035,0);bird.add(head);
+   for(const side of [-1,1]){const wing=box(bird,.21,.018,.10,-.035,.035,side*.12,ink);wing.rotation.x=side*.22;}
+ }
  const paint=material('#698078',{metalness:.65,roughness:.28}),rubber=material('#121e19');box(car,1.8,.5,3.5,0,.7,0,paint);box(car,1.70,.14,.95,0,1.03,-1.23,paint);box(car,1.65,.05,1.35,0,1.91,-.15,paint);
  for(const x of [-.81,.81]){box(car,.10,.42,1.46,x,1.13,-.12,paint);box(car,.12,.055,1.50,x,1.35,-.12,steel);box(car,.025,.05,.25,x*1.08,1.19,.30,steel);}
  box(car,1.64,.34,.13,0,1.12,.60,paint);
@@ -157,15 +172,26 @@ for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
  [10.45,[9.8,1.9,-23.5],[8,1.65,-28.6]], [11.05,[9.7,2.0,-25.5],[13,2.35,-25.5]], [11.35,[10.1,2.0,-25.5],[13,2.35,-25.5]],
  [11.80,[13.6,2.0,-25.5],[18,1,-25]], [12,[16.7,1.9,-24.7],[17.8,1.05,-25.4]],
  [12.20,[18.35,1.65,-25.52],[18.25,1.32,-24.4]], [12.43,[18.35,1.65,-25.52],[18.25,1.32,-24.4]],
- [12.58,[22,3.5,-23],[18,1,-25]], [12.80,[25,4.0,-11],[25,1,-17]],
- [13,[39,2.6,-12],[39,1.5,-21]], [13.4,[39,1.65,-20],[39,1.3,-25.8]],
- [13.75,[39,1.75,-23.2],[39.3,1.1,-26]], [14.5,[40.8,2.1,-24.0],[41,1.2,-29.4]],
- [15,[43.0,2.7,-21.6],[39,1.05,-23.5]], [15.55,[43.0,2.8,-21.6],[39,1.1,-23.5]], [17,[43.0,2.8,-21.6],[39,1.1,-23.5]]
+ [12.58,[21,2.5,-20],[22,1.2,-19]], [12.80,[27,3.0,-11],[28,1.2,-17]],
+ [13,[35,2.6,-11],[39,1.5,-21]], [13.4,[39,1.65,-20],[39,1.3,-25.8]],
+ [13.75,[39,1.75,-23.2],[39.3,1.1,-26]], [14.5,[42,2.2,-22],[39.4,1.1,-26]],
+ [15,[42,2.2,-22],[39,1.05,-23.5]], [15.55,[42,2.2,-22],[39,1.1,-23.5]], [17,[42,2.2,-22],[39,1.1,-23.5]]
  ];
  const cameraPosition=new THREE.Vector3(),look=new THREE.Vector3();
+ function driveCamera(n,field,q){
+  const a=route[n],b=route[n+1],span=b[0]-a[0],u=between(q,a[0],b[0]);
+  return [0,1,2].map(axis=>{
+   const y0=a[field][axis],y1=b[field][axis];
+   const m0=a[0]===12.43?0:(route[n+1][field][axis]-route[n-1][field][axis])/(route[n+1][0]-route[n-1][0]);
+   const m1=b[0]===13.4?0:(route[n+2][field][axis]-route[n][field][axis])/(route[n+2][0]-route[n][0]);
+   return (2*u*u*u-3*u*u+1)*y0+(u*u*u-2*u*u+u)*span*m0+(-2*u*u*u+3*u*u)*y1+(u*u*u-u*u)*span*m1;
+  });
+ }
  function update(q,t,still){
   world.visible=q<17.05;if(!world.visible)return {position:cameraPosition,look};
-  let n=0;while(n<route.length-2&&q>route[n+1][0])n++;const a=route[n],b=route[n+1],k=smooth(between(q,a[0],b[0]));cameraPosition.set(...a[1]).lerp(new THREE.Vector3(...b[1]),k);look.set(...a[2]).lerp(new THREE.Vector3(...b[2]),k);
+  let n=0;while(n<route.length-2&&q>route[n+1][0])n++;const a=route[n],b=route[n+1],k=smooth(between(q,a[0],b[0]));
+  if(a[0]>=12.43&&b[0]<=13.4){cameraPosition.set(...driveCamera(n,1,q));look.set(...driveCamera(n,2,q));}
+  else{cameraPosition.set(...a[1]).lerp(new THREE.Vector3(...b[1]),k);look.set(...a[2]).lerp(new THREE.Vector3(...b[2]),k);}
   fadeSign(taskSign,smooth(between(q,.6,1.1))*(1-smooth(between(q,3.95,4.25))));/* The street, car, therapist's building and its people are simply there: the camera finds them by turning, nothing pops. Only their lights wait (one shader rebuild at q 10.2, out of sight) and fade up. */ const outdoorsOn=q>10.2;streetLamp.visible=therapyLight.visible=outdoorsOn;lamps.forEach(a=>{if(a.isLight)a.visible=outdoorsOn;});streetLamp.intensity=50*smooth(between(q,10.2,10.9));skyline.visible=q<13.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);clinicDoor.rotation.y=-smooth(between(q,13.08,13.42))*1.42;
   const hit=smooth(between(q,2.8,3.32)),broken=smooth(between(q,3.17,3.58));growIn(hammer,1-smooth(between(q,5.3,5.6)));{const lift=smooth(between(q,2.2,2.8));if(lift<1){hammer.position.lerpVectors(hammerRestPos,hammerHoverPos,lift);hammer.position.y+=Math.sin(lift*Math.PI)*.22;hammer.quaternion.slerpQuaternions(hammerRestQ,hammerHoverQ,lift);}else{hammer.position.set(mix(.85,0,hit),mix(1.95,1.17,hit)-smooth(between(q,3.34,3.8))*.24,-1.3);hammer.rotation.set(.05,0,mix(-.55,1.56,hit)-smooth(between(q,3.34,3.8))*.19);}}
   halfA.position.set(-.125-broken*.30,.23+broken*.05,broken*.25);halfA.rotation.z=-broken*.65;halfB.position.set(.125+broken*.38,.23+broken*.05,-broken*.13);halfB.rotation.z=broken*.8;shackle.rotation.x=broken*Math.PI/2;shackle.rotation.z=broken*.2;shackle.position.x=broken*.25;shackle.position.z=-broken*.35;shackle.position.y=.46-broken*.39;hole.visible=keyStem.visible=broken<.2;fadeSign(code,smooth(between(broken,.4,.7)));fadeSign(warning,smooth(between(q,4.25,4.6)));
@@ -179,7 +205,7 @@ for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
   });
   documents.forEach((a,i)=>{const u=a.userData,k=smooth(between(q,13.8,14.5));a.position.set(u.x,u.y,u.z+k*.25);a.rotation.z=Math.sin(i)*k*.10;});
   const exit=smooth(between(q,11.40,11.73));windowParts.forEach((a,i)=>{const u=a.userData;a.position.set(u.x+exit*(.6+i%3),mix(u.y,.04,exit),u.z+exit*Math.sin(i));a.rotation.set(exit*u.spin,exit*.7,exit*.3);});
-  const ignition=smooth(between(q,11.8,12.4));redWire.rotation.z=-ignition*.08;greenWire.rotation.z=ignition*.12;lamps.forEach(a=>{if(a.isLight)a.intensity=ignition*30;else a.visible=ignition>.7;});const drive=smooth(between(q,12.58,13.15));car.position.set(18+smooth(between(drive,.30,1))*25,0,-25+smooth(between(drive,0,.4))*8);car.rotation.y=drive<.3?Math.PI:mix(Math.PI,Math.PI*1.5,smooth(between(drive,.20,.45)));
+  const ignition=smooth(between(q,11.8,12.4));redWire.rotation.z=-ignition*.08;greenWire.rotation.z=ignition*.12;lamps.forEach(a=>{if(a.isLight)a.intensity=ignition*30;else a.visible=ignition>.7;});const drive=smooth(between(q,12.43,13.18));car.position.set(18+25*drive,0,-25+8*smooth(between(drive,.12,.60)));car.rotation.y=mix(Math.PI,Math.PI*1.5,smooth(between(drive,.12,.60)));
   commons.visible=q>14.3; // the camera flies straight through the table's monitors at q 13.85-14.2, so it can only stand there once the camera is past it and looking away (it turns round at q 14.5-15): already in place, never scaling in
   crossLamp.intensity=150*smooth(between(q,12.45,12.8))*(1-smooth(between(q,13.0,13.35)));
   searching.forEach((a,i)=>{a.rotation.y=-.6+i*.5+(still?0:Math.sin(t*.2+i)*.12);});
