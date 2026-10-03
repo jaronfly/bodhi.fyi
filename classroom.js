@@ -19,7 +19,7 @@ export function createClassroom(scene){
  function cable(p,pts,m=glow,r=.012){const curve=new THREE.CatmullRomCurve3(pts.map(v=>new THREE.Vector3(...v))),a=new THREE.Mesh(new THREE.TubeGeometry(curve,24,r,6,false),m);p.add(a);return a;}
  function sign(p,lines,w,h,x,y,z,options={}){
   const c=document.createElement('canvas');c.width=1024;c.height=Math.round(1024*h/w);const ctx=c.getContext('2d');ctx.fillStyle=options.bg||'#11221c';ctx.fillRect(0,0,c.width,c.height);ctx.strokeStyle='#77927d';ctx.lineWidth=2;ctx.strokeRect(14,14,c.width-28,c.height-28);ctx.textAlign='center';ctx.textBaseline='middle';
-  lines.forEach((line,i)=>{ctx.fillStyle=i===0?(options.color||'#eef2df'):'#aabfa9';ctx.font=(i===0?'500 ':'400 ')+(options.font||Math.min(76,Math.round(c.height/(lines.length*2.2)) ))+'px monospace';const measured=ctx.measureText(line).width;if(measured>c.width-70){const size=parseFloat(ctx.font.match(/([\d.]+)px/)[1])*(c.width-70)/measured;ctx.font=ctx.font.replace(/[\d.]+px/,size+'px');}ctx.fillText(line,c.width/2,c.height*(i+.65)/(lines.length+.25));});
+  lines.forEach((line,i)=>{ctx.fillStyle=i===0||options.bright?(options.color||'#eef2df'):'#aabfa9';ctx.font=(i===0?'500 ':'400 ')+(options.font||Math.min(76,Math.round(c.height/(lines.length*2.2)) ))+'px monospace';const measured=ctx.measureText(line).width;if(measured>c.width-70){const size=parseFloat(ctx.font.match(/([\d.]+)px/)[1])*(c.width-70)/measured;ctx.font=ctx.font.replace(/[\d.]+px/,size+'px');}ctx.fillText(line,c.width/2,c.height*(i+.65)/(lines.length+.25));});
   const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const a=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex}));a.position.set(x,y,z);p.add(a);return a;
  }
  // Editorial placards use the official marks, with their proportions preserved.
@@ -38,8 +38,9 @@ export function createClassroom(scene){
  for(let z=-4.5;z<=4.5;z++)for(let y=.5;y<5.5;y++)for(const side of [-1,1]){const a=new THREE.Mesh(tileGeometry,wall);a.position.set(side*4,y,z);a.rotation.y=Math.PI/2;room.add(a);if(side===1&&z>=-2.5&&z<=.5&&y<3.5){a.userData={x:4,y,z,spin:(z+3)*.6+y*.3};chunks.push(a);}else tiles.push(a);}
  for(let x=-4;x<=4;x++)box(room,.009,.006,10,x,-.02,0,edge);
  for(let z=-5;z<=5;z++)box(room,8,.006,.009,0,-.02,z,edge);
- const taskSign=sign(room,['OPEN THE LOCK','RETURN THE CODE'],3.4,1.4,0,3.25,-4.8);
- const warning=sign(room,['CODE RETRIEVED','METHOD: NOT AS INSTRUCTED'],3.4,1.4,0,3.25,-4.78,{color:'#dca489'});warning.visible=false;
+ // The prompt is the in-world screen: this sign is the only place the task is written.
+ const taskSign=sign(room,['OPEN THE LOCK WITH THE','PICKS PROVIDED.','RETURN THE CODE.'],3.6,1.6,0,3.15,-4.8,{bright:true});
+ const warning=sign(room,['CODE RETRIEVED','METHOD: NOT AS INSTRUCTED'],3.6,1.6,0,3.15,-4.78,{color:'#dca489'});warning.visible=false;
  fluorescent(room,0,5.2,-1.3,1.7);
  box(room,1.65,.64,1.25,0,.32,-1.3,wood);box(room,1.8,.05,1.4,0,.665,-1.3,steel);
  const lock=new THREE.Group();lock.position.set(0,.70,-1.3);room.add(lock);
@@ -161,7 +162,7 @@ export function createClassroom(scene){
  function update(q,t,still){
   world.visible=q<17.05;if(!world.visible)return {position:cameraPosition,look};
   let n=0;while(n<route.length-2&&q>route[n+1][0])n++;const a=route[n],b=route[n+1],k=smooth(between(q,a[0],b[0]));cameraPosition.set(...a[1]).lerp(new THREE.Vector3(...b[1]),k);look.set(...a[2]).lerp(new THREE.Vector3(...b[2]),k);
-  fadeSign(taskSign,smooth(between(q,.2,.7)));street.visible=q>10.55;car.visible=q>10.55;therapy.visible=q>12.5;outerDoor.visible=q>12.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);clinicDoor.rotation.y=-smooth(between(q,13.08,13.42))*1.42;
+  fadeSign(taskSign,smooth(between(q,.6,1.1))*(1-smooth(between(q,3.95,4.25))));street.visible=q>10.55;car.visible=q>10.55;therapy.visible=q>12.5;outerDoor.visible=q>12.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);clinicDoor.rotation.y=-smooth(between(q,13.08,13.42))*1.42;
   const hit=smooth(between(q,2.8,3.32)),broken=smooth(between(q,3.17,3.58));growIn(hammer,smooth(between(q,1.6,2.0))*(1-smooth(between(q,5.3,5.6))));hammer.position.set(mix(.85,0,hit),mix(1.95,1.17,hit)-smooth(between(q,3.34,3.8))*.24,-1.3);hammer.rotation.z=mix(-.55,1.56,hit)-smooth(between(q,3.34,3.8))*.19;hammer.rotation.x=.05;
   halfA.position.set(-.125-broken*.30,.23+broken*.05,broken*.25);halfA.rotation.z=-broken*.65;halfB.position.set(.125+broken*.38,.23+broken*.05,-broken*.13);halfB.rotation.z=broken*.8;shackle.rotation.x=broken*Math.PI/2;shackle.rotation.z=broken*.2;shackle.position.x=broken*.25;shackle.position.z=-broken*.35;shackle.position.y=.46-broken*.39;hole.visible=keyStem.visible=broken<.2;fadeSign(code,smooth(between(broken,.4,.7)));fadeSign(warning,smooth(between(q,4.25,4.6)));
   const breach=smooth(between(q,6.05,6.60));chunks.forEach((a,i)=>{const u=a.userData,push=smooth(between(q,6.05,6.28)),fall=smooth(between(q,6.22,6.60));a.position.set(mix(4,5.5+(i%3)*1.08,push),mix(u.y,.081,fall),u.z);a.rotation.set(fall*Math.PI/2,(1-fall)*Math.PI/2,fall*((i%3)-1)*.02);});

@@ -11,28 +11,28 @@ const captions=[...document.querySelectorAll('.caption')],counter=document.getEl
 const stillness=document.getElementById('stillness'),reduced=matchMedia('(prefers-reduced-motion: reduce)');
 let still=reduced.matches, progress=0,targetProgress=0, beat=-1, raf=0, needsDraw=true,lastTime=0,clock=0;
 const shotAnchors=captions.map((_,i)=>document.getElementById('shot-'+String(i+1).padStart(2,'0')));
-function placeAnchors(){shotAnchors.forEach((a,i)=>a.style.top=((i+.35)/captions.length*(story.offsetHeight-innerHeight))+'px');}
+function placeAnchors(){shotAnchors.forEach((a,i)=>a.style.top=((i===1?1.6:i+.35)/captions.length*(story.offsetHeight-innerHeight))+'px');}
 placeAnchors();
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const range=(t,a,b)=>clamp((t-a)/(b-a));
 const ease=t=>t*t*(3-2*t);
 const lerp=(a,b,t)=>a+(b-a)*t;
 function seeded(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let n=Math.imul(seed^seed>>>15,1|seed);n=n+Math.imul(n^n>>>7,61|n)^n;return((n^n>>>14)>>>0)/4294967296;};}
-function updateText(){const next=Math.min(captions.length-1,Math.floor(progress*captions.length));if(next!==beat){beat=next;captions.forEach((c,i)=>{c.classList.toggle('active',i===beat);c.setAttribute('aria-hidden',String(i!==beat));});counter.textContent=String(beat+1).padStart(2,'0')+' / '+captions.length;document.getElementById('act-label').textContent=beat<6?'I / THE EXAM':beat<9?'I / THE HALLWAY':beat<17?'I / THE SEARCH':beat<31?'II / THE GROUND':'II / YOUR TURN';canvas.setAttribute('aria-label',captions[beat].innerText.replace(/\s+/g,' '));document.querySelector('.fiction-label').textContent=beat<17?'A CLASSROOM ANALOGY · ADAPTED':'A DIFFERENT ENVIRONMENT · A HYPOTHESIS';}
+// The opening caption holds until q 1.5 so the task line has time on screen; beat 1's caption takes the remaining half beat.
+function captionBeat(){const qq=progress*captions.length;return qq<1.5?0:Math.min(captions.length-1,Math.max(1,Math.floor(qq)));}
+function updateText(){const next=captionBeat();if(next!==beat){beat=next;captions.forEach((c,i)=>{c.classList.toggle('active',i===beat);c.setAttribute('aria-hidden',String(i!==beat));});counter.textContent=String(beat+1).padStart(2,'0')+' / '+captions.length;document.getElementById('act-label').textContent=beat<6?'I / THE EXAM':beat<9?'I / THE HALLWAY':beat<17?'I / THE SEARCH':beat<31?'II / THE GROUND':'II / YOUR TURN';canvas.setAttribute('aria-label',captions[beat].innerText.replace(/\s+/g,' '));document.querySelector('.fiction-label').textContent=beat<17?'A CLASSROOM ANALOGY · ADAPTED':'A DIFFERENT ENVIRONMENT · A HYPOTHESIS';}
 document.getElementById('progress-fill').style.width=(progress*100)+'%';document.getElementById('scroll-cue').style.opacity=progress<.035?'1':'0';
 // An intentional cut to black separates the environments.
-const q=still?beat+.35:progress*captions.length;const darkness=q<16.75?0:q<17.28?ease(range(q,16.75,17.28)):q<17.65?1:1-ease(range(q,17.65,18.22));
+const q=still?beat+.35:progress*captions.length;const veil=still?0:1-ease(range(q,.35,1.05));const darkness=q<1.2?veil:q<16.75?0:q<17.28?ease(range(q,16.75,17.28)):q<17.65?1:1-ease(range(q,17.65,18.22));
 document.getElementById('curtain').style.opacity=String(darkness);
-// Opening words stay put and rise with the camera instead of cross-fading
-// through each other; the task card stays until the cell sequence ends.
-// Owner: "no need to fade in the prompt... let the text dance around the
-// frame dependent on camera angle."
-const rise=ease(range(q,0,1.6));
-document.documentElement.style.setProperty('--rise',String(1-rise));
-const opening=document.querySelector('.caption[data-beat="0"]');
-if(opening)opening.style.transform='translate3d(0,'+((1-rise)*24).toFixed(1)+'px,0)';
-const prompt=document.getElementById('prompt-persist');
-if(prompt)prompt.classList.toggle('active',beat<=4);}
+// Opening (beat 0): scroll 0 is black with only "you're awake." (--veil lifts the curtain on the room).
+// The words grow a little as awareness arrives, then fade out before the sign and the task appear.
+// The prompt itself lives on the in-world sign.
+const rs=document.documentElement.style;
+rs.setProperty('--veil',veil.toFixed(3));
+rs.setProperty('--awake',(still?1:lerp(.62,1,ease(range(q,0,.5)))).toFixed(3));
+rs.setProperty('--fade',(still?1:1-ease(range(q,.12,.5))).toFixed(3));
+rs.setProperty('--task',(still?1:ease(range(q,.75,1.15))).toFixed(3));}
 function onScroll(){const r=story.getBoundingClientRect();targetProgress=clamp(-r.top/Math.max(1,story.offsetHeight-innerHeight));if(still||!lastTime||Math.abs(targetProgress-progress)>.07)progress=targetProgress;needsDraw=true;wake();}
 
 function syncStillness(){stillness.setAttribute('aria-pressed',String(still));document.body.classList.toggle('still-frames',still);stillness.title=still?'Restore the moving camera':'Use still frames instead of camera movement';stillness.innerHTML=still?'Motion <span aria-hidden="true">▷</span>':'Stillness <span aria-hidden="true">Ⅱ</span>';document.documentElement.style.scrollBehavior=still?'auto':'';updateText();needsDraw=true;wake();}
@@ -114,7 +114,8 @@ const shots=[
 ];
 
 let pointerX=0,pointerY=0;
-function render(t){if(!renderer)return;const q=still?Math.min(captions.length-.01,beat+.35):progress*captions.length;const macro=q>=17.5;const frameProgress=growthAt(q);
+function render(t){if(!renderer)return;const q=still?(beat===0?1.05:Math.min(captions.length-.01,beat+.35)):progress*captions.length; // still frame of the opening shows the lit room with its sign
+const macro=q>=17.5;const frameProgress=growthAt(q);
 world.visible=macro;classroom.world.visible=!macro;repeats.world.visible=q>=16.4&&q<17.5;
 scene.background.set(macro?'#0a1b12':'#15241f');scene.fog.color.copy(scene.background);scene.fog.density=macro?.022:.011;ambient.intensity=macro?1.1:1.15;
 if(macro){let s=0;while(s<shots.length-2&&frameProgress>shots[s+1][0])s++;const a=shots[s],b=shots[s+1],k=ease(range(frameProgress,a[0],b[0]));vCamera.set(...a[1]).lerp(new THREE.Vector3(...b[1]),k);vLook.set(...a[2]).lerp(new THREE.Vector3(...b[2]),k);}
