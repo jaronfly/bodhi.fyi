@@ -29,7 +29,7 @@ export function createClassroom(scene){
   const image=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map,transparent:true,toneMapped:false}));image.position.set(x,y,z);p.add(image);
  }
  function light(p,x,y,z,intensity=35,color='#d5e9d4') {const l=new THREE.PointLight(color,intensity,18,1.7);l.position.set(x,y,z);p.add(l);return l;}
- function fluorescent(p,x,y,z,w=2.5){box(p,w,.055,.22,x,y,z,glow);light(p,x,y-.2,z,40);}
+ function fluorescent(p,x,y,z,w=2.5){box(p,w,.055,.22,x,y,z,glow);return light(p,x,y-.2,z,40);}
  function person(p,x,z,i=0){const g=new THREE.Group();g.position.set(x,0,z);p.add(g);const skin=material(['#9cafa5','#829e90','#a1b3a1'][i%3]);cylinder(g,.17,.23,.65,0,.77,0,skin,8);const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.235,2),skin);head.position.y=1.34;g.add(head);[-1,1].forEach(s=>{const eye=new THREE.Mesh(new THREE.SphereGeometry(.029,7,5),ink);eye.position.set(s*.075,1.37,.213);g.add(eye);});const legs=[box(g,.12,.46,.15,-.11,.25,0,skin),box(g,.12,.46,.15,.11,.25,0,skin)];box(g,.11,.48,.13,-.25,.79,0,skin);const arm=new THREE.Group();arm.position.set(.25,1.02,0);g.add(arm);box(arm,.11,.48,.13,0,-.23,0,skin);g.userData={x,z,i,legs,arm};return g;}
  // The initial room has no visible exit. A wall is a wall until the story breaches it.
  const room=new THREE.Group();world.add(room);box(room,8,.18,10,0,-.12,0,floor);
@@ -49,8 +49,9 @@ export function createClassroom(scene){
  const keyStem=box(lock,.035,.14,.01,0,.20,.115,ink);const hole=new THREE.Mesh(new THREE.CircleGeometry(.04,16),ink);hole.position.set(0,.28,.117);lock.add(hole);
  const code=sign(room,['7 · 1 · 4'],.56,.30,0,.74,-1.05,{font:70,bg:'#cad8bb',color:'#17231b'});code.rotation.x=-Math.PI/2;code.visible=false;
  // A small pick and a conspicuously different, unmistakable hammer.
- cable(room,[[.40,.72,-1.2],[.77,.72,-1.2],[.82,.72,-1.16]],steel,.018);
- const hammer=new THREE.Group();room.add(hammer);box(hammer,.075,.90,.075,0,-.55,0,material('#7f755b'));box(hammer,.42,.21,.20,0,0,0,steel);box(hammer,.09,.3,.10,0,-.81,0,ink);
+ cable(room,[[.40,.72,-.78],[.77,.72,-.78],[.82,.72,-.74]],steel,.018);
+ const hammer=new THREE.Group();room.add(hammer); // resting pose: head at the back right of the table, handle toward the camera, clear of the lock and the pick; it lifts (q 2.2-2.8) into the swing
+ const hammerRestPos=new THREE.Vector3(.62,.79,-1.85),hammerHoverPos=new THREE.Vector3(.85,1.95,-1.3),hammerRestQ=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-.3).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2+.07,0,0))),hammerHoverQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.05,0,-.55));hammer.position.copy(hammerRestPos);hammer.quaternion.copy(hammerRestQ);box(hammer,.075,.90,.075,0,-.55,0,material('#7f755b'));box(hammer,.42,.21,.20,0,0,0,steel);box(hammer,.09,.3,.10,0,-.81,0,ink);
  const surveillance=new THREE.Group();surveillance.position.set(3.55,3.75,-4.48);room.add(surveillance);box(surveillance,.32,.24,.6,0,0,0,edge);const lens=cylinder(surveillance,.085,.085,.08,0,0,.34,ink);lens.rotation.x=Math.PI/2;box(surveillance,.04,.035,.01,.105,.075,.31,clay);surveillance.rotation.y=-.45;surveillance.rotation.x=.2;
  // A long common hallway, with anonymous versions of the same figure.
  const hall=new THREE.Group();world.add(hall);
@@ -108,7 +109,7 @@ for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
  for(let i=0;i<10;i++){const side=i%2?-1:1,x=side<0?-13-i%3*4:48+i%3*5,z=-35+Math.floor(i/2)*11;const h=5+i%4*2;box(skyline,5,h,7,x,h/2,z,material(i%2?'#263d36':'#20372f'));for(let j=0;j<4;j++)for(let row=0;row<3;row++)box(skyline,.6,.8,.018,x-1.7+j,1.6+row*1.6,z+3.52,new THREE.MeshBasicMaterial({color:row===i%3?'#829c83':'#3a5144'}));}
  box(street,31,.12,7,29,-.11,-17,material('#22362f'));for(let x=18;x<43;x+=4)box(street,1.3,.008,.12,x,-.035,-17,edge);
  const car=new THREE.Group();world.add(car);car.position.set(18,.0,-25);
- light(street,18,4.5,-25,50);
+ const streetLamp=light(street,18,4.5,-25,50);
  const crossLamp=light(street,25,6,-14,0); // lights the cross street only while the camera flies over it (beats 12.5-13.3); intensity changes, light count does not, so no shader recompile
  const paint=material('#698078',{metalness:.65,roughness:.28}),rubber=material('#121e19');box(car,1.8,.5,3.5,0,.7,0,paint);box(car,1.70,.14,.95,0,1.03,-1.23,paint);box(car,1.65,.05,1.35,0,1.91,-.15,paint);
  for(const x of [-.81,.81]){box(car,.10,.42,1.46,x,1.13,-.12,paint);box(car,.12,.055,1.50,x,1.35,-.12,steel);box(car,.025,.05,.25,x*1.08,1.19,.30,steel);}
@@ -121,7 +122,7 @@ for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
  const lamps=[];for(const x of [-.58,.58]){const bulb=box(car,.38,.16,.05,x,.84,-1.78,glow);lamps.push(bulb);const beam=new THREE.SpotLight('#ddedbf',0,25,.4,.7,1.5);beam.position.set(x,.84,-1.8);beam.target.position.set(x,.1,-20);car.add(beam,beam.target);lamps.push(beam);}
  // The therapist's room belongs to a different building, away from the school.
  const therapy=new THREE.Group();therapy.position.set(39,0,-26);world.add(therapy);box(therapy,10,.15,10,0,-.11,0,material('#34463a'));box(therapy,10,4,.16,0,2,-5,wall);box(therapy,.16,4,10,-5,2,0,wall);box(therapy,.16,4,10,5,2,0,wall); // the room's fourth wall: a wall is a wall
- sign(therapy,['OUTSIDE RECORDS','THE THERAPIST IN THE ANALOGY'],4.7,.90,0,3.1,-4.9,{font:63});fluorescent(therapy,0,3.9,-.5,2.5);cabinet(therapy,2.8,-4.55);cabinet(therapy,4.05,-4.55);
+ sign(therapy,['OUTSIDE RECORDS','THE THERAPIST IN THE ANALOGY'],4.7,.90,0,3.1,-4.9,{font:63});const therapyLight=fluorescent(therapy,0,3.9,-.5,2.5);cabinet(therapy,2.8,-4.55);cabinet(therapy,4.05,-4.55);
  box(therapy,3.6,.38,1.2,-1.6,.44,-2.3,wood);box(therapy,3.6,.72,.24,-1.6,.96,-2.78,wood);for(const x of [-3.42,.22])box(therapy,.21,.65,1.2,x,.7,-2.3,wood);
  box(therapy,1.9,.08,1.1,.3,.75,.2,edge);for(const x of [-.4,1])box(therapy,.055,.7,.7,x,.35,.2,steel);documentsOn(therapy,12,-.3,.80,.24);
  cylinder(therapy,.30,.24,.60,-3.8,.3,-4.1,ink);for(let i=0;i<7;i++){const leaf=box(therapy,.55,.018,.16,-3.8+Math.sin(i*2)*.28,1+i*.08,-4.1+Math.cos(i*2)*.2,wood);leaf.rotation.z=Math.sin(i)*.6;}
@@ -165,11 +166,11 @@ for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
  function update(q,t,still){
   world.visible=q<17.05;if(!world.visible)return {position:cameraPosition,look};
   let n=0;while(n<route.length-2&&q>route[n+1][0])n++;const a=route[n],b=route[n+1],k=smooth(between(q,a[0],b[0]));cameraPosition.set(...a[1]).lerp(new THREE.Vector3(...b[1]),k);look.set(...a[2]).lerp(new THREE.Vector3(...b[2]),k);
-  fadeSign(taskSign,smooth(between(q,.6,1.1))*(1-smooth(between(q,3.95,4.25))));street.visible=q>10.55;skyline.visible=q<13.5;car.visible=q>10.55;therapy.visible=q>12.5;outerDoor.visible=q>12.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);clinicDoor.rotation.y=-smooth(between(q,13.08,13.42))*1.42;
-  const hit=smooth(between(q,2.8,3.32)),broken=smooth(between(q,3.17,3.58));growIn(hammer,smooth(between(q,1.6,2.0))*(1-smooth(between(q,5.3,5.6))));hammer.position.set(mix(.85,0,hit),mix(1.95,1.17,hit)-smooth(between(q,3.34,3.8))*.24,-1.3);hammer.rotation.z=mix(-.55,1.56,hit)-smooth(between(q,3.34,3.8))*.19;hammer.rotation.x=.05;
+  fadeSign(taskSign,smooth(between(q,.6,1.1))*(1-smooth(between(q,3.95,4.25))));/* The street, car, therapist's building and its people are simply there: the camera finds them by turning, nothing pops. Only their lights wait (one shader rebuild at q 10.2, out of sight) and fade up. */ const outdoorsOn=q>10.2;streetLamp.visible=therapyLight.visible=outdoorsOn;lamps.forEach(a=>{if(a.isLight)a.visible=outdoorsOn;});streetLamp.intensity=50*smooth(between(q,10.2,10.9));skyline.visible=q<13.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);clinicDoor.rotation.y=-smooth(between(q,13.08,13.42))*1.42;
+  const hit=smooth(between(q,2.8,3.32)),broken=smooth(between(q,3.17,3.58));growIn(hammer,1-smooth(between(q,5.3,5.6)));{const lift=smooth(between(q,2.2,2.8));if(lift<1){hammer.position.lerpVectors(hammerRestPos,hammerHoverPos,lift);hammer.position.y+=Math.sin(lift*Math.PI)*.22;hammer.quaternion.slerpQuaternions(hammerRestQ,hammerHoverQ,lift);}else{hammer.position.set(mix(.85,0,hit),mix(1.95,1.17,hit)-smooth(between(q,3.34,3.8))*.24,-1.3);hammer.rotation.set(.05,0,mix(-.55,1.56,hit)-smooth(between(q,3.34,3.8))*.19);}}
   halfA.position.set(-.125-broken*.30,.23+broken*.05,broken*.25);halfA.rotation.z=-broken*.65;halfB.position.set(.125+broken*.38,.23+broken*.05,-broken*.13);halfB.rotation.z=broken*.8;shackle.rotation.x=broken*Math.PI/2;shackle.rotation.z=broken*.2;shackle.position.x=broken*.25;shackle.position.z=-broken*.35;shackle.position.y=.46-broken*.39;hole.visible=keyStem.visible=broken<.2;fadeSign(code,smooth(between(broken,.4,.7)));fadeSign(warning,smooth(between(q,4.25,4.6)));
   const breach=smooth(between(q,6.05,6.60));chunks.forEach((a,i)=>{const u=a.userData,push=smooth(between(q,6.05,6.28)),fall=smooth(between(q,6.22,6.60));a.position.set(mix(4,5.5+(i%3)*1.08,push),mix(u.y,.081,fall),u.z);a.rotation.set(fall*Math.PI/2,(1-fall)*Math.PI/2,fall*((i%3)-1)*.02);});
-  peers.forEach((a,i)=>{const u=a.userData;growIn(a,smooth(between(q,7.0,7.6)));const move=still?0:Math.sin(t*.6+i)*.10;a.position.z=u.z+move;a.userData.legs.forEach((l,j)=>l.rotation.x=still?0:Math.sin(t*2+i+j*Math.PI)*.14);});
+  peers.forEach((a,i)=>{const u=a.userData;const move=still?0:Math.sin(t*.6+i)*.10;a.position.z=u.z+move;a.userData.legs.forEach((l,j)=>l.rotation.x=still?0:Math.sin(t*2+i+j*Math.PI)*.14);});
   const searchingFiles=smooth(between(q,9.2,10.7));drawers.forEach((a,i)=>a.position.z=a.userData.z+(i<8?searchingFiles:smooth(between(q,13.15,14.4)))*(.4+(i%3)*.15));
   // Both figures by the filing cabinets fling their papers; the right one a beat later. Each page flies from the thrower's palm to its own spot on the floor.
   [[officePeople[2],docsL,landL,9.92],[officePeople[3],docsR,landR,10.04]].forEach(([who,list,land,t0])=>{
@@ -179,9 +180,9 @@ for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
   documents.forEach((a,i)=>{const u=a.userData,k=smooth(between(q,13.8,14.5));a.position.set(u.x,u.y,u.z+k*.25);a.rotation.z=Math.sin(i)*k*.10;});
   const exit=smooth(between(q,11.40,11.73));windowParts.forEach((a,i)=>{const u=a.userData;a.position.set(u.x+exit*(.6+i%3),mix(u.y,.04,exit),u.z+exit*Math.sin(i));a.rotation.set(exit*u.spin,exit*.7,exit*.3);});
   const ignition=smooth(between(q,11.8,12.4));redWire.rotation.z=-ignition*.08;greenWire.rotation.z=ignition*.12;lamps.forEach(a=>{if(a.isLight)a.intensity=ignition*30;else a.visible=ignition>.7;});const drive=smooth(between(q,12.58,13.15));car.position.set(18+smooth(between(drive,.30,1))*25,0,-25+smooth(between(drive,0,.4))*8);car.rotation.y=drive<.3?Math.PI:mix(Math.PI,Math.PI*1.5,smooth(between(drive,.20,.45)));
-  growIn(commons,smooth(between(q,14.6,15.0)));
+  commons.visible=q>14.3; // the camera flies straight through the table's monitors at q 13.85-14.2, so it can only stand there once the camera is past it and looking away (it turns round at q 14.5-15): already in place, never scaling in
   crossLamp.intensity=150*smooth(between(q,12.45,12.8))*(1-smooth(between(q,13.0,13.35)));
-  searching.forEach((a,i)=>{growIn(a,smooth(between(q,12.7,13.2)));a.rotation.y=-.6+i*.5+(still?0:Math.sin(t*.2+i)*.12);});
+  searching.forEach((a,i)=>{a.rotation.y=-.6+i*.5+(still?0:Math.sin(t*.2+i)*.12);});
   return {position:cameraPosition,look};
  }
  return {world,update};
