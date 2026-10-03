@@ -87,8 +87,9 @@
 .outside-world .end-note::before{display:none}
 .opening-title{position:relative;min-height:2.05em}
 .opening-title>span{display:block;transition:opacity .6s ease}
-#opening-task{position:absolute;inset:0;opacity:0}
-.no-webgl #opening-process{display:none}.no-webgl #opening-task{position:static;opacity:1}
+/* The opening words stack in flow now; no overlay and no cross-fade
+   (owner direction: "position the text more sensibly"). */
+.no-webgl #opening-process,.no-webgl #opening-task{opacity:1}
 @media(min-width:960px){.claude-field .tree-parts .part{padding:40px;min-height:65vh}.claude-field .scene-tree .tree-stage{top:8vh}}
 @media(max-width:800px){
  .grove-arrival{position:relative;top:auto;right:auto;width:auto;padding:75px 7vw 35px;background:transparent}
