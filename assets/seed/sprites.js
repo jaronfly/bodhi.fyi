@@ -17,7 +17,7 @@ export const SPRITE_PAL = {
   cloud0: '#ffffff', cloud1: '#ece6f4', cloud2: '#c4bad8', cloud3: '#8e84ae',
   cyan0: '#d8fbff', cyan1: '#7ae8ff', cyan2: '#38a8d8',
   saff0: '#ffe2a0', saff1: '#ffc35a', saff2: '#E8982A', saff3: '#b8661a',
-  dog0: '#7e4a22', dog1: '#b87434', dog2: '#dc9c50', dog3: '#f2c47e', dog4: '#fbe4b4',
+  dog0: '#171a18', dog1: '#292d2b', dog2: '#424743', dog3: '#c9ccc6', dog4: '#f3f2eb',
   nose: '#24140e', tongue: '#e8707a', mouth: '#5a2018', bark: '#fff6e0',
 };
 
@@ -96,7 +96,7 @@ const BARK = ['bark0', 'bark1', 'bark2', 'bark3'];
 const BARK_L = ['bark1', 'bark2', 'bark3', 'bark4'];
 const LEAF = ['leaf0', 'leaf1', 'leaf2', 'leaf3', 'leaf4'];
 const CLOUD = ['cloud3', 'cloud2', 'cloud1', 'cloud0'];
-const DOG = ['dog0', 'dog1', 'dog2', 'dog3', 'dog4'];
+const DOG = ['dog0', 'dog0', 'dog1', 'dog1', 'dog2'];
 
 const leaf = (p, cx, cy, rx, ry) => p.blob(cx, cy, rx, ry, LEAF);
 const eyes = (p, x0, x1, y) => { p.set(x0, y, 'eye'); p.set(x1, y, 'eye'); p.set(x0, y - 1, 'eyeHi'); p.set(x1, y - 1, 'eyeHi'); };
@@ -231,21 +231,27 @@ function thinker(frame = 0) {
   return p;
 }
 
-/* The puppy, barking up at the one apple. frame 1 is mid-bark. */
-function puppy(frame = 0) {
+/* Shadow, a mostly black Jack Russell. Bark and tail pose are independent. */
+function puppy(frame = 0, pose = 0) {
   const p = painter(32, 24);
   const b = frame ? 1 : 0;
-  // tail, up and wagging
-  p.line(5, 12, 3, 7 - b, 'dog2', 2); p.line(3, 7 - b, 2, 4 - b, 'dog3', 2);
+  // Six hinged tail poses wag independently of the two upward bark poses.
+  const tailPoses = [[3, 9, 1, 6], [2, 8, 1, 4], [3, 7, 3, 3], [4, 8, 5, 4], [5, 10, 6, 7], [4, 11, 5, 8]];
+  const tail = tailPoses[((Math.trunc(pose) % tailPoses.length) + tailPoses.length) % tailPoses.length];
+  p.line(5, 12, tail[0], tail[1], 'dog1', 2); p.line(tail[0], tail[1], tail[2], tail[3], 'dog2', 2); p.set(tail[2], tail[3], 'dog4');
   // far legs (darker), then body, then near legs
   p.rect(9, 17, 2, 5, 'dog0'); p.rect(18, 16, 2, 6, 'dog0');
   p.blob(11.5, 14, 7.5, 4.6, DOG);
-  p.rect(5, 16, 3, 6, 'dog1'); p.rect(15, 16, 3, 6, 'dog2'); p.rect(4, 21, 4, 1, 'dog1'); p.rect(15, 21, 4, 1, 'dog2');
-  p.rect(9, 21, 3, 1, 'dog0'); p.rect(18, 21, 3, 1, 'dog0');
-  // chest rising into the neck
+  p.rect(5, 16, 3, 6, 'dog1'); p.rect(15, 16, 3, 6, 'dog2');
+  p.rect(4, 21, 4, 1, 'dog4'); p.rect(15, 21, 4, 1, 'dog4');
+  p.rect(9, 21, 3, 1, 'dog3'); p.rect(18, 21, 3, 1, 'dog3');
+  // White chest and a small shoulder patch break up the dark coat.
   p.blob(18, 11.5, 3.6, 4.4, DOG);
+  p.blob(17.4, 14, 1.7, 4, ['dog3', 'dog4']);
+  p.disc(12, 12.5, 1.2, 'dog3');
   // the head, tipped up
   p.blob(21.5, 6.5, 4.6, 4.2, DOG);
+  p.line(20, 3, 21, 5, 'dog4'); p.set(20, 4, 'dog3');
   // muzzle pointing at the apple
   p.blob(25.6, 4 - b * 0.4, 2.6, 1.9, ['dog2', 'dog3', 'dog4']);
   p.set(27, 2 - b, 'nose'); p.set(28, 2 - b, 'nose'); p.set(28, 3 - b, 'nose');
@@ -263,6 +269,6 @@ function puppy(frame = 0) {
 
 export const PAINTERS = { local, blind, instruct, cloud, thinker, puppy };
 
-// Draw a sprite to a canvas (scale = whole pixels per art pixel).
-export function spriteCanvas(name, frame = 0, scale = 1) { return toCanvas(PAINTERS[name](frame), scale); }
+// Draw a sprite to a canvas (scale = whole pixels per art pixel). Puppy pose is independent of bark frame.
+export function spriteCanvas(name, frame = 0, scale = 1, pose = 0) { return toCanvas(PAINTERS[name](frame, pose), scale); }
 export function spriteSize(name) { const p = PAINTERS[name](0); return [p.w, p.h]; }

@@ -262,3 +262,19 @@
 
 
 .crew-fallback-log{margin-top:44px;padding-top:24px;border-top:1px solid #516151}
+
+/* The last shot returns to Claude's seed: a title, then roots carrying the credits. */
+.end-note{min-height:85svh;display:flex;flex-direction:column;justify-content:center;gap:clamp(24px,5vh,56px);padding:12svh 7vw 10svh;position:relative}
+.closing-cue{color:#a7c695;font:10px/1.7 var(--mono);letter-spacing:.22em}
+.seed-finale{width:100%;max-width:840px;margin:0 auto;filter:drop-shadow(0 0 26px #83b34a22)}
+.seed-finale .seed-frame{position:relative;width:100%;aspect-ratio:35 / 13}
+.seed-finale .seed-static,.seed-finale .seed-canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.seed-finale .seed-canvas{display:none}
+.seed-finale.seed-ready .seed-frame{aspect-ratio:auto;display:flex;justify-content:center}
+.seed-finale.seed-ready .seed-static{display:none}
+.seed-finale.seed-ready .seed-canvas{display:block;position:static}
+.end-note .end-epigraph{font-style:normal;font-size:clamp(24px,3vw,34px);color:#d4dfcc}
+.site-footer{background:linear-gradient(180deg,#0b291760,#071b1399);border-top:1px solid #91b26924;color:#b8d0ac}
+.site-footer .footer-heading,.site-footer .colophon{color:#92b479}
+.pj-on .outside-world .end-note,.pj-on .outside-world .site-footer{background:transparent}
+@media(prefers-reduced-motion:reduce){.seed-finale{filter:none}}

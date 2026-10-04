@@ -19,7 +19,7 @@
 
    Motion: still when the system asks for reduced motion, when the film's Stillness is on, or when the
    field guide's ambient-motion switch is off. Pauses when hidden. No storage, no network. */
-import { spriteCanvas } from './assets/seed/sprites.js';
+import { spriteCanvas } from './assets/seed/sprites.js?v=543cf1ef031d';
 import { paintCottage } from './assets/seed/cottage.js';
 
 (() => {
@@ -650,17 +650,18 @@ import { paintCottage } from './assets/seed/cottage.js';
     for (let j = -f2; j <= f2; j++) { const w = Math.floor(Math.sqrt(f2 * f2 - j * j)); for (let i = -w; i <= w; i++) raw(Math.round(ax - s + i), Math.round(ay - s + j), P.saffron); }
     raw(Math.round(ax - 2 * s), Math.round(ay - 2 * s), P.fruitHi);
   }
-  // The original seed puppy: keep its two authored frames, including the upward gaze and wag.
-  const PET = [0, 1].map(frame => {
-    const c = spriteCanvas('puppy', frame);
+  // Shadow keeps the puppy’s bark and upward gaze; its six tail poses move independently.
+  const PET = [0, 1].map(frame => Array.from({ length: 6 }, (_, pose) => {
+    const c = spriteCanvas('puppy', frame, 1, pose);
     return new Uint32Array(c.getContext('2d').getImageData(0, 0, 32, 24).data.buffer);
-  });
+  }));
   function paintPuppy(target, x, y, s, t, hi) {
     const k = Math.max(1, Math.round(s * 0.75));
     const cyc = t % 1.5;
     const hop = hi > 0 ? Math.abs(Math.sin(hi * 6)) * 5 : cyc > 0.16 && cyc < 0.66 ? Math.sin((cyc - 0.16) / 0.5 * Math.PI) * 4.5 : 0;
     const frame = hi > 0 || hop > 3 ? 1 : Math.floor(t * 5) % 2;
-    const src = PET[frame], x0 = Math.round(x), y0 = Math.round(y - 23 * k - hop * s);
+    const pose = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1][Math.floor(t * 12) % 10];
+    const src = PET[frame][pose], x0 = Math.round(x), y0 = Math.round(y - 23 * k - hop * s);
     for (let j = 0; j < 24; j++) for (let i = 0; i < 32; i++) {
       const c = src[j * 32 + i]; if (!(c >>> 24)) continue;
       for (let dy = 0; dy < k; dy++) for (let dx = 0; dx < k; dx++) {
@@ -796,8 +797,8 @@ import { paintCottage } from './assets/seed/cottage.js';
     ['#partial-view', 92, 104, 2, 0, 1],
     ['#tree', 150, 161, 2, 0, 0],
     ['#the-practice', 204, 213, 2, 0, 0],
-    ['#questions', 224, 232, 2, 0.2, 0],
-    ['#influences', 250, 271, 3, 0, 0],
+    ['#questions', 224, 232, 2, 1, 0],
+    ['#influences', 250, 271, 3, 1, 0],
     ['#sky', 290, 294, 3, 1, 0],
     ['#ancestors', 294, 297, 3, 1, 0],
     ['.source-window', 318, 321, 4, 0.15, 0],
@@ -836,10 +837,17 @@ import { paintCottage } from './assets/seed/cottage.js';
     const A = keys[i], B = keys[Math.min(i + 1, keys.length - 1)];
     const f = B === A ? 0 : sat((sy - A[0]) / Math.max(1, B[0] - A[0]));
     const e = smooth(0, 1, f);
-    const oe = doc.getElementById('similar-trees'), ae = doc.getElementById('afterward');
+    const oe = doc.getElementById('similar-trees'), title = doc.querySelector('.seed-finale .seed-canvas');
     const orch = oe ? smooth(vh * 1.6, -vh * 0.15, oe.getBoundingClientRect().top) : 0;
-    const dusk = ae ? smooth(vh * 0.9, -vh * 0.6, ae.getBoundingClientRect().top) * 0.8 : 0;
-    return { on, z: lerp(A[1], B[1], sy < keys[0][0] ? 0 : f), ha: A[2], hb: B[2], hf: e, look: lerp(A[3], B[3], e), fog: lerp(A[4], B[4], e), orch, dusk };
+    // Shadow stays in the orchard's light until the closing mark itself is visible.
+    // The canvas uses whole pixel multiples and can be narrower than its frame on phones.
+    const titleRect = title?.getBoundingClientRect();
+    const tr = titleRect?.width ? titleRect : null;
+    const ending = tr ? smooth(vh * 0.7, vh * 0.1, tr.top) : 0;
+    const dusk = ending * 0.65;
+    const rootX = tr ? (tr.left + tr.width * 5.5 / 35) / win.innerWidth : 0.5;
+    const rootY = tr ? (tr.top + tr.height) / vh : 0.35;
+    return { on, z: lerp(A[1], B[1], sy < keys[0][0] ? 0 : f), ha: A[2], hb: B[2], hf: e, look: lerp(A[3], B[3], e), fog: lerp(A[4], B[4], e), orch, dusk, ending, rootX, rootY };
   }
   const crewBuild = () => {
     const stage = Number(doc.getElementById('the-crew')?.dataset.crewStage ?? 0);
@@ -922,6 +930,54 @@ import { paintCottage } from './assets/seed/cottage.js';
       put(bx - 1, by - (fl ? 1 : 0), S.HILL2); put(bx, by, S.HILL2); put(bx + 1, by - (fl ? 1 : 0), S.HILL2);
     }
   }
+  // Small, slow motes share the same pixel grid as the landscape. Autumn
+  // leaves descend; night fireflies rise. Stillness paints one quiet arrangement.
+  function drawMotes(st, t, anim) {
+    if (st.look > 0.6 || st.fog > 0.75) return;
+    const autumn = st.z > 30 && st.z < 76, rr = rng(420);
+    for (let i = 0; i < 28; i++) {
+      const ph = rr(), speed = 0.7 + rr(), baseX = rr() * W;
+      const fall = ((ph + (anim ? t * 0.011 * speed : 0)) % 1);
+      const y = Math.round(H * (0.36 + (autumn ? fall : 1 - fall) * 0.64));
+      const x = Math.round((baseX + Math.sin(fall * 7 + i) * 6 + W) % W);
+      const color = autumn ? P.clay : i % 5 === 0 ? P.saffron : P.lichen;
+      if (autumn || !anim || Math.sin(t * 0.6 + ph * 8) > 0.1) raw(x, y, color);
+    }
+  }
+
+  // Come home to the mark's soil. Its roots carry on through the green credits,
+  // using the same whole-pixel line painter as the orchard's trunk and branches.
+  let returnBase = null, returnKey = '';
+  function drawRootReturn(st, t, anim) {
+    if (st.ending <= 0.001) return;
+    OB = buf2;
+    const rx = Math.round(st.rootX * W), ry = Math.round(st.rootY * H);
+    const key = W + 'x' + H + '|' + rx + '|' + ry;
+    if (key !== returnKey) {
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const glow = Math.exp(-Math.pow((x - rx) / (W * 0.65), 2) - Math.pow((y - ry) / (H * 0.9), 2));
+        OB[y * W + x] = mixInk(hu('#071b13'), hu('#21462a'), glow * 0.8);
+      }
+      const span = Math.max(H * 0.72, 120);
+      for (let i = 0; i < 9; i++) {
+        const side = (i - 4) / 4, depth = span * (0.6 + (i % 3) * 0.16);
+        const x1 = rx + side * W * 0.09, y1 = ry + depth * 0.28;
+        const x2 = rx + side * W * 0.24, y2 = ry + depth * 0.64;
+        const x3 = rx + side * W * 0.39, y3 = ry + depth;
+        oline(i % 2 ? '#3c6940' : '#4f7c45', [[rx, ry], [x1, y1], [x2, y2], [x3, y3]], 1);
+        if (side) {
+          oline('#294d31', [[x2, y2], [x2 + side * W * 0.12, y2 + depth * 0.09], [x2 + side * W * 0.18, y2 + depth * 0.27]], 1);
+        }
+      }
+      returnBase = new Uint32Array(buf2); returnKey = key;
+    } else buf2.set(returnBase);
+    const rr = rng(1990);
+    for (let i = 0; i < 22; i++) {
+      const x = rr() * W, y = rr() * H;
+      if (!anim || Math.sin(t * 0.4 + i) > 0.55) orect(i % 4 ? '#3c6940' : '#92b479', x, y, 1, 1);
+    }
+    for (let k = 0; k < W * H; k++) buf[k] = mixInk(buf[k], buf2[k], st.ending);
+  }
   function draw(st, t, anim) {
     const tick = anim ? Math.floor(t * 2.6) : 0, oa = st.orch || 0;
     if (oa < 0.999) drawWalk(st, t, anim, tick);
@@ -935,6 +991,8 @@ import { paintCottage } from './assets/seed/cottage.js';
         for (let x = 0; x < W; x++) { const k = y * W + x; buf[k] = mixInk(buf[k], buf2[k], blend); }
       }
     }
+    if (oa < 0.95) drawMotes(st, t, anim);
+    drawRootReturn(st, t, anim);
     ctx.putImageData(img, 0, 0);
   }
   function drawRails() {
@@ -963,7 +1021,7 @@ import { paintCottage } from './assets/seed/cottage.js';
     if (!visible || doc.hidden) { last = 0; return; }
     const still = motionOff();
     if (still) {
-      const zq = Math.round(st.z / 3) * 3, key = zq + '|' + st.ha + st.hb + Math.round(st.hf * 4) + '|' + Math.round(st.look * 4) + '|' + Math.round(st.orch * 4) + Math.round(st.dusk * 4) + '|' + W + 'x' + H + '|' + crewBuild();
+      const zq = Math.round(st.z / 3) * 3, key = zq + '|' + st.ha + st.hb + Math.round(st.hf * 4) + '|' + Math.round(st.look * 4) + '|' + Math.round(st.orch * 4) + Math.round(st.dusk * 4) + '|' + Math.round(st.ending * 16) + '|' + Math.round(st.rootY * H) + '|' + W + 'x' + H + '|' + crewBuild();
       if (key !== lastKey) { lastKey = key; draw(Object.assign({}, st, { z: zq, hf: Math.round(st.hf * 4) / 4, orch: Math.round(st.orch * 4) / 4 }), 0, false); api.frames++; }
       api.z = zq;
       return;
@@ -971,7 +1029,7 @@ import { paintCottage } from './assets/seed/cottage.js';
     if (zS === null || Math.abs(st.z - zS) > 30) zS = st.z;
     zS += (st.z - zS) * (1 - Math.exp(-dt * 6));
     time += dt; if (hello > 0) hello = Math.max(0, hello - dt);
-    const key = zS.toFixed(3) + st.hf.toFixed(3) + st.look.toFixed(3) + st.orch.toFixed(3) + st.dusk.toFixed(3);
+    const key = zS.toFixed(3) + st.hf.toFixed(3) + st.look.toFixed(3) + st.orch.toFixed(3) + st.dusk.toFixed(3) + st.ending.toFixed(3) + st.rootY.toFixed(3);
     if (key !== lastKey || now - lastT > 80) { lastKey = key; lastT = now; draw(Object.assign({}, st, { z: zS }), time, true); api.frames++; }
     api.z = zS;
     raf = requestAnimationFrame(frame);

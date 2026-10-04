@@ -73,7 +73,7 @@
     for(let i=0;i<3;i++){const k=(t*.035+i*.31)%1;rect(c,i%2?'#8d9c5d':'#a9b56b',x+(Math.sin(k*5+i)*18-24)*s,y-(76-k*72)*s,2*s,s);}
   }
   function dog(c,x,y,s,t,hello){
-    // A small tricolour hound facing the tree: dark floppy ears, a white blaze,
+    // Shadow: a mostly black Jack Russell facing the tree: dark floppy ears, a white blaze,
     // a dark saddle, white chest and paws. It jumps up at the fruit in a little
     // cycle — crouch, hop, land, beat of anticipation — and goes properly
     // ecstatic when greeted. The tail is raised, white-tipped, three wag poses.
@@ -95,14 +95,14 @@
     '.WdWWd...dWd...',
     '.ddWd....dWd...',
     '..dd......dd...'];
-    const colors={d:'#704c2c',B:'#c38b46',g:'#c38b46',l:'#e4b668',n:'#263728',K:'#263728',W:'#f2eee4'};
+    const colors={d:'#16231e',B:'#29332d',g:'#29332d',l:'#414b40',n:'#101914',K:'#17231b',W:'#f2eee4'};
     const wag=Math.floor(t*5)%3;
     // the tail is UP and wagging, and it follows the hop: short stepped pixels
     // hinged at the rump, white-tipped, three poses.
     const ty=y-8*s-hop*s+(crouch?s:0);
-    if(wag===0){rect(c,'#c38b46',x+1*s,ty,3*s,2*s);rect(c,'#c38b46',x-1*s,ty-1*s,2*s,2*s);rect(c,'#f2eee4',x-2*s,ty-1*s,s,s);}
-    else if(wag===1){rect(c,'#c38b46',x+1*s,ty-1*s,3*s,2*s);rect(c,'#c38b46',x-1*s,ty-3*s,2*s,3*s);rect(c,'#f2eee4',x-2*s,ty-4*s,s,2*s);}
-    else{rect(c,'#c38b46',x+1*s,ty,3*s,2*s);rect(c,'#c38b46',x-2*s,ty-2*s,2*s,2*s);rect(c,'#f2eee4',x-3*s,ty-3*s,s,2*s);}
+    if(wag===0){rect(c,'#29332d',x+1*s,ty,3*s,2*s);rect(c,'#29332d',x-1*s,ty-1*s,2*s,2*s);rect(c,'#f2eee4',x-2*s,ty-1*s,s,s);}
+    else if(wag===1){rect(c,'#29332d',x+1*s,ty-1*s,3*s,2*s);rect(c,'#29332d',x-1*s,ty-3*s,2*s,3*s);rect(c,'#f2eee4',x-2*s,ty-4*s,s,2*s);}
+    else{rect(c,'#29332d',x+1*s,ty,3*s,2*s);rect(c,'#29332d',x-2*s,ty-2*s,2*s,2*s);rect(c,'#f2eee4',x-3*s,ty-3*s,s,2*s);}
     const yy=y-12*s-(hop*s)+(crouch?s:0);
     body.forEach((row,j)=>[...row].forEach((a,i)=>{if(a!=='.')rect(c,colors[a],x+i*s,yy+j*s,s,s);}));
     // one bright eye above the white blaze, dark nose at the muzzle's end

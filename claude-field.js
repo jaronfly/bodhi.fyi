@@ -114,6 +114,7 @@
       if (!s) return;
       s.visible = e.isIntersecting;
       if (s.visible && s.onShow) s.onShow();
+      if (!s.visible && s.onHide) s.onHide();
     });
     kick();
   }, { rootMargin: '160px 0px' });
@@ -208,12 +209,13 @@
     if (!cv || !frameEl) return;
     const ctx = cv.getContext('2d');
     const last = SEED_FRAMES.length - 1;
-    const maxW = fig.classList.contains('seed-stage-sm') ? 420 : 600;
+    const closing = fig.dataset.seed === 'closing';
+    const maxW = closing ? 840 : fig.classList.contains('seed-stage-sm') ? 420 : 600;
     // The canvas takes over from the static SVG, so it carries the SVG's words.
     cv.removeAttribute('aria-hidden');
     cv.setAttribute('role', 'img');
     if (svg) cv.setAttribute('aria-label', svg.getAttribute('aria-label'));
-    const s = { i: last, playing: false, t0: 0, played: false };
+    const s = { i: last, playing: false, elapsed: 0, lastT: 0, played: false };
     const draw = () => {
       const g = SEED_FRAMES[s.i];
       ctx.clearRect(0, 0, 35, 13);
@@ -234,20 +236,35 @@
     s.play = () => {
       s.played = true;
       if (!motion) { s.i = last; s.playing = false; draw(); return; }
-      s.i = 0; s.t0 = 0; s.playing = true; draw(); kick();
+      s.i = 0; s.elapsed = 0; s.lastT = 0; s.playing = true; draw(); kick();
     };
     s.tick = (t) => {
       if (!s.playing) return false;
-      if (!s.t0) s.t0 = t;
-      const i = Math.min(Math.floor((t - s.t0) / 80), last);
+      if (!s.lastT) s.lastT = t;
+      s.elapsed += Math.min(160, t - s.lastT); s.lastT = t;
+      const i = Math.min(Math.floor(s.elapsed / 80), last);
       if (i !== s.i) { s.i = i; draw(); }
       if (s.i >= last) { s.playing = false; return false; }
       return true;
     };
-    s.onShow = () => { if (!s.played) s.play(); };
+    s.onShow = () => { s.lastT = 0; if (!closing && !s.played) s.play(); };
+    s.onHide = () => { s.lastT = 0; };
+    doc.addEventListener('visibilitychange', () => { if (doc.hidden) s.lastT = 0; });
+    // The final title starts on actual visibility, not the field's prewarm margin.
+    // It is the same planting sequence as the first seed, played once and held.
+    if (closing) {
+      const titleIO = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.35)) {
+          if (!s.played) s.play();
+          titleIO.disconnect();
+        }
+      }, { threshold: 0.35 });
+      titleIO.observe(frameEl);
+    }
     s.motionChanged = (m) => { if (!m) { s.playing = false; s.i = last; draw(); } };
     if (btn) { btn.hidden = false; btn.addEventListener('click', s.play); }
     s.layout();
+    fig.classList.add('seed-ready');
     register(fig, s);
   };
   doc.querySelectorAll('[data-seed]').forEach(SeedPlayer);
@@ -664,34 +681,35 @@
       }
     };
 
-    // roots: the left one runs deeper than the right, like the mark
+    // A connected root system: a deep left root and a shorter right root,
+    // with lateral feeders growing from their joints, rather than a knotted random walk.
     const tips = [];
-    const rootWalk = (x, y, dir, len, t0, t1, depth, col) => {
-      let cx = x, cy = y;
-      for (let i = 0; i < len; i++) {
-        cy += 1;
-        const r = R();
-        if (r < 0.5) cx += dir; else if (r < 0.62) cx -= dir;
-        add(cx, cy, col, 'roots', lerp(t0, t1, i / len));
-        if (depth > 0 && i > 4 && R() < 0.13) {
-          const tt = lerp(t0, t1, i / len);
-          rootWalk(cx, cy, R() < 0.5 ? -1 : 1, Math.floor(len * (0.3 + R() * 0.3)), tt, lerp(tt, t1, 0.9), depth - 1, 'l');
-        }
+    const rootPath = (pts, t0, t1, thick = false) => {
+      const span = pts.length - 1;
+      for (let k = 1; k < pts.length; k++) {
+        line(...pts[k - 1], ...pts[k], (x, y, f) => {
+          const t = lerp(t0, t1, (k - 1 + f) / span);
+          add(x, y, 'g', 'roots', t);
+          if (thick && k < span) add(x + 1, y, 'l', 'roots', t);
+        });
       }
-      tips.push([cx, cy]);
+      tips.push(pts[pts.length - 1]);
     };
-    rootWalk(47, GY, -1, 37, 0.02, 0.26, 2, 'g');
-    rootWalk(49, GY, 1, 24, 0.02, 0.2, 2, 'g');
-    rootWalk(48, GY, 0, 14, 0.05, 0.16, 1, 'l');
+    rootPath([[47, GY], [44, 94], [36, 105], [31, 123]], 0.02, 0.26, true);
+    rootPath([[49, GY], [53, 93], [63, 101], [70, 114]], 0.02, 0.21, true);
+    rootPath([[48, GY], [49, 99], [46, 111], [48, 124]], 0.03, 0.25);
+    rootPath([[44, 94], [34, 99], [23, 101], [12, 111]], 0.10, 0.24);
+    rootPath([[36, 105], [24, 113], [18, 123]], 0.18, 0.28);
+    rootPath([[53, 93], [65, 96], [78, 105], [84, 112]], 0.085, 0.23);
+    rootPath([[63, 101], [59, 109], [62, 119]], 0.15, 0.26);
+    rootPath([[49, 99], [54, 108], [53, 117]], 0.13, 0.24);
 
-    // mycelium: dotted threads joining the root tips and running off to other trees
-    tips.sort((a, b) => a[0] - b[0]);
+    // Sparse mycelium reaches beyond this tree; it is distinct from the solid roots.
     const thread = (a, b, t0, t1) => line(a[0], a[1], b[0], b[1], (x, y, f, i) => { if (i % 2 === 0) add(x, y, 'l', 'mycelium', lerp(t0, t1, f)); });
-    for (let i = 0; i < tips.length - 1; i++) thread(tips[i], tips[i + 1], 0.26 + i * 0.01, 0.4);
-    if (tips.length) {
-      thread(tips[0], [0, clamp(tips[0][1] + 6, GY + 4, TH - 2)], 0.3, 0.42);
-      thread(tips[tips.length - 1], [TW - 1, clamp(tips[tips.length - 1][1] - 4, GY + 4, TH - 2)], 0.3, 0.42);
-    }
+    thread([12, 111], [0, 116], 0.28, 0.38);
+    thread([18, 123], [31, 123], 0.29, 0.39);
+    thread([48, 124], [62, 119], 0.3, 0.4);
+    thread([84, 112], [TW - 1, 116], 0.3, 0.42);
 
     // trunk
     const TOP = GY - 30;

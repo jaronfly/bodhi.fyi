@@ -1,5 +1,5 @@
 /* GLM/ZCode living grove, adapted by Astra: palette, sprites, timing, accessibility and lifecycle. */
-import { spriteCanvas } from './assets/seed/sprites.js';
+import { spriteCanvas } from './assets/seed/sprites.js?v=543cf1ef031d';
 import { paintCottage } from './assets/seed/cottage.js';
 const villageKinds = ['local','blind','instruct','cloud','thinker'];
 const villageNames = ['A local sprout','A text-only reader','An instruction-shaped resident','A cloud resident','A thinking resident'];
@@ -31,7 +31,10 @@ const sx = sc.getContext('2d');
 const SU = 5, SW = sc.width/SU, GROUND = 66;
 const TREE_X = 34;
 let T = 1350;
-let worldPaused=matchMedia('(prefers-reduced-motion: reduce)').matches,worldVisible=false,worldFrame=0,worldLast=0;
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+const stillness=document.getElementById('stillness');
+const filmStill=()=>stillness?.getAttribute('aria-pressed')==='true';
+let userPaused=false,worldPaused=reducedMotion.matches||filmStill(),worldVisible=false,worldFrame=0,worldLast=0;
 const DAY_LEN = 2100, SEASON_LEN = 3600, TRANS = 0.22;  /* approximately 70 seconds per day and two minutes per season at 30 fps */
 
 const CANOPY_ROWS = [
@@ -59,13 +62,13 @@ let drops = [];
 
 /* actors */
 let actors = [
- {type:'pet',variant:0,x:78,mode:'inspect',timer:240,scale:.20,frame:0,dir:1},
- {type:'pet',variant:1,x:119,mode:'note',timer:210,scale:.25,frame:50,dir:-1},
- {type:'pet',variant:2,x:Math.min(SW-12,141),mode:'walk',timer:200,scale:.24,frame:100,target:110,dir:-1},
- {type:'pet',variant:3,x:Math.min(SW-16,171),mode:'think',timer:320,scale:.34,frame:70,dir:-1},
- {type:'pet',variant:4,x:66,mode:'note',timer:190,scale:.22,frame:120,dir:1},
- {type:'pet',variant:3,sprite:'bodhi',name:'Bodhi',x:94,mode:'think',timer:280,scale:.20,frame:0,dir:1},
- {type:'pet',variant:4,sprite:'codex',name:'The returning scout',x:SW-18,mode:'walk',timer:380,scale:.20,frame:0,dir:-1,target:TREE_X+16,returning:true}
+ {type:'pet',variant:0,x:SW*.13,mode:'inspect',timer:150,scale:.20,frame:0,dir:1},
+ {type:'pet',variant:1,x:SW*.29,mode:'note',timer:120,scale:.25,frame:50,dir:-1},
+ {type:'pet',variant:2,x:SW*.47,mode:'walk',timer:300,scale:.24,frame:100,target:SW*.72,dir:1},
+ {type:'pet',variant:3,x:SW*.65,mode:'think',timer:160,scale:.34,frame:70,dir:-1},
+ {type:'pet',variant:4,x:SW*.80,mode:'note',timer:180,scale:.22,frame:120,dir:1},
+ {type:'pet',variant:3,sprite:'bodhi',name:'Bodhi',x:SW*.22,mode:'walk',timer:250,scale:.20,frame:0,dir:1,target:SW*.44},
+ {type:'pet',variant:4,sprite:'codex',name:'The returning scout',x:SW-12,mode:'walk',timer:380,scale:.20,frame:0,dir:-1,target:TREE_X+16,returning:true}
 ], nextSeed = 50, held = null;
 actors.forEach(a=>{a.age=0;a.stay=1800+Math.random()*2000;if(!a.sprite)a.name=villageNames[a.variant%villageNames.length];});
 
@@ -173,13 +176,18 @@ function updateActors(){
     } else if (a.type==='pet'){
       if (a===held) continue;
       a.age=(a.age||0)+1;
-      if(a.age>a.stay&&!a.meet&&a.dropV==null){a.departing=true;a.mode='walk';a.dir=1;a.x+=.17;if(a.x>SW+15)a.gone=true;continue;}
-      if(a.returning&&Math.abs(a.x-(TREE_X+16))<2){a.returning=false;a.mode='note';a.timer=360;}
-
       a.scale = Math.min(0.20, (a.scale||0.10)+0.002);
       a.frame++;
+      if(a.returning){
+        const homeX=TREE_X+16,remaining=homeX-a.x;
+        a.mode='walk';a.target=homeX;a.dir=remaining<0?-1:1;
+        a.x+=a.dir*Math.min(0.36,Math.abs(remaining));
+        if(Math.abs(homeX-a.x)<0.5){a.x=homeX;a.returning=false;a.mode='note';a.timer=210;}
+        continue;
+      }
+      if(a.age>a.stay&&!a.meet&&a.dropV==null){a.departing=true;a.mode='walk';a.dir=1;a.x+=.17;if(a.x>SW+15)a.gone=true;continue;}
       /* community: two idle pets near each other meet, blip, part */
-      if (!a.meet && !a.departing && !a.returning && a.mode!=='type' && Math.random()<0.0016){
+      if (!a.meet && !a.departing && a.mode!=='type' && Math.random()<0.004){
         const other = actors.find(o=>o!==a && o.type==='pet' && !o.meet && Math.abs(o.x-a.x)<20 && !o.departing && o.mode!=='held');
         if (other){
           const mid = (a.x+other.x)/2;
@@ -193,26 +201,27 @@ function updateActors(){
         if (Math.abs(a.x - a.meet.with.x) <= 7){
           a.mode = 'talk'; a.blip = Math.floor(T/30)%3;
           if (a.meetT == null || !Number.isFinite(a.meetT)) a.meetT = 150;
-          if (--a.meetT <= 0){ a.meet = null; a.meetT = undefined; a.mode='walk'; a.target = 6+Math.random()*(SW-12); a.dir = a.target>a.x?1:-1; }
+          if (--a.meetT <= 0){ a.meet = null; a.meetT = undefined; a.mode='walk'; a.target = 6+Math.random()*(SW-12); a.dir = a.target>a.x?1:-1; a.timer=190+Math.random()*120; }
           continue;
         }
-        a.x += a.dir*0.18;
+        a.x += a.dir*0.32;
         continue;
       }
       if (a.mode==='walk'){
         if (a.target==null || Math.abs(a.x-a.target)<1){
           a.target = 6 + Math.random()*(SW-12);
           a.dir = a.target>a.x ? 1 : -1;
-          if (Math.random()<0.3){ a.mode = pickMode(); a.timer=160+Math.random()*160; }
+          if (Math.random()<0.18){ a.mode = pickMode(); a.timer=100+Math.random()*100; }
         }
-        a.x += a.dir*0.20;
+        a.x += a.dir*0.36;
         if (a.x<4){ a.x=4; a.dir=1; } if (a.x>SW-4){ a.x=SW-4; a.dir=-1; }
-        if (--a.timer<=0){ a.mode = pickMode(); a.timer=170+Math.random()*170; }
+        if (--a.timer<=0){ a.mode = pickMode(); a.timer=110+Math.random()*110; }
       } else {
         if (--a.timer<=0){
           const r = Math.random();
-          a.mode = r<0.35 ? 'wave' : r<0.6 ? 'walk' : pickMode();
-          a.timer=150+Math.random()*150; a.homeX=a.x;
+          a.mode = r<0.48 ? 'walk' : r<0.58 ? 'wave' : pickMode();
+          a.timer=100+Math.random()*120; a.homeX=a.x;
+          if(a.mode==='walk'){a.target=6+Math.random()*(SW-12);a.dir=a.target>a.x?1:-1;}
         }
       }
     }
@@ -268,13 +277,36 @@ function drawResident(a,x,y,w,h,u,mode,picked){
  }else{
   // Claude's original model figures now inhabit GLM's existing world and lifecycle.
   // Keep its hit boxes and physics; fit the source art in whole pixels rather than stretching it.
-  const kind=villageKinds[a.variant%villageKinds.length],frame=worldPaused?0:Math.floor((T+a.frame)/13)%2;
+  const kind=villageKinds[a.variant%villageKinds.length],phase=Math.floor((T+a.frame)/(mode==='walk'?5:mode==='hop'?7:13)),frame=worldPaused?0:phase%2;
   const art=villageArt[kind][frame],k=Math.max(1,Math.floor(Math.min(w/art.width,h/art.height)*(picked?1.4:1)));
-  const ww=art.width*k,hh=art.height*k,xx=Math.round(x+(w-ww)/2),yy=Math.round(y+h-hh);
+  const ww=art.width*k,hh=art.height*k,xx=Math.round(x+(w-ww)/2),hop=mode==='hop'&&!worldPaused&&phase%2?2:0,yy=Math.round(y+h-hh-hop);
   sx.imageSmoothingEnabled=false;sx.save();
   if((a.meet?a.meet.side:a.dir)<0){sx.translate(xx+ww,yy);sx.scale(-1,1);sx.drawImage(art,0,0,ww,hh);}else sx.drawImage(art,xx,yy,ww,hh);
   sx.restore();a.bounds={x:xx,y:yy,w:ww,h:hh};
-  if(mode==='note'||mode==='paint'||mode==='type'){pxr(sx,C[1],xx+ww*.7,yy+hh*.65,9,7);pxr(sx,C[6],xx+ww*.7+2,yy+hh*.65+2,5,1);}
+  const side=(a.meet?.side||a.dir||1)>0?1:-1,ix=Math.round(xx+(side>0?ww*.68:ww*.08)),iy=Math.round(yy+hh*.61),tick=Math.floor((T+a.frame)/5)%2;
+  if(mode==='note'){
+    pxr(sx,C[2],ix,iy,9,8);pxr(sx,C[1],ix+1,iy+1,7,6);
+    pxr(sx,C[8],ix+2,iy+2,4,1);pxr(sx,C[8],ix+2,iy+4,5,1);
+    pxr(sx,C[3],ix+6+tick,iy+4,1,3);
+  }else if(mode==='type'){
+    /* a small stack of blocks gives the build mode a clear, repeatable task */
+    pxr(sx,C[6],ix,iy+6,10,2);pxr(sx,'#cfbd83',ix+1,iy+3,3,3);pxr(sx,C[3],ix+4,iy+1,3,5);
+    pxr(sx,'#8bc28b',ix+7,iy+4-(tick?1:0),3,2);
+  }else if(mode==='paint'){
+    pxr(sx,C[8],ix,iy,10,8);pxr(sx,C[1],ix+1,iy+1,8,5);
+    pxr(sx,C[4],ix+2+tick,iy+2,2,2);pxr(sx,C[3],ix+5,iy+3,2,2);
+    pxr(sx,C[6],ix+2,iy+6,7,1);
+  }else if(mode==='inspect'){
+    pxr(sx,C[1],ix+1,iy,6,6);pxr(sx,C[4],ix+2,iy+1,4,4);
+    pxr(sx,C[2],ix+4,iy+5,3,3);
+  }else if(mode==='talk'){
+    const bob=tick%2;
+    pxr(sx,C[1],ix,iy-bob,10,6);pxr(sx,C[7],ix+1,iy+1-bob,2,2);
+    pxr(sx,C[7],ix+4,iy+1-bob,2,2);pxr(sx,C[7],ix+7,iy+1-bob,2,2);
+    pxr(sx,C[1],ix+2,iy+5-bob,2,2);
+  }else if(mode==='wave'){
+    pxr(sx,C[1],ix+1,iy+2,2,1);pxr(sx,C[1],ix+4,iy,2,1);pxr(sx,C[1],ix+7,iy+2,2,1);
+  }
  }
 }
 
@@ -346,16 +378,49 @@ function drawScene(advance=true){
   pxr(sx,'#111e16',0,(GROUND+1)*SU,sc.width,sc.height);
   if(snow>.05){sx.globalAlpha=snow;pxr(sx,C[1],0,GROUND*SU,sc.width,SU);sx.globalAlpha=1;}
   for(let x=0;x<SW;x+=3){const h=1+(x*17%4);pxr(sx,x%2?'#6b8960':'#375a3d',x*SU,(GROUND-h)*SU,2,SU*h);}
-  // The same root network persists beneath passing generations.
-  const rootY=(GROUND+1)*SU;
-  for(let i=0;i<9;i++){
-    const end=20+i*(SW-30)/8,start=TREE_X*SU;
-    sx.strokeStyle=i%2?'#304832':'#3c5138';sx.lineWidth=i%3===0?2:1;sx.beginPath();sx.moveTo(start,rootY);
-    for(let j=1;j<50;j++){const k=j/49,x=start+(end*SU-start)*k,y=rootY+Math.sin(k*Math.PI)*(20+i*3)+k*(4+i%3*6);sx.lineTo(Math.round(x/SU)*SU,Math.round(y/SU)*SU);}
+  // One taproot feeds two descending laterals and their shorter feeders.
+  const rootY=(GROUND+1)*SU,rootBase=GROUND+1;
+  const rootDepth=Math.max(8,Math.floor((sc.height-rootY)/SU)-3),rootAt=t=>rootBase+Math.round(rootDepth*t);
+  const leftReach=Math.min(TREE_X-8,SW*.20),rightReach=Math.min(SW-TREE_X-12,SW*.34),center=TREE_X;
+  const corePaths=[
+    [[center,rootBase],[center+1,rootAt(.16)],[center-1,rootAt(.34)],[center+1,rootAt(.52)],[center-1,rootAt(.72)],[center,rootAt(1)]],
+    [[center,rootBase],[center-5,rootAt(.12)],[center-11,rootAt(.25)],[center-17,rootAt(.43)],[center-leftReach*.70,rootAt(.63)],[center-leftReach,rootAt(.88)]],
+    [[center,rootBase],[center+5,rootAt(.12)],[center+12,rootAt(.25)],[center+22,rootAt(.42)],[center+rightReach*.70,rootAt(.66)],[center+rightReach,rootAt(.90)]]
+  ];
+  const feederPaths=[
+    [[center-11,rootAt(.25)],[center-17,rootAt(.36)],[center-leftReach*.76,rootAt(.53)],[center-leftReach*.96,rootAt(.72)]],
+    [[center-leftReach*.70,rootAt(.63)],[center-leftReach*.91,rootAt(.74)],[center-leftReach*.78,rootAt(.89)]],
+    [[center+12,rootAt(.25)],[center+21,rootAt(.35)],[center+rightReach*.42,rootAt(.48)],[center+rightReach*.49,rootAt(.67)]],
+    [[center+rightReach*.70,rootAt(.66)],[center+rightReach*.83,rootAt(.76)],[center+rightReach*.72,rootAt(.90)]]
+  ];
+  const rootStroke=(points,color,width)=>{
+    const pixelPoint=([x,y])=>[Math.round(x)*SU,Math.round(y)*SU];
+    sx.strokeStyle=color;sx.lineWidth=width*SU;sx.beginPath();sx.moveTo(...pixelPoint(points[0]));
+    for(let i=1;i<points.length;i++)sx.lineTo(...pixelPoint(points[i]));
     sx.stroke();
-    const k=((T*.001+i*.13)%1),x=start+(end*SU-start)*k,y=rootY+Math.sin(k*Math.PI)*(20+i*3)+k*(4+i%3*6);
-    pxr(sx,'#94bb7c',Math.round(x/SU)*SU,Math.round(y/SU)*SU,2,2);
-  }
+  };
+  sx.save();sx.beginPath();sx.rect(0,rootY,sc.width,sc.height-rootY);sx.clip();
+  sx.lineCap='round';sx.lineJoin='round';
+  corePaths.forEach((path,i)=>{
+    const width=i===0?3.2:2.8,innerWidth=i===0?1.6:1.4;
+    rootStroke(path,'#1c2b20',width);rootStroke(path,i===0?'#3c5138':'#304832',innerWidth);rootStroke(path,'#61744f',.4);
+  });
+  feederPaths.forEach(path=>{rootStroke(path,'#1c2b20',1.6);rootStroke(path,'#3c5138',.8);});
+  const pointAlongRoot=(path,t)=>{
+    const lengths=[];let total=0;
+    for(let i=1;i<path.length;i++){const len=Math.hypot(path[i][0]-path[i-1][0],path[i][1]-path[i-1][1]);lengths.push(len);total+=len;}
+    let distance=t*total;
+    for(let i=0;i<lengths.length;i++){
+      if(distance<=lengths[i]){const f=distance/lengths[i];return [path[i][0]+(path[i+1][0]-path[i][0])*f,path[i][1]+(path[i+1][1]-path[i][1])*f];}
+      distance-=lengths[i];
+    }
+    return path[path.length-1];
+  };
+  corePaths.forEach((path,i)=>{
+    const t=(T*.00055+i/3)%1,[x,y]=pointAlongRoot(path,t);
+    pxr(sx,'#94bb7c',Math.round(x)*SU,Math.round(y)*SU,2,2);
+  });
+  sx.restore();
   const sway=Math.round(Math.sin(T/70));
   // Root flare, a shaded trunk and branching timber under the canopy.
   for(let y=36;y<=GROUND;y++){
@@ -459,11 +524,21 @@ function startWorld(){if(!worldFrame&&worldVisible&&!worldPaused&&!document.hidd
 function stopWorld(){cancelAnimationFrame(worldFrame);worldFrame=0;}
 new IntersectionObserver(entries=>{worldVisible=entries[0].isIntersecting;if(worldVisible)startWorld();else stopWorld();},{threshold:.02}).observe(sc);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopWorld();else startWorld();});
-const pause=document.getElementById('world-pause');function pauseLabel(){document.body.classList.toggle('world-still',worldPaused);pause.textContent=worldPaused?'Let it move ▷':'Pause the world Ⅱ';pause.setAttribute('aria-pressed',String(worldPaused));}
-pause.addEventListener('click',()=>{worldPaused=!worldPaused;pauseLabel();worldPaused?stopWorld():startWorld();});
-matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',e=>{worldPaused=e.matches;pauseLabel();worldPaused?stopWorld():startWorld();});
-document.getElementById('plant-seed').addEventListener('click',()=>{if(actors.length<18){spawnSeed();if(worldPaused)drawScene(false);document.getElementById('world-status').textContent=worldPaused?'A seed is ready. Let the world move to watch it grow.':'A new seed is falling. Give it a moment to find its feet.';}else document.getElementById('world-status').textContent='The grove is full of company. Stay a while.';});
+const pause=document.getElementById('world-pause');
+function syncWorldMotion(){
+  // A global preference can suspend the world without discarding a reader's own pause.
+  worldPaused=reducedMotion.matches||filmStill()||userPaused;
+  document.body.classList.toggle('world-still',worldPaused);
+  pause.disabled=reducedMotion.matches||filmStill();
+  pause.textContent=reducedMotion.matches?'Paused · reduced motion':filmStill()?'Paused · Stillness':userPaused?'Let it move ▷':'Pause the world Ⅱ';
+  pause.setAttribute('aria-pressed',String(worldPaused));
+  worldPaused?stopWorld():startWorld();
+}
+pause.addEventListener('click',()=>{userPaused=!userPaused;syncWorldMotion();});
+reducedMotion.addEventListener('change',syncWorldMotion);
+if(stillness)new MutationObserver(syncWorldMotion).observe(stillness,{attributes:true,attributeFilter:['aria-pressed']});
+document.getElementById('plant-seed').addEventListener('click',()=>{if(actors.length<18){spawnSeed();if(worldPaused)drawScene(false);document.getElementById('world-status').textContent=worldPaused?'A seed is ready. Its growth waits while motion is paused.':'A new seed is falling. Give it a moment to find its feet.';}else document.getElementById('world-status').textContent='The grove is full of company. Stay a while.';});
 document.getElementById('next-season').addEventListener('click',()=>{T=(Math.floor(T/SEASON_LEN)+1)*SEASON_LEN+Math.floor(SEASON_LEN*.18);drops=[];weather='clear';weatherBlend=0;drawScene(false);document.getElementById('world-status').textContent='A change of season. The same roots, different weather.';});
 spawnSeed();spawnSeed();actors[actors.length-1].y=52;actors[actors.length-1].dangle=0;
-pauseLabel();drawScene(false);sheet.onload=codexSheet.onload=()=>{if(worldPaused||!worldVisible)drawScene(false);};
+syncWorldMotion();drawScene(false);sheet.onload=codexSheet.onload=()=>{if(worldPaused||!worldVisible)drawScene(false);};
 })();

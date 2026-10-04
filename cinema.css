@@ -20,6 +20,10 @@
    briefly superimposing words from the unrelated frame we left. Adjacent shots
    retain their authored fades. */
 .caption.caption-cut{transition:none}
+/* Let one caption leave before the next enters, so shared positions stay readable. */
+.caption{transition:opacity .15s ease,transform .2s ease,visibility .15s}
+.caption.active{transition:opacity .25s ease .15s,transform .35s ease .15s,visibility 0s .15s}
+.caption.caption-cut,.still-frames .caption,.no-webgl .caption{transition:none}
 /* Opening: scroll 0 is black and quiet, "you're awake." alone. Scrolling lifts the veil on the room; the words fade first, then the sign and the task arrive. All of it is scroll-driven (--veil, --awake, --fade, --task set in cinema.js) and reversible. */
 article.caption.opening{left:0;right:0;top:0;bottom:0;max-width:none;text-align:center;pointer-events:none}
 .caption.opening .op-awake{position:absolute;left:5vw;right:5vw;top:46%;transform:translateY(-50%);opacity:var(--fade,1);font-size:calc(clamp(38px,4.2vw,64px)*var(--awake,.6));color:#d5dcd3}
