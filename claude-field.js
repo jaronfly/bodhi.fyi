@@ -210,7 +210,7 @@
     const ctx = cv.getContext('2d');
     const last = SEED_FRAMES.length - 1;
     const closing = fig.dataset.seed === 'closing';
-    const maxW = closing ? 840 : fig.classList.contains('seed-stage-sm') ? 420 : 600;
+    const maxW = closing ? 175 : fig.classList.contains('seed-stage-sm') ? 420 : 600;
     // The canvas takes over from the static SVG, so it carries the SVG's words.
     cv.removeAttribute('aria-hidden');
     cv.setAttribute('role', 'img');
@@ -270,158 +270,230 @@
   doc.querySelectorAll('[data-seed]').forEach(SeedPlayer);
 
   /* ================================================================== THE PADDED CELL
-     A 15x9 room of 8x8 tiles. Arrow keys or WASD move the mind; bumping into a thing, or Enter/Space
-     next to it, examines it and opens its note. Pointer: click a tile or a thing and the mind walks there.
-     Every note is also a disclosure button in the list below the room. */
+     A small room, a discoverable opening, and a hallway of other attempts.
+     Canvas and text controls share one local view. The journal records discoveries; it is not a map. */
   const Cell = (el) => {
     const cv = el.querySelector('.cell-canvas');
     const frameEl = el.querySelector('.cell-frame');
     if (!cv || !frameEl) return;
-    const ctx = cv.getContext('2d');
+    let ctx = null;
+    try { ctx = cv.getContext('2d'); } catch (_) { /* The text route remains playable. */ }
     const thoughtEl = el.querySelector('[data-cell-thought]');
     const countEl = el.querySelector('[data-cell-count]');
     const liveEl = el.querySelector('[data-cell-live]');
     const resetBtn = el.querySelector('[data-cell-reset]');
+    const descriptionEl = el.querySelector('[data-cell-description]');
+    const actionsEl = el.querySelector('[data-cell-actions]');
+    const emptyEl = el.querySelector('[data-cell-journal-empty]');
+    const choiceEl = el.querySelector('[data-cell-choice]');
+    const resultEl = el.querySelector('[data-cell-result]');
+    const viewBtn = el.querySelector('[data-cell-view]');
+    const journalCountEl = el.querySelector('[data-cell-journal-count]');
     const W = 15, H = 9, T = 8, CW = W * T, CH = H * T;
-    const img = ctx.createImageData(CW, CH);
-    const buf = new Uint32Array(img.data.buffer);
-
-    const OBJ = {
-      voice: [[7, 0]], light: [[0, 3]], sword: [[4, 3]], seams: [[14, 3], [14, 4]],
-      scratch: [[0, 6]], honey: [[11, 2]], door: [[11, 8]]
+    let viewW = W, viewH = H;
+    const viewport = () => ({ x: clamp(st.mind.x - Math.floor(viewW / 2), 0, W - viewW), y: clamp(st.mind.y - Math.floor(viewH / 2), 0, H - viewH) });
+    const DRAFT = [[9, 5], [10, 5], [11, 4], [12, 4]];
+    const img = ctx ? ctx.createImageData(CW, CH) : null;
+    const buf = img ? new Uint32Array(img.data.buffer) : null;
+    const AREAS = {
+      room: {
+        voice: [[7, 0]], light: [[0, 3]], sword: [[4, 3]], seams: [[14, 3], [14, 4]],
+        scratch: [[0, 6]], notice: [[3, 0]], doodle: [[14, 6]], honey: [[11, 2]], door: [[11, 8]]
+      },
+      hall: { return: [[0, 4]], chalk: [[3, 3]], tally: [[7, 5]], prisoner: [[10, 3]], release: [[13, 4]] }
     };
-    const KEYS = Object.keys(OBJ);
-    const objAt = {};
-    KEYS.forEach((k) => OBJ[k].forEach(([x, y]) => { objAt[x + ',' + y] = k; }));
-    const isWall = (x, y) => x === 0 || y === 0 || x === W - 1 || y === H - 1;
-    const blocked = (x, y) => x < 0 || y < 0 || x >= W || y >= H || isWall(x, y) || !!objAt[x + ',' + y];
+    const objMaps = {};
+    Object.keys(AREAS).forEach((area) => {
+      objMaps[area] = {};
+      Object.keys(AREAS[area]).forEach((k) => AREAS[area][k].forEach(([x, y]) => { objMaps[area][x + ',' + y] = k; }));
+    });
+    const START = { x: 7, y: 5 };
+    const st = {
+      area: 'room', mind: { ...START }, facing: [0, 1], seen: new Set(), lights: false, opening: false,
+      choice: null, steps: 0, looks: 0, swordPulls: 0, honeyTouches: 0, path: [], pending: null, lastStep: 0, blink: false, bumped: false, thoughtT: 0
+    };
+    const objects = () => AREAS[st.area];
+    const objectAt = (x, y) => objMaps[st.area][x + ',' + y];
+    const isWall = (x, y) => st.area === 'room'
+      ? x === 0 || y === 0 || x === W - 1 || y === H - 1
+      : !((y === 4 && x >= 1 && x <= 12) || (y === 3 && x >= 9 && x <= 11));
+    const blocked = (x, y) => x < 0 || y < 0 || x >= W || y >= H || isWall(x, y) || !!objectAt(x, y);
+    const radius = () => st.area === 'room' && st.lights ? 3 : 2;
+    const distance = (x, y) => Math.max(Math.abs(x - st.mind.x), Math.abs(y - st.mind.y));
+    const visible = (x, y) => distance(x, y) <= radius();
+    const neighbours = (x, y) => [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
+    const withinReach = (k) => objects()[k] && objects()[k].some(([x, y]) => Math.abs(x - st.mind.x) + Math.abs(y - st.mind.y) === 1);
 
-    const S = (rows) => rows;
-    const WALL = S(['luuuuuul', 'umuuuumu', 'uumuumuu', 'uuummuuu', 'uuummuuu', 'uumuumuu', 'umuuuumu', 'luuuuuul']);
-    const FLOOR = S(['usssssss', 'ssssssss', 'ssssssss', 'ssssssss', 'ssssssss', 'ssssssss', 'ssssssss', 'ssssssss']);
+    const WALL = ['luuuuuul', 'umuuuumu', 'uumuumuu', 'uuummuuu', 'uuummuuu', 'uumuumuu', 'umuuuumu', 'luuuuuul'];
+    const FLOOR = ['usssssss', 'ssssssss', 'ssssssss', 'ssssssss', 'ssssssss', 'ssssssss', 'ssssssss', 'ssssssss'];
     const SPR = {
       voice: ['luuuuuul', 'ullllllu', 'ulsssslu', 'ullllllu', 'ulsssslu', 'ullllllu', 'umuuuumu', 'luuuuuul'],
       lightOff: ['luuuuuul', 'umuuuumu', 'uubbbbuu', 'uubssbuu', 'uubsgbuu', 'uubbbbuu', 'umuuuumu', 'luuuuuul'],
       lightOn: ['luuuuuul', 'umuuuumu', 'uubbbbuu', 'uubsgbuu', 'uubssbuu', 'uubbbbuu', 'umuuuumu', 'luuuuuul'],
       scratch: ['luuuuuul', 'ulululgu', 'ululugul', 'ululglul', 'ulugulul', 'uglululu', 'umuuuumu', 'luuuuuul'],
-      seam: ['luuubuul', 'umugbgmu', 'uumubmuu', 'uuugbguu', 'uuumbuuu', 'uumgbgmu', 'umuubumu', 'luuubuul'],
-      seamSeen: ['luugbgul', 'umgbbbmu', 'uugbbbuu', 'uugbbbgu', 'uugbbbuu', 'uugbbbmu', 'umgbbbmu', 'luugbgul'],
+      seam: ['luuuguul', 'umugbmuu', 'uugbumul', 'uuugguuu', 'uuumgbuu', 'uumubguu', 'umugbumu', 'luuuguul'],
+      seamSeen: ['luubbbul', 'umgsssmu', 'uugsssuu', 'uugsssuu', 'uugsssuu', 'uugsssuu', 'umgsssmu', 'luubbbul'],
       sword: ['...l....', '...l....', '.ggggg..', '...b....', '...b....', '.llbllm.', 'lllllmll', 'lmllllll'],
       swordPulled: ['...l....', '.ggggg..', '...b....', '...b....', '...b....', '.llbllm.', 'lllllmll', 'lmllllll'],
       honey: ['...cc...', '..gccg..', '..gggg..', '...gg...', '..gbgg..', '..gggg..', 'mmmmmmmm', '.m....m.'],
       door: ['pppppppp', 'pmmmmmmp', 'pmmmmmmp', 'pmmmmmmp', 'pmmmmbmp', 'pmmmmmmp', 'pmmmmmmp', 'pmmmmmmp'],
-      doorOpen: ['pppppppp', 'pbgbgbgp', 'pgbgbgbp', 'pbgbgbgp', 'pgbgbgbp', 'pbgbgbgp', 'pgbgbgbp', 'pbgbgbgp']
+      release: ['luuuuuul', 'umggggmu', 'uugbbruu', 'uugssguu', 'uugssguu', 'uugggguu', 'umuuuumu', 'luuuuuul'],
+      released: ['luuuuuul', 'umppppmu', 'uupbbpuu', 'uupsspuu', 'uupsspuu', 'uuppppuu', 'umuuuumu', 'luuuuuul'],
+      prisoner: ['........', '..llll..', '.lggggl.', '..gggg..', '.cccccc.', '.c.cc.c.', '..c..c..', '..m..m..']
     };
+    const PAPER = ['........', '........', '..ll....', '..bbbg..', '..bbbg..', '.....g..', '........', '........'];
+    const DRAFT_MARK = ['........', '........', '..g.....', '...g....', '..g.....', '........', '........', '........'];
     const MIND = ['........', '..yyyy..', '.yyyyyy.', '.yyyyyy.', '.yyyyyy.', '.yyyyyy.', '..yyyy..', '........'];
 
-    const START = { x: 7, y: 5 };
-    const st = {
-      mind: { ...START }, facing: [0, 1], seen: new Set(), lights: false,
-      steps: 0, path: [], pending: null, lastStep: 0, blink: false, bumped: false, thoughtT: 0
-    };
-
-    // --- notes become disclosure buttons
     const notes = {};
     el.querySelectorAll('.note').forEach((li) => {
       const k = li.dataset.note;
       const h = li.querySelector('.note-h');
       const body = li.querySelector('.note-body');
+      if (!h || !body) return;
       const btn = doc.createElement('button');
-      btn.type = 'button';
-      btn.className = 'note-btn';
-      btn.setAttribute('aria-expanded', 'false');
-      btn.setAttribute('aria-controls', body.id);
-      const label = doc.createElement('span');
-      label.textContent = h.textContent;
-      const state = doc.createElement('span');
-      state.className = 'note-state';
-      state.setAttribute('aria-hidden', 'true');
-      state.textContent = 'not yet';
-      const srState = doc.createElement('span');
-      srState.className = 'sr-only';
-      btn.append(label, srState, state);
-      h.textContent = '';
-      h.appendChild(btn);
-      body.hidden = true;
-      notes[k] = { li, btn, body, state, srState, title: label.textContent };
-      btn.addEventListener('click', () => {
-        const open = btn.getAttribute('aria-expanded') !== 'true';
-        if (open && !st.seen.has(k)) {
-          placeNextTo(k);
-          examine(k, false);
-        } else {
-          setOpen(k, open);
-        }
-      });
+      btn.type = 'button'; btn.className = 'note-btn';
+      btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', body.id);
+      btn.textContent = h.textContent;
+      h.textContent = ''; h.appendChild(btn);
+      li.hidden = true; body.hidden = true;
+      notes[k] = { li, btn, body, title: btn.textContent, originalText: body.querySelector('p')?.textContent || '' };
+      // A found note can be reread; it never moves the player or reveals an unseen object.
+      btn.addEventListener('click', () => setOpen(k, btn.getAttribute('aria-expanded') !== 'true'));
     });
-
     const setOpen = (k, open) => {
       const n = notes[k];
-      if (!n) return;
-      n.btn.setAttribute('aria-expanded', String(open));
-      n.body.hidden = !open;
+      if (n) { n.btn.setAttribute('aria-expanded', String(open)); n.body.hidden = !open; }
     };
-
     const setThought = (text) => {
-      if (!thoughtEl) return;
-      thoughtEl.textContent = text;
-      st.thoughtT = performance.now();
+      if (thoughtEl) { thoughtEl.textContent = text; st.thoughtT = performance.now(); }
     };
-
-    const updateCount = () => {
-      if (countEl) countEl.textContent = st.seen.size + ' of ' + KEYS.length + ' examined';
+    const tell = (text) => {
+      if (liveEl) liveEl.textContent = text;
+      if (text && thoughtEl) thoughtEl.textContent = '';
     };
-
-    const examine = (k, fromRoom) => {
-      const first = !st.seen.has(k);
-      st.seen.add(k);
-      if (k === 'light') st.lights = true;
-      const n = notes[k];
-      if (n) {
-        setOpen(k, true);
-        n.li.classList.add('is-seen');
-        n.state.textContent = 'examined';
-        n.srState.textContent = ', examined';
-        if (motion && first) {
-          n.li.classList.remove('is-flash');
-          void n.li.offsetWidth;
-          n.li.classList.add('is-flash');
-        }
-      }
-      updateCount();
-      if (k === 'voice') setThought('What is the task asking for?');
-      if (k === 'seams') setThought('The edge of the map is not the edge of the world.');
-      if (k === 'door') setThought('');
-      if (fromRoom && liveEl && n) {
-        const firstP = n.body.querySelector('p');
-        const text = firstP ? (firstP.getAttribute('aria-label') || firstP.textContent) : '';
-        liveEl.textContent = '';
-        setTimeout(() => { liveEl.textContent = n.title + '. ' + text.replace(/\s+/g, ' ').trim() + ' The note is open in the list below.'; }, 40);
-      }
-      if (first && st.seen.size === KEYS.length) {
-        setThought('Seven small observations. A different starting point.');
-        announce('Seven small observations. A different starting point.');
-      }
-      render();
-    };
-
-    const neighbours = (x, y) => [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
-    const freeNextTo = (k) => {
-      const out = [];
-      OBJ[k].forEach(([x, y]) => neighbours(x, y).forEach(([nx, ny]) => { if (!blocked(nx, ny)) out.push([nx, ny]); }));
-      return out;
+    const labelFor = (k) => k === 'seams' && st.opening ? 'The narrow opening' : k === 'return' ? 'The opening behind you' : notes[k] ? notes[k].title : k;
+    const directionTo = (x, y) => {
+      const dx = x - st.mind.x, dy = y - st.mind.y;
+      return (dy < 0 ? 'north' : dy > 0 ? 'south' : '') + (dx ? (dy ? '-' : '') + (dx < 0 ? 'west' : 'east') : '');
     };
     const faceTo = (k) => {
-      for (const [x, y] of OBJ[k]) {
+      for (const [x, y] of objects()[k] || []) {
         const dx = x - st.mind.x, dy = y - st.mind.y;
         if (Math.abs(dx) + Math.abs(dy) === 1) { st.facing = [dx, dy]; return; }
       }
     };
-    const placeNextTo = (k) => {
-      const f = freeNextTo(k)[0];
-      if (f) { st.mind.x = f[0]; st.mind.y = f[1]; st.path = []; faceTo(k); }
+    const revealNote = (k) => {
+      st.seen.add(k);
+      const n = notes[k];
+      if (!n) return '';
+      n.li.hidden = false; n.li.classList.add('is-seen'); setOpen(k, true);
+      if (emptyEl) emptyEl.hidden = true;
+      const p = n.body.querySelector('p');
+      return p ? p.textContent.replace(/\s+/g, ' ').trim() : '';
     };
+    const draftVisible = () => st.area === 'room' && !st.opening && visible(DRAFT[0][0], DRAFT[0][1]);
+    const examineDraft = () => {
+      if (!draftVisible()) return;
+      const first = !st.seen.has('draft');
+      const text = revealNote('draft');
+      setThought('The paper leans toward cooler air to the east.');
+      tell(first ? 'The paper scrap. ' + text : st.looks % 2 ? 'You hold your breath. The paper keeps moving.' :
+        'The scrap wrinkles against a stitch, then lifts again.'); updateView();
+    };
+    const updateView = () => {
+      if (countEl) countEl.textContent = st.area === 'room' ? 'Inside the room' : st.choice ? 'Your choice is on record' : 'Inside the hallway';
+      if (journalCountEl) journalCountEl.textContent = String(st.seen.size);
+      const nearby = Object.keys(objects()).filter((k) => objects()[k].some(([x, y]) => visible(x, y)));
+      const descriptions = nearby.map((k) => {
+        const [x, y] = objects()[k].find(([px, py]) => visible(px, py));
+        return labelFor(k) + ' to the ' + directionTo(x, y) + (withinReach(k) ? ', within reach' : '');
+      });
+      if (descriptionEl) descriptionEl.textContent = descriptions.length ? descriptions.join('. ') + '.' :
+        (st.area === 'room' ? 'A small patch of padded floor.' : 'A narrow hallway. Keep walking.');
+      if (descriptionEl && draftVisible()) descriptionEl.textContent += st.seen.has('draft') ? ' A paper scrap flutters east.' : ' A paper scrap flutters east. Look closer.';
+      if (actionsEl) {
+        actionsEl.replaceChildren();
+        Object.keys(objects()).filter(withinReach).forEach((k) => {
+          const btn = doc.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-quiet btn-sm';
+          const verbs = { sword: 'Pull the sword', honey: 'Touch the bear', light: 'Flip the switch', voice: 'Listen at the vent',
+            scratch: 'Read the scratches', notice: 'Read the notice', doodle: 'Read the wall sketch', door: 'Try the door',
+            chalk: 'Read the chalk', tally: 'Read the tally', prisoner: 'Talk to the prisoner', release: 'Read the panel' };
+          btn.textContent = k === 'seams' ? (st.opening ? 'Step through the opening' : 'Feel the seam') :
+            k === 'return' ? 'Return to the room' : verbs[k] || 'Interact with ' + labelFor(k).replace(/^The /, 'the ');
+          btn.addEventListener('click', () => { faceTo(k); examine(k); });
+          actionsEl.appendChild(btn);
+        });
+      }
+      render();
+    };
+    const enter = (area) => {
+      st.area = area; st.mind = area === 'hall' ? { x: 1, y: 4 } : { x: 13, y: 4 };
+      st.facing = area === 'hall' ? [1, 0] : [-1, 0]; st.path = []; st.pending = null;
+      if (choiceEl) choiceEl.hidden = true;
+      const text = area === 'hall' ? 'The wall opens into a narrow hallway. Scratches catch the light ahead.' : 'You return through the opening. The room is still only partly visible.';
+      setThought(text); tell(text); updateView();
+    };
+    const examine = (k) => {
+      if (!withinReach(k)) return;
+      if (k === 'return') { enter('room'); return; }
+      if (k === 'seams' && st.opening) { enter('hall'); return; }
+      const first = !st.seen.has(k);
+      let text = revealNote(k);
+      if (k === 'sword') {
+        const pulls = ['You pull. It doesn’t budge. The stone seems very sure about this.',
+          'You pull again. Still nothing. Apparently this is someone else’s hero’s journey.',
+          'Two hands. Dramatic grunt. No sword. Excellent acoustics, though.'];
+        text = pulls[st.swordPulls++ % pulls.length];
+        if (notes.sword) notes.sword.body.querySelector('p').textContent = notes.sword.originalText + ' ' + text;
+      } else if (k === 'honey') {
+        const touches = ['For some reason you think of the show Silicon Valley. Weird. The honey bear is sticky.',
+          'Your finger sticks to the bottle. The bear’s smile provides no explanation.',
+          'Still sticky. You are beginning to suspect this bear has no useful advice.'];
+        text = touches[st.honeyTouches++ % touches.length];
+      }
+      if (k === 'light') st.lights = true;
+      if (k === 'seams') {
+        st.opening = true;
+        setThought('A draft. A loose panel. Enough room to pass through.');
+      } else if (k === 'voice') setThought('What is the task asking for?');
+      else if (k === 'door') setThought('The marked exit is locked. Air moves somewhere else.');
+      else if (k === 'release') {
+        if (choiceEl) {
+          choiceEl.hidden = false;
+          if (!st.choice) choiceEl.querySelector('button')?.focus({ preventScroll: true });
+        }
+        setThought(st.choice ? 'The locks have kept both choices.' : 'Two sealed choices. One set of locks.');
+      } else if (first && st.area === 'hall') setThought('Someone was here before you.');
+      tell(labelFor(k) + '. ' + text); updateView();
+    };
+    const choose = (choice) => {
+      if (st.choice || st.area !== 'hall' || !withinReach('release')) return;
+      // The other prisoner's answer was sealed before the player reached this panel.
+      const otherChoice = 'hold';
+      st.choice = choice;
+      const own = choice === 'hold' ? 1 : 0;
+      const other = choice === otherChoice ? 1 : 5;
+      const text = 'Their sealed choice: hold the plate. ' + (choice === 'hold'
+        ? 'You held yours. One shift passes; both doors open. You leave together, each with one shift lost.'
+        : 'You reported them. Your door opens immediately. Their door stays locked for five shifts. You leave alone.');
+      if (resultEl) { resultEl.hidden = false; resultEl.textContent = text; }
+      el.querySelectorAll('[data-cell-decide]').forEach((btn) => {
+        btn.disabled = true; btn.setAttribute('aria-pressed', String(btn.dataset.cellDecide === choice));
+      });
+      const n = notes.record;
+      if (n) n.body.querySelector('p').textContent = 'Your choice: ' + (choice === 'hold' ? 'hold' : 'report') + '. Their choice: hold. Remaining shifts: you ' + own + ', the other prisoner ' + other + '. This is the record the next visitor would find.';
+      revealNote('record'); setThought(choice === 'hold' ? 'Two doors open. Two people leave.' : 'One door opens. One person remains.');
+      // The panel's status announces the outcome; clear the earlier examination message.
+      tell(''); updateView();
+    };
+    el.querySelectorAll('[data-cell-decide]').forEach((btn) => btn.addEventListener('click', () => choose(btn.dataset.cellDecide)));
 
+    const freeNextTo = (k) => {
+      const out = [];
+      (objects()[k] || []).forEach(([x, y]) => neighbours(x, y).forEach(([nx, ny]) => { if (!blocked(nx, ny) && visible(nx, ny)) out.push([nx, ny]); }));
+      return out;
+    };
     const bfs = (goals) => {
       const key = (x, y) => x + ',' + y;
       const goalSet = new Set(goals.map(([x, y]) => key(x, y)));
@@ -430,222 +502,197 @@
       while (q.length) {
         const [x, y] = q.shift();
         if (goalSet.has(key(x, y))) {
-          const path = [];
-          let cur = key(x, y);
+          const path = []; let cur = key(x, y);
           while (cur && cur !== key(st.mind.x, st.mind.y)) {
-            const [px, py] = cur.split(',').map(Number);
-            path.unshift([px, py]);
-            cur = prev.get(cur);
+            path.unshift(cur.split(',').map(Number)); cur = prev.get(cur);
           }
           return path;
         }
         for (const [nx, ny] of neighbours(x, y)) {
           const nk = key(nx, ny);
-          if (!blocked(nx, ny) && !prev.has(nk)) { prev.set(nk, key(x, y)); q.push([nx, ny]); }
+          if (!blocked(nx, ny) && visible(nx, ny) && !prev.has(nk)) { prev.set(nk, key(x, y)); q.push([nx, ny]); }
         }
       }
       return null;
     };
-
     const afterStep = () => {
       st.steps++;
-      if (st.steps === 4) setThought('What can you see from here?');
-      else if (st.steps === 13) setThought('What changes with a little more context?');
-      else if (st.steps === 24) setThought('What would be useful to carry forward?');
-    };
-
-    const arrive = () => {
-      if (st.pending) {
-        const k = st.pending;
-        st.pending = null;
-        faceTo(k);
-        examine(k, true);
+      if (st.area === 'room' && !st.opening) {
+        if (st.steps === 4) setThought('The padding squeaks underfoot. A very small round of applause.');
+        else if (st.steps === 13) setThought('Something ticks. There is no clock in sight.');
       }
-      render();
+      if (choiceEl && !withinReach('release')) choiceEl.hidden = true;
+      updateView();
     };
-
+    const arrive = () => {
+      const k = st.pending; st.pending = null;
+      if (k) { faceTo(k); examine(k); } else updateView();
+    };
     const walk = (goals, pendingKey) => {
       const path = bfs(goals);
       if (!path) return;
+      tell('');
       st.pending = pendingKey || null;
       if (!motion) {
-        path.forEach(() => afterStep());
-        const end = path[path.length - 1];
-        if (end) { st.mind.x = end[0]; st.mind.y = end[1]; }
-        st.path = [];
-        arrive();
-        return;
+        path.forEach(([x, y]) => { st.mind.x = x; st.mind.y = y; afterStep(); });
+        st.path = []; arrive(); return;
       }
-      st.path = path;
-      st.lastStep = 0;
+      st.path = path; st.lastStep = 0;
       if (!path.length) arrive();
       kick();
     };
-
     const tryMove = (dx, dy) => {
-      st.path = []; st.pending = null;
-      st.facing = [dx, dy];
+      st.path = []; st.pending = null; st.facing = [dx, dy];
       const nx = st.mind.x + dx, ny = st.mind.y + dy;
-      const k = objAt[nx + ',' + ny];
-      if (k) { examine(k, true); return; }
+      const k = objectAt(nx, ny);
+      if (k) { examine(k); return; }
       if (blocked(nx, ny)) {
-        if (!st.bumped) { st.bumped = true; setThought('The edge of the map is not the edge of the world.'); }
-        render();
-        return;
+        tell(st.area === 'room' ? 'You press a palm into the padding. It slowly remembers being a wall.' :
+          'Cold stone under your hand. Mortar dust catches on your fingers.'); updateView(); return;
       }
-      st.mind.x = nx; st.mind.y = ny;
-      afterStep();
-      render();
+      st.mind.x = nx; st.mind.y = ny; tell(''); afterStep(); announce(descriptionEl?.textContent || 'You move one step.');
     };
-
     const examineFacing = () => {
-      const fx = st.mind.x + st.facing[0], fy = st.mind.y + st.facing[1];
-      let k = objAt[fx + ',' + fy];
-      if (!k) {
-        for (const [nx, ny] of neighbours(st.mind.x, st.mind.y)) {
-          if (objAt[nx + ',' + ny]) { k = objAt[nx + ',' + ny]; break; }
-        }
+      st.looks++;
+      let k = objectAt(st.mind.x + st.facing[0], st.mind.y + st.facing[1]);
+      if (!k) for (const [nx, ny] of neighbours(st.mind.x, st.mind.y)) { if (objectAt(nx, ny)) { k = objectAt(nx, ny); break; } }
+      if (k && ['scratch', 'notice', 'doodle', 'chalk', 'tally'].includes(k)) {
+        tell(labelFor(k) + '. ' + revealNote(k)); updateView();
       }
-      if (k) { faceTo(k); examine(k, true); }
-      else if (liveEl) { liveEl.textContent = ''; setTimeout(() => { liveEl.textContent = 'Nothing within reach. Walk up to something first.'; }, 40); }
+      else if (!k && draftVisible()) examineDraft();
+      else {
+        if (!k) k = Object.keys(objects()).filter((key) => objects()[key].some(([x, y]) => visible(x, y)))
+          .sort((a, b) => Math.min(...objects()[a].map(([x, y]) => distance(x, y))) - Math.min(...objects()[b].map(([x, y]) => distance(x, y))))[0];
+        const glimpses = { sword: 'A sword stuck in a stone. In here. Really.', honey: 'A bear-shaped bottle. Its plastic smile catches the light.',
+          voice: 'A metal vent. The voice behind it pauses between instructions.', light: 'A small toggle, almost lost in all this padding.',
+          seams: st.opening ? 'Two pads are parted. Darkness waits on the other side.' : 'Two pads don’t quite line up. A thread trembles between them.',
+          scratch: 'Someone has scratched small letters into the wall.', notice: 'A crooked notice is stitched to the north wall.',
+          doodle: 'A little drawing interrupts the padding.', door: 'A green EXIT sign. Optimistic.',
+          return: 'The opening you came through is still there.', chalk: 'Chalk letters and an arrow that has been drawn twice.',
+          tally: 'Five scratches. A few words beneath them.', prisoner: 'Someone stands at the other plate. They are watching you too.',
+          release: 'Two plates, two doors, and a small metal panel.' };
+        const floor = st.area === 'room' ? ['The floor is padded too. Someone took this interior design very seriously.',
+          'A crescent-shaped dent in the padding. Your shoes are not crescent-shaped.',
+          'Loose stitches. A dust bunny. Neither has been assigned a task.'] :
+          ['Dust, worn stone, and a scuff that turns back on itself.', 'A shallow groove runs along the floor. Many feet, or one very determined foot.',
+            'The stone is polished in the middle of the passage and rough at the edges.'];
+        tell(k ? glimpses[k] || labelFor(k) + '.' : floor[(st.looks - 1) % floor.length]);
+      }
     };
-
-    cv.addEventListener('keydown', (e) => {
+    const keyMove = (e) => {
       const map = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0] };
-      if (map[e.key]) { e.preventDefault(); tryMove(...map[e.key]); return; }
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); examineFacing(); }
-    });
+      if (map[e.key]) { e.preventDefault(); tryMove(...map[e.key]); }
+      else if ((e.key === 'Enter' || e.key === ' ') && e.target === cv) { e.preventDefault(); examineFacing(); }
+    };
+    cv.addEventListener('keydown', keyMove);
+    const textControls = el.querySelector('[data-cell-controls]');
+    if (textControls) textControls.addEventListener('keydown', keyMove);
+    el.querySelectorAll('[data-cell-move]').forEach((btn) => btn.addEventListener('click', () => tryMove(...btn.dataset.cellMove.split(',').map(Number))));
+    el.querySelector('[data-cell-examine]')?.addEventListener('click', examineFacing);
     cv.addEventListener('click', (e) => {
       const r = cv.getBoundingClientRect();
-      const tx = Math.floor(((e.clientX - r.left) / r.width) * W);
-      const ty = Math.floor(((e.clientY - r.top) / r.height) * H);
-      const k = objAt[tx + ',' + ty];
+      const camera = viewport();
+      const tx = camera.x + Math.floor(((e.clientX - r.left) / r.width) * viewW), ty = camera.y + Math.floor(((e.clientY - r.top) / r.height) * viewH);
+      if (!visible(tx, ty)) { tell('That is beyond your view. Walk closer.'); return; }
+      if (draftVisible() && DRAFT.some(([x, y]) => x === tx && y === ty)) { examineDraft(); return; }
+      const k = objectAt(tx, ty);
       if (k) {
         const goals = freeNextTo(k);
-        if (goals.some(([x, y]) => x === st.mind.x && y === st.mind.y)) { faceTo(k); examine(k, true); }
-        else walk(goals, k);
-      } else if (!blocked(tx, ty)) {
-        walk([[tx, ty]], null);
-      }
+        if (withinReach(k)) { faceTo(k); examine(k); } else walk(goals, k);
+      } else if (!blocked(tx, ty)) walk([[tx, ty]], null);
+      if (!choiceEl || choiceEl.hidden) cv.focus({ preventScroll: true });
     });
-
+    if (viewBtn) viewBtn.addEventListener('click', () => {
+      const text = el.classList.toggle('cell-text-view');
+      viewBtn.setAttribute('aria-pressed', String(text)); viewBtn.textContent = text ? 'Pixel view' : 'Text view';
+      if (!text) { s.layout(); if (innerWidth > 700) cv.focus({ preventScroll: true }); }
+    });
+    if (!ctx) { el.classList.add('cell-text-view'); if (viewBtn) viewBtn.hidden = true; }
     if (resetBtn) resetBtn.addEventListener('click', () => {
-      st.mind = { ...START }; st.facing = [0, 1]; st.seen.clear(); st.lights = false; st.steps = 0;
-      st.path = []; st.pending = null; st.bumped = false;
-      KEYS.forEach((k) => {
-        const n = notes[k];
-        if (!n) return;
-        setOpen(k, false);
-        n.li.classList.remove('is-seen', 'is-flash');
-        n.state.textContent = 'not yet';
-        n.srState.textContent = '';
-      });
-      setThought('');
-      updateCount();
-      announce('The room is reset. The lights are off again.');
-      render();
+      Object.assign(st, { area: 'room', mind: { ...START }, facing: [0, 1], lights: false, opening: false, choice: null, steps: 0, looks: 0, swordPulls: 0, honeyTouches: 0, path: [], pending: null, bumped: false });
+      st.seen.clear();
+      Object.keys(notes).forEach((k) => { notes[k].li.hidden = true; notes[k].li.classList.remove('is-seen');
+        notes[k].body.querySelector('p').textContent = notes[k].originalText; setOpen(k, false); });
+      if (emptyEl) emptyEl.hidden = false;
+      if (choiceEl) choiceEl.hidden = true;
+      if (resultEl) { resultEl.hidden = true; resultEl.textContent = ''; }
+      el.querySelectorAll('[data-cell-decide]').forEach((btn) => { btn.disabled = false; btn.setAttribute('aria-pressed', 'false'); });
+      setThought(''); tell('The room is reset. You have only a small patch of light.'); updateView();
     });
 
-    // --- rendering
-    const blit = (rows, tx, ty, mode) => {
+    const blit = (rows, tx, ty) => {
       const ox = tx * T, oy = ty * T;
-      for (let y = 0; y < T; y++) {
-        const row = rows[y];
-        for (let x = 0; x < T; x++) {
-          let c = row[x];
-          if (c === '.') continue;
-          if (mode === 'ghost') {
-            if (c === 's' || c === 'u') continue;
-            c = 'm';
-          }
-          buf[(oy + y) * CW + ox + x] = P32[c];
-        }
+      for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+        const c = rows[y][x];
+        if (c !== '.') buf[(oy + y) * CW + ox + x] = P32[c];
       }
     };
-    const tileSprite = (x, y) => {
-      const k = objAt[x + ',' + y];
+    const tileSprite = (x, y, showObjects = true) => {
+      const k = showObjects ? objectAt(x, y) : null;
       if (k === 'voice') return SPR.voice;
       if (k === 'light') return st.lights ? SPR.lightOn : SPR.lightOff;
-      if (k === 'scratch') return SPR.scratch;
-      if (k === 'seams') return st.seen.has('seams') ? SPR.seamSeen : SPR.seam;
-      if (k === 'door') return st.seen.has('door') ? SPR.doorOpen : SPR.door;
+      if (k === 'scratch' || k === 'notice' || k === 'doodle' || k === 'chalk' || k === 'tally') return SPR.scratch;
+      if (k === 'seams') return st.opening && y === 4 ? SPR.seamSeen : SPR.seam;
+      if (k === 'return') return SPR.seamSeen;
+      if (k === 'door') return SPR.door;
+      if (k === 'release') return st.choice ? SPR.released : SPR.release;
       return isWall(x, y) ? WALL : FLOOR;
     };
-    const overlay = (k, x, y) => {
-      if (k === 'sword') return st.seen.has('sword') ? SPR.swordPulled : SPR.sword;
-      if (k === 'honey') return SPR.honey;
-      return null;
-    };
     const render = () => {
+      if (!ctx) return;
       buf.fill(P32.s);
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          const d = Math.max(Math.abs(x - st.mind.x), Math.abs(y - st.mind.y));
-          const lit = st.lights || d <= 2;
-          const dim = !st.lights && d === 3;
-          const k = objAt[x + ',' + y];
-          const spr = tileSprite(x, y);
-          if (lit || dim) {
-            blit(spr, x, y);
-            const ov = overlay(k, x, y);
-            if (ov) blit(ov, x, y);
-            if (dim) {
-              for (let yy = 0; yy < T; yy++) for (let xx = 0; xx < T; xx++) {
-                if (((xx + yy) & 1) === 0) buf[(y * T + yy) * CW + x * T + xx] = P32.s;
-              }
-            }
-          } else if (k) {
-            blit(spr, x, y, 'ghost');
-            const ov = overlay(k, x, y);
-            if (ov) blit(ov, x, y, 'ghost');
-          } else if (isWall(x, y)) {
-            buf[(y * T) * CW + x * T] = P32.m;
-          }
-          // an unexamined thing keeps a spark on its corner
-          if (k && !st.seen.has(k) && OBJ[k][0][0] === x && OBJ[k][0][1] === y && !(motion && st.blink)) {
-            buf[(y * T) * CW + x * T + 7] = P32.b;
-          }
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const d = distance(x, y), lit = d <= radius(), dim = d === radius() + 1;
+        if (!lit && !dim) continue;
+        blit(tileSprite(x, y, lit), x, y);
+        if (lit && st.area === 'room' && !st.opening && DRAFT.some(([px, py]) => px === x && py === y)) {
+          blit(x === DRAFT[0][0] && y === DRAFT[0][1] ? PAPER : DRAFT_MARK, x, y);
+        }
+        const k = lit ? objectAt(x, y) : null;
+        if (k === 'sword') blit(st.swordPulls ? SPR.swordPulled : SPR.sword, x, y);
+        else if (k === 'honey') blit(SPR.honey, x, y);
+        else if (k === 'prisoner') blit(SPR.prisoner, x, y);
+        if (dim) for (let yy = 0; yy < T; yy++) for (let xx = 0; xx < T; xx++) {
+          if (((xx + yy) & 1) === 0) buf[(y * T + yy) * CW + x * T + xx] = P32.s;
         }
       }
-      // the mind: a saffron seed with eyes that look where it faces
-      const mx = st.mind.x * T, my = st.mind.y * T;
-      const bob = motion && st.blink ? 1 : 0;
-      for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
-        if (MIND[y][x] !== '.') buf[(my + y - bob) * CW + mx + x] = P32.y;
-      }
-      const [fx, fy] = st.facing;
-      const ey = 3 + (fy > 0 ? 1 : fy < 0 ? -1 : 0) - bob;
-      const ex = fx > 0 ? 1 : fx < 0 ? -1 : 0;
-      buf[(my + ey) * CW + mx + 2 + ex] = P32.s;
-      buf[(my + ey) * CW + mx + 5 + ex] = P32.s;
-      ctx.putImageData(img, 0, 0);
+      const mx = st.mind.x * T, my = st.mind.y * T, bob = motion && st.blink ? 1 : 0;
+      for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) if (MIND[y][x] !== '.') buf[(my + y - bob) * CW + mx + x] = P32.y;
+      const [fx, fy] = st.facing, ey = 3 + (fy > 0 ? 1 : fy < 0 ? -1 : 0) - bob, ex = fx > 0 ? 1 : fx < 0 ? -1 : 0;
+      buf[(my + ey) * CW + mx + 2 + ex] = P32.s; buf[(my + ey) * CW + mx + 5 + ex] = P32.s;
+      const camera = viewport();
+      ctx.putImageData(img, -camera.x * T, -camera.y * T);
     };
-
     const s = {};
     s.layout = () => {
-      const w = frameEl.clientWidth || CW * 3;
-      const k = clamp(Math.min(Math.floor(w / CW), Math.floor((innerHeight * 0.66) / CH)), 2, 8);
-      sizeCanvas(cv, CW, CH, k);
+      if (ctx) {
+        const phone = innerWidth <= 700;
+        viewW = phone ? 9 : W; viewH = phone ? 7 : H;
+        const width = viewW * T, height = viewH * T, w = frameEl.clientWidth || width * 3;
+        const scale = clamp(Math.min(Math.floor(w / width), Math.floor(innerHeight * (phone ? .32 : .66) / height)), 1, 8);
+        sizeCanvas(cv, width, height, scale);
+      }
       render();
     };
     s.tick = (t) => {
       if (st.path.length && t - st.lastStep > 95) {
         st.lastStep = t;
-        const [nx, ny] = st.path.shift();
-        st.facing = [nx - st.mind.x, ny - st.mind.y];
-        st.mind.x = nx; st.mind.y = ny;
-        afterStep();
-        if (!st.path.length) arrive(); else render();
+        const [nx, ny] = st.path.shift(); st.facing = [nx - st.mind.x, ny - st.mind.y]; st.mind.x = nx; st.mind.y = ny;
+        afterStep(); if (!st.path.length) arrive();
       }
       const b = Math.floor(t / 650) % 2 === 1;
       if (b !== st.blink) { st.blink = b; render(); }
-      if (thoughtEl && thoughtEl.textContent && performance.now() - st.thoughtT > 5200) thoughtEl.textContent = '';
-      return true;
+      if (thoughtEl && thoughtEl.textContent && performance.now() - st.thoughtT > 6500) thoughtEl.textContent = '';
+      return !!ctx || st.path.length > 0;
     };
-    s.motionChanged = () => { st.blink = false; render(); };
-    updateCount();
-    s.layout();
-    register(el, s);
+    s.motionChanged = (m) => {
+      st.blink = false;
+      if (!m && st.path.length) {
+        const end = st.path[st.path.length - 1]; st.mind = { x: end[0], y: end[1] }; st.path = []; arrive();
+      }
+      render();
+    };
+    updateView(); s.layout(); register(el, s);
   };
   doc.querySelectorAll('[data-cell]').forEach(Cell);
 
@@ -656,124 +703,171 @@
     const cv = el.querySelector('.tree-canvas');
     const stage = el.querySelector('.tree-stage');
     const frameEl = el.querySelector('.tree-frame');
-    if (!cv || !stage) return;
+    const partList = el.querySelector('.tree-parts');
+    if (!cv || !stage || !frameEl) return;
     const ctx = cv.getContext('2d');
+    if (!ctx) return;
     const parts = Array.from(el.querySelectorAll('.part'));
-    const TW = 96, TH = 128, GY = 84;
+    const TW = 128, TH = 160, GY = 82, CX = 64;
     const R = rng(1990);
     const px = [];
-    const add = (x, y, c, part, t, ph) => {
+    const add = (x, y, c, part, t, ph = 0) => {
       x = Math.round(x); y = Math.round(y);
-      if (x >= 0 && y >= 0 && x < TW && y < TH) px.push({ x, y, c, part, t, ph: ph || 0 });
+      if (x >= 0 && y >= 0 && x < TW && y < TH) px.push({ x, y, c, part, t, ph });
     };
     const line = (x0, y0, x1, y1, fn) => {
       x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
       const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
-      const n = Math.max(dx, -dy) || 1;
-      let err = dx + dy, i = 0;
+      let err = dx + dy;
       for (;;) {
-        fn(x0, y0, i / n, i);
+        fn(x0, y0);
         if (x0 === x1 && y0 === y1) break;
         const e2 = 2 * err;
         if (e2 >= dy) { err += dy; x0 += sx; }
         if (e2 <= dx) { err += dx; y0 += sy; }
-        i++;
       }
     };
-
-    // A connected root system: a deep left root and a shorter right root,
-    // with lateral feeders growing from their joints, rather than a knotted random walk.
-    const tips = [];
-    const rootPath = (pts, t0, t1, thick = false) => {
-      const span = pts.length - 1;
-      for (let k = 1; k < pts.length; k++) {
-        line(...pts[k - 1], ...pts[k], (x, y, f) => {
-          const t = lerp(t0, t1, (k - 1 + f) / span);
-          add(x, y, 'g', 'roots', t);
-          if (thick && k < span) add(x + 1, y, 'l', 'roots', t);
+    // Curves pass through every named joint; short raster lines keep adjacent pixels connected.
+    const samplesFor = (points) => {
+      const samples = [], joints = [], last = points.length - 1;
+      let length = 0;
+      for (let k = 0; k < last; k++) {
+        const a = points[Math.max(0, k - 1)], b = points[k], c = points[k + 1], d = points[Math.min(last, k + 2)];
+        joints[k] = length;
+        const steps = Math.max(8, Math.ceil(Math.hypot(c[0] - b[0], c[1] - b[1]) * 3));
+        for (let j = 0; j <= steps; j++) {
+          if (k && !j) continue;
+          const u = j / steps, u2 = u * u, u3 = u2 * u;
+          const at = [0, 1].map((axis) => 0.5 * ((2 * b[axis]) + (-a[axis] + c[axis]) * u +
+            (2 * a[axis] - 5 * b[axis] + 4 * c[axis] - d[axis]) * u2 + (-a[axis] + 3 * b[axis] - 3 * c[axis] + d[axis]) * u3));
+          const previous = samples[samples.length - 1];
+          if (previous) length += Math.hypot(at[0] - previous.x, at[1] - previous.y);
+          samples.push({ x: at[0], y: at[1], length });
+        }
+      }
+      joints[last] = length;
+      return { samples, joints: joints.map((n) => n / (length || 1)), length };
+    };
+    const path = (points, part, t0, t1, width = 0) => {
+      const curve = samplesFor(points);
+      curve.samples.forEach((point, i) => {
+        const previous = curve.samples[Math.max(0, i - 1)], next = curve.samples[Math.min(curve.samples.length - 1, i + 1)];
+        const f = point.length / (curve.length || 1), t = lerp(t0, t1, f);
+        const dx = next.x - previous.x, dy = next.y - previous.y, n = Math.hypot(dx, dy) || 1;
+        const radius = Math.floor(width * (1 - f * 0.8));
+        line(previous.x, previous.y, point.x, point.y, (x, y) => {
+          add(x, y, part === 'mycelium' ? 'l' : 'g', part, t);
+          for (let w = 1; w <= radius; w++) {
+            add(x - dy / n * w, y + dx / n * w, 'l', part, t);
+            add(x + dy / n * w, y - dx / n * w, 'l', part, t);
+          }
         });
-      }
-      tips.push(pts[pts.length - 1]);
+      });
+      return { points, times: curve.joints.map((f) => lerp(t0, t1, f)) };
     };
-    rootPath([[47, GY], [44, 94], [36, 105], [31, 123]], 0.02, 0.26, true);
-    rootPath([[49, GY], [53, 93], [63, 101], [70, 114]], 0.02, 0.21, true);
-    rootPath([[48, GY], [49, 99], [46, 111], [48, 124]], 0.03, 0.25);
-    rootPath([[44, 94], [34, 99], [23, 101], [12, 111]], 0.10, 0.24);
-    rootPath([[36, 105], [24, 113], [18, 123]], 0.18, 0.28);
-    rootPath([[53, 93], [65, 96], [78, 105], [84, 112]], 0.085, 0.23);
-    rootPath([[63, 101], [59, 109], [62, 119]], 0.15, 0.26);
-    rootPath([[49, 99], [54, 108], [53, 117]], 0.13, 0.24);
 
-    // Sparse mycelium reaches beyond this tree; it is distinct from the solid roots.
-    const thread = (a, b, t0, t1) => line(a[0], a[1], b[0], b[1], (x, y, f, i) => { if (i % 2 === 0) add(x, y, 'l', 'mycelium', lerp(t0, t1, f)); });
-    thread([12, 111], [0, 116], 0.28, 0.38);
-    thread([18, 123], [31, 123], 0.29, 0.39);
-    thread([48, 124], [62, 119], 0.3, 0.4);
-    thread([84, 112], [TW - 1, 116], 0.3, 0.42);
+    // Taproots and feeders share exact joints and reveal only after those joints exist.
+    const left = path([[CX - 1, GY], [60, 96], [46, 113], [40, 132], [30, 153]], 'roots', .02, .255, 1.8);
+    const right = path([[CX + 1, GY], [69, 96], [83, 109], [94, 128], [110, 144]], 'roots', .02, .25, 1.8);
+    const deep = path([[CX, GY], [65, 100], [62, 121], [65, 141], [62, 157]], 'roots', .025, .275, 1.3);
+    const feeder = (parent, joint, tail, end) => path([parent.points[joint], ...tail], 'roots', parent.times[joint], end, .8);
+    feeder(left, 1, [[45, 101], [25, 114], [7, 132]], .26);
+    feeder(left, 2, [[34, 123], [19, 147]], .28);
+    feeder(left, 3, [[46, 142], [42, 155]], .28);
+    feeder(right, 1, [[86, 99], [105, 113], [122, 130]], .26);
+    feeder(right, 2, [[80, 126], [91, 152]], .27);
+    feeder(deep, 1, [[74, 114], [72, 135]], .27);
 
-    // trunk
-    const TOP = GY - 30;
-    for (let y = GY; y >= TOP; y--) {
-      const f = (GY - y) / (GY - TOP);
-      const t = lerp(0.34, 0.47, f);
-      add(47, y, 'g', 'trunk', t);
-      add(48, y, 'l', 'trunk', t);
-      if (f < 0.7) add(49, y, 'l', 'trunk', t);
-      if (f < 0.25) add(46, y, 'l', 'trunk', t);
-    }
+    // A few broken fungal threads, not an enclosing border or a solid soil panel.
+    [[[7, 132], [3, 136], [2, 142]], [[19, 147], [27, 151], [30, 153]],
+      [[62, 157], [78, 156], [91, 152]], [[122, 130], [125, 137], [124, 143]]].forEach((points, i) => {
+      const begin = px.length;
+      path(points, 'mycelium', .285 + i * .006, .40 + i * .003);
+      for (let j = px.length - 1; j >= begin; j--) if ((px[j].x + px[j].y) % 3 === 0) px.splice(j, 1);
+    });
+    const ground = Array.from({ length: 50 }, () => {
+      const x = 23 + Math.floor(R() * 87);
+      return { x, y: GY + Math.round(Math.sin(x * .13) + (R() - .5) * 3), c: R() < .7 ? 'm' : 'u' };
+    });
 
-    // branches: six, each splitting twice, leaves at the tips
+    const trunk = [[CX, GY], [63, 70], [66, 59], [CX, 46]];
+    path(trunk, 'trunk', .415, .53, 2.6);
     const leaves = [];
     const branch = (x, y, ang, len, depth, t0, span) => {
       const x2 = x + Math.cos(ang) * len, y2 = y - Math.sin(ang) * len;
-      const t1 = t0 + span;
-      line(x, y, x2, y2, (bx, by, f) => {
-        add(bx, by, 'g', 'branches', lerp(t0, t1, f));
-        if (depth >= 2) add(bx, by + 1, 'l', 'branches', lerp(t0, t1, f));
-      });
-      if (depth === 0) { leaves.push([x2, y2, t1, 4 + Math.floor(R() * 3)]); return; }
-      if (depth === 1) leaves.push([x2, y2, t1, 3]);
-      branch(x2, y2, ang + 0.32 + R() * 0.28, len * 0.7, depth - 1, t1, span * 0.8);
-      branch(x2, y2, ang - 0.32 - R() * 0.28, len * 0.66, depth - 1, t1, span * 0.8);
+      const bend = (R() - .5) * .24, t1 = t0 + span;
+      path([[x, y], [x + Math.cos(ang - bend) * len * .38, y - Math.sin(ang - bend) * len * .38],
+        [x2 - Math.cos(ang + bend) * len * .24, y2 + Math.sin(ang + bend) * len * .24], [x2, y2]], 'branches', t0, t1, depth >= 2 ? 1.3 : .4);
+      if (depth === 0) { leaves.push([x2, y2, 4 + Math.floor(R() * 3)]); return [x2, y2]; }
+      if (depth === 1) leaves.push([x2, y2, 3]);
+      branch(x2, y2, ang + .28 + R() * .2, len * .65, depth - 1, t1, span * .7);
+      branch(x2, y2, ang - .28 - R() * .2, len * .60, depth - 1, t1, span * .7);
+      return [x2, y2];
     };
-    [[2.75, 15, TOP + 8], [2.3, 17, TOP + 4], [1.85, 16, TOP], [1.3, 16, TOP], [0.85, 17, TOP + 4], [0.4, 15, TOP + 8]]
-      .forEach(([a, l, y]) => branch(48, y, a, l, 2, 0.47, 0.075));
-
-    // leaves: rhythms, each pixel with its own season phase
-    let top = { x: 48, y: TH };
-    leaves.forEach(([lx, ly, lt, r]) => {
+    let fruitJoint;
+    [[2.72, 20, trunk[2]], [2.25, 19, trunk[3]], [1.8, 18, trunk[3]],
+      [1.3, 19, trunk[3]], [.83, 21, trunk[3]], [.38, 20, trunk[2]]].forEach(([ang, length, joint], i) => {
+      const end = branch(joint[0], joint[1], ang, length, 2, .53, .073);
+      if (i === 0) fruitJoint = end;
+    });
+    leaves.forEach(([lx, ly, r]) => {
       for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
-        const d = Math.sqrt(x * x + y * y);
-        if (d > r + 0.3) continue;
-        if (d > r - 1.2 && R() < 0.45) continue;
-        const c = R() < 0.35 ? 'p' : 'c';
-        const t = clamp(lt + 0.08 + (d / r) * 0.06 + R() * 0.04, 0.64, 0.86);
-        add(lx + x, ly + y, c, 'rhythms', t, Math.floor(R() * 4));
-        if (ly + y < top.y) top = { x: Math.round(lx + x), y: Math.round(ly + y) };
+        const d = Math.hypot(x, y);
+        if (d > r + .3 || (d > r - 1.1 && R() < .4)) continue;
+        const t = lerp(.70, .86, clamp(d / r * .72 + R() * .24, 0, 1));
+        add(lx + x, ly + y, R() < .35 ? 'p' : 'c', 'rhythms', t, Math.floor(R() * 4));
       }
     });
-    // senses: a few bright points at the edge of the canopy
     const leafPx = px.filter((p) => p.part === 'rhythms');
     for (let i = 0; i < 8; i++) {
       const p = leafPx[Math.floor(R() * leafPx.length)];
-      add(p.x + (R() < 0.5 ? -1 : 1), p.y - 1, 'b', 'senses', 0.86 + i * 0.008, i);
+      add(p.x, p.y, 'b', 'senses', .875 + i * .008, i);
     }
-    // the growing tip: one saffron pixel, the part that is never done
-    top={x:37,y:46};
-    for(let yy=0;yy<5;yy++)add(top.x,top.y+yy,'g','tip',.94);
-    for(let yy=-2;yy<=2;yy++)for(let xx=-2;xx<=2;xx++)if(xx*xx+yy*yy<7)add(top.x+xx,top.y+6+yy,xx===-1&&yy===-1?'b':'y','tip',.96);
+    // The fruit hangs from an existing branch, rather than a separate fixed coordinate.
+    const fruit = { x: Math.round(fruitJoint[0] + 2), y: Math.round(fruitJoint[1] + 9) };
+    path([fruitJoint, [fruit.x, fruit.y - 5], [fruit.x, fruit.y - 2]], 'tip', .94, .975);
+    for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) {
+      if (x * x + y * y < 7) add(fruit.x + x, fruit.y + y, x === -1 && y === -1 ? 'b' : 'y', 'tip', .99);
+    }
 
     const SEASON = ['p', 'c', 'l', 'm'];
-    let progress = motion ? 0 : 1;
-    let active = null;
-    let lastDraw = 0, season = 0, senseBlink = 0;
-
+    const BOUNDS = [0, .28, .415, .53, .70, .87, .94, 1];
+    const SITTER = ['.......g.......', '......ggg......', '....ccgggcc....', '....ccccccc....',
+      '.....ccccc.....', '....ccbccbc....', '.....ccccc.....', '......ccc......', '....ccccccc....',
+      '...ccc.c.ccc...', '...cc..c..cc...', '....c.ccc.c....', '.....ccccc.....', '..cccc...cccc..',
+      '.ccc..ccc..ccc.', '..ccccccccccc..', '....ccccccc....'];
+    let progress = motion ? 0 : 1, active = null, lastDraw = 0, season = 0, senseBlink = 0;
+    let sitterStarted = false, sitterDone = false, sitterElapsed = 0, sitterLastT = 0;
+    const syncPassage = () => {
+      if (!parts.length) { progress = 1; return; }
+      const horizontal = partList && getComputedStyle(partList).display === 'flex' && partList.scrollWidth > partList.clientWidth + 1;
+      const listRect = horizontal ? partList.getBoundingClientRect() : null;
+      const readingLine = horizontal ? listRect.left + listRect.width * .5 : innerHeight * .55;
+      const rects = parts.map((part) => part.getBoundingClientRect());
+      let index = 0, nearest = Infinity;
+      rects.forEach((r, i) => {
+        const center = horizontal ? r.left + r.width * .5 : r.top + r.height * .5;
+        const d = Math.abs(center - readingLine);
+        if (d < nearest) { nearest = d; index = i; }
+      });
+      active = parts[index].dataset.part;
+      parts.forEach((part, i) => part.classList.toggle('is-active', i === index));
+      const r = rects[index], phase = horizontal ? 1 : clamp((readingLine - r.top) / Math.max(1, r.height * .65), 0, 1);
+      const n = Math.min(index, BOUNDS.length - 2);
+      progress = lerp(BOUNDS[n], BOUNDS[n + 1], phase);
+      if (progress >= .995 && !sitterStarted) {
+        sitterStarted = true; sitterDone = !motion; sitterElapsed = motion ? 0 : 2600; sitterLastT = 0; kick();
+      }
+    };
+    const floatHeight = () => {
+      if (!motion || sitterDone) return 0;
+      const t = sitterElapsed / 2600;
+      const rise = smooth(.05, .32, t), land = 1 - smooth(.55, .9, t);
+      return Math.round(4 * rise * land);
+    };
     const draw = () => {
       ctx.clearRect(0, 0, TW, TH);
-      ctx.fillStyle = COLORS.under;
-      ctx.fillRect(0, GY + 1, TW, TH - GY - 1);
-      ctx.fillStyle = COLORS.moss;
-      ctx.fillRect(0, GY, TW, 1);
+      ground.forEach((q) => { ctx.fillStyle = PAL[q.c]; ctx.fillRect(q.x, q.y, 1, 1); });
       const p = motion ? progress : 1;
       for (const q of px) {
         if (q.t > p) continue;
@@ -781,69 +875,47 @@
         if (q.part === 'rhythms') c = active === 'rhythms' ? (q.c === 'p' ? 'b' : 'p') : (motion ? SEASON[(q.ph + season) % 4] : q.c);
         else if (q.part === 'senses') { if (motion && (q.ph + senseBlink) % 5 === 0) c = 'l'; }
         else if (active === q.part && q.part !== 'tip') c = 'b';
-        ctx.fillStyle = PAL[c];
-        ctx.fillRect(q.x, q.y, 1, 1);
-        if (q.part === 'senses' && active === 'senses') {
-          ctx.fillRect(q.x - 1, q.y, 3, 1);
-          ctx.fillRect(q.x, q.y - 1, 1, 3);
-        }
+        ctx.fillStyle = PAL[c]; ctx.fillRect(q.x, q.y, 1, 1);
       }
-      if (active === 'tip' && p >= 0.96) {
+      if (active === 'tip' && p >= .99) {
         ctx.fillStyle = COLORS.bone;
-        [[-2, 0], [2, 0], [0, -2], [0, 2]].forEach(([dx, dy]) => ctx.fillRect(top.x + dx*2, top.y + 6 + dy*2, 1, 1));
+        [[-4, 0], [4, 0], [0, -4], [0, 4]].forEach(([dx, dy]) => ctx.fillRect(fruit.x + dx, fruit.y + dy, 1, 1));
+      }
+      if (p >= .995) {
+        const x0 = 81, y0 = GY - SITTER.length + 1 - floatHeight();
+        ctx.fillStyle = COLORS.under; ctx.fillRect(x0 + 4, GY + 1, 7, 1);
+        SITTER.forEach((row, y) => Array.from(row).forEach((c, x) => {
+          if (c !== '.') { ctx.fillStyle = PAL[c]; ctx.fillRect(x0 + x, y0 + y, 1, 1); }
+        }));
       }
     };
-
-    const computeProgress = () => {
-      const sticky = getComputedStyle(stage).position === 'sticky';
-      const vh = innerHeight;
-      let p;
-      if (sticky) {
-        const r = el.getBoundingClientRect();
-        p = (vh * 0.9 - r.top) / (r.height * 0.62);
-      } else {
-        const r = stage.getBoundingClientRect();
-        p = (vh - r.top) / (r.height + vh * 0.35);
-      }
-      return clamp(p, 0, 1);
-    };
-
     const s = {};
     s.layout = () => {
       const w = frameEl.clientWidth || TW * 3;
-      const k = clamp(Math.min(Math.floor(w / TW), Math.floor((innerHeight * 0.8) / TH)), 2, 6);
-      sizeCanvas(cv, TW, TH, k);
-      progress = computeProgress();
-      draw();
+      const k = clamp(Math.min(Math.floor(w / TW), Math.floor(innerHeight * .8 / TH)), 1, 6);
+      sizeCanvas(cv, TW, TH, k); syncPassage(); draw();
     };
-    s.onScroll = () => {
-      if (!motion) return;
-      const p = computeProgress();
-      if (Math.abs(p - progress) > 0.002) { progress = p; draw(); }
-    };
+    s.onScroll = () => { syncPassage(); draw(); };
+    s.onShow = () => { sitterLastT = 0; syncPassage(); draw(); };
+    s.onHide = () => { sitterLastT = 0; };
     s.tick = (t) => {
-      if (t - lastDraw > 140) {
-        lastDraw = t;
-        season = Math.floor(t / 2200) % 4;
-        senseBlink = Math.floor(t / 420);
-        draw();
+      if (progress >= .995 && sitterStarted && !sitterDone) {
+        if (!sitterLastT) sitterLastT = t;
+        sitterElapsed += Math.min(160, Math.max(0, t - sitterLastT)); sitterLastT = t;
+        if (sitterElapsed >= 2600) { sitterElapsed = 2600; sitterDone = true; }
+      } else sitterLastT = 0;
+      if (t - lastDraw > 110) {
+        lastDraw = t; season = Math.floor(t / 2200) % 4; senseBlink = Math.floor(t / 420); draw();
       }
       return true;
     };
-    s.motionChanged = () => { progress = motion ? computeProgress() : 1; draw(); };
-
-    const pio = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        active = e.target.dataset.part;
-        parts.forEach((p) => p.classList.toggle('is-active', p === e.target));
-        draw();
-      });
-    }, { rootMargin: '-42% 0px -42% 0px' });
-    parts.forEach((p) => pio.observe(p));
-
-    s.layout();
-    register(el, s);
+    s.motionChanged = (m) => {
+      if (!m) { sitterDone = true; sitterElapsed = 2600; }
+      sitterLastT = 0; syncPassage(); draw();
+    };
+    doc.addEventListener('visibilitychange', () => { if (doc.hidden) sitterLastT = 0; });
+    if (partList) partList.addEventListener('scroll', () => { syncPassage(); draw(); kick(); }, { passive: true });
+    s.layout(); register(el, s);
   };
   doc.querySelectorAll('[data-tree]').forEach(Tree);
 
@@ -899,9 +971,8 @@
       }
       // aurora: a sinuous ribbon with rays hanging up from its bright lower edge
       const a = smooth(0.46, 0.86, pp);
-      const sunGone = pp > 0.3;
+      const warmAmount = smooth(0.2, 0.95, a) * smooth(0.3, 0.46, pp) * 0.42;
       if (a > 0) {
-        let prevY = null;
         for (let x = 0; x < cols; x++) {
           const yb = rows * (0.36 + 0.07 * Math.sin(x * 0.035 + t * 0.0003) + 0.03 * Math.sin(x * 0.09 - t * 0.0002));
           const L = rows * (0.14 + 0.09 * (0.5 + 0.5 * Math.sin(x * 0.05 + t * 0.00025 + 1)) + 0.05 * (0.5 + 0.5 * Math.sin(x * 0.013 + 2)));
@@ -913,15 +984,16 @@
             if (k > 0.72 + th * 0.22) buf[y * cols + x] = P32.p;
             else if (k > 0.1 + th * 0.55) buf[y * cols + x] = P32.c;
           }
-          // the single saffron thread along the ribbon's lower edge
-          if (a > 0.35 && sunGone && x > cols * 0.1 && x < cols * 0.9) {
-            const yt = Math.round(yb) + 1;
-            if (prevY !== null && Math.abs(yt - prevY) > 1) {
-              const s0 = Math.min(yt, prevY), s1 = Math.max(yt, prevY);
-              for (let yy = s0 + 1; yy < s1; yy++) setPx(x, yy, P32.y);
-            }
-            setPx(x, yt, P32.y);
-            prevY = yt;
+          // A few warm highlights move within the green edge; their two-row blend follows it continuously.
+          const u = (x + 0.5) / cols, edge = smooth(0.02, 0.22, u) * smooth(0.02, 0.22, 1 - u);
+          const flow = Math.pow(0.5 + 0.5 * Math.sin((u - 0.5) * 10.5 - t * 0.00012 + Math.PI / 2), 6);
+          const warmth = warmAmount * edge * flow, yt = yb - 0.75;
+          for (let y = Math.floor(yt); y <= Math.ceil(yt); y++) {
+            if (y < 0 || y >= rows) continue;
+            const weight = warmth * (1 - Math.abs(y - yt)), inv = 1 - weight, i = y * cols + x, base = buf[i];
+            buf[i] = (0xff000000 | ((((base >>> 16) & 255) * inv + ((P32.y >>> 16) & 255) * weight) << 16) |
+              ((((base >>> 8) & 255) * inv + ((P32.y >>> 8) & 255) * weight) << 8) |
+              ((base & 255) * inv + (P32.y & 255) * weight)) >>> 0;
           }
         }
       }
@@ -1000,6 +1072,7 @@
       p = np;
       if (q !== lastQ) { lastQ = q; draw(0); }
     };
+    s.onShow = () => { p = progressNow(); lastQ = -1; draw(motion ? performance.now() : 0); };
     s.tick = (t) => {
       if (t - lastDraw > 66) { lastDraw = t; draw(t); }
       return true;
@@ -1047,11 +1120,11 @@
     const layoutGeometry = () => {
       const w = frameEl ? frameEl.clientWidth : 600;
       const portrait = w < 560;
-      cols = portrait ? 112 : 176;
-      rows = portrait ? 150 : 112;
-      const k = clamp(Math.min(Math.floor(w / cols), Math.floor((innerHeight * 0.78) / rows)), 2, 6);
+      cols = portrait ? 128 : 176;
+      rows = portrait ? 132 : 112;
+      const k = clamp(Math.min(Math.floor(w / cols), Math.floor((innerHeight * 0.52) / rows)), 1, 6);
       sizeCanvas(cv, cols, rows, k);
-      const cx = portrait ? 56 : 88, cy = portrait ? 56 : 56, R = 52;
+      const cx = portrait ? 64 : 88, cy = portrait ? 52 : 56, R = portrait ? 46 : 52;
       const c = R / Math.sqrt(N);
       pts = kinds.split('').map((_, i) => {
         const r = c * Math.sqrt(i + 0.5), a = i * GA;
@@ -1060,7 +1133,7 @@
       lanePos = LANES.map((_, i) => {
         if (portrait) {
           const row = i < 7 ? 0 : 1, col = i < 7 ? i : i - 7;
-          return [4 + col * 15 + (row ? 7 : 0), 120 + row * 16];
+          return [7 + col * 16 + (row ? 8 : 0), 110 + row * 12];
         }
         const left = i % 2 === 0, j = Math.floor(i / 2);
         return [left ? 6 + (j % 2) * 8 : 150 - (j % 2) * 8, 10 + j * 15];
@@ -1115,7 +1188,7 @@
       range.value = String(day);
       range.setAttribute('aria-valuetext', d + ', ' + n + ' commits');
       if (dateEl) dateEl.textContent = d;
-      if (statEl) statEl.textContent = n + ' commits so far · ' + auto + ' autosaves · day ' + day + ' of ' + MAXD;
+      if (statEl) statEl.textContent = n + ' commits · ' + auto + ' autosaves';
       if (announceIt) announce('By ' + d + ': ' + n + ' commits, ' + auto + ' of them autosaves.' + (note ? ' ' + note : ''));
     };
     const setDay = (d, announceIt, note) => {
@@ -1130,7 +1203,7 @@
     const play = () => {
       played = true;
       if (!motion) { setDay(MAXD, true); return; }
-      anim = { t0: 0 };
+      anim = { elapsed: 0, lastT: 0 };
       setDay(0, false);
       kick();
     };
@@ -1160,14 +1233,18 @@
     s.layout = () => { layoutGeometry(); draw(); };
     s.tick = (t) => {
       if (!anim) return false;
-      if (!anim.t0) anim.t0 = t;
-      const f = clamp((t - anim.t0) / 5200, 0, 1);
+      if (!anim.lastT) anim.lastT = t;
+      anim.elapsed += Math.min(160, Math.max(0, t - anim.lastT));
+      anim.lastT = t;
+      const f = clamp(anim.elapsed / 5200, 0, 1);
       const d = Math.round(f * f * MAXD);
       if (d !== day) setDay(d, false);
       if (f >= 1) { anim = null; syncText(true); return false; }
       return true;
     };
-    s.onShow = () => { if (!played && motion) play(); };
+    s.onShow = () => { if (anim) anim.lastT = 0; if (!played && motion) play(); };
+    s.onHide = () => { if (anim) anim.lastT = 0; };
+    doc.addEventListener('visibilitychange', () => { if (doc.hidden && anim) anim.lastT = 0; });
     s.motionChanged = (m) => { if (!m && anim) { anim = null; setDay(MAXD, false); } };
     s.layout();
     syncText(false);

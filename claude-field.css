@@ -465,3 +465,88 @@
 .claude-field h2{font-weight:400;letter-spacing:-.05em}.claude-field .kicker{font:9px/1.6 var(--f-mono);letter-spacing:.16em}.claude-field .q{border:0;padding-left:0}.claude-field .scene-tree,.claude-field .field-origin{background:transparent}.claude-field .field-motion{display:flex;align-items:center;justify-content:space-between;gap:25px;padding:35px 7vw 0}.claude-field .field-motion .btn{border:0;border-bottom:1px solid var(--moss);border-radius:0;font:9px var(--f-mono);padding:0}.claude-field .panel{padding-left:0;padding-right:0}.claude-field .field-origin{padding-bottom:70px}.claude-field .origin-path{display:grid;grid-template-columns:repeat(3,1fr);gap:35px;margin:60px 0 25px}.claude-field .origin-path article{padding-top:22px;border-top:1px solid #5b7453}.claude-field .origin-path .px{font-size:9px;color:var(--lichen)}.claude-field .origin-path h3{font-weight:400;font-size:24px;letter-spacing:-.03em;margin:15px 0}.claude-field .origin-path p{font-size:14px}.claude-field .part-h{font-weight:400}.claude-field .part-k{font:10px var(--f-mono)}.claude-field .part p{font-size:15px}.claude-field .part .q p{font:italic 25px var(--f-serif)}.claude-field .field-receipt{padding-top:0}.claude-field .receipt-row{margin-top:0}.claude-field .sky-card{background:linear-gradient(120deg,#14271ddd,#14271d80);border:0;backdrop-filter:blur(3px)}.claude-field .sky-card h2{margin-bottom:35px}.claude-field .src{font-size:10px}.claude-field .scene-sky .src{color:#c0cab9}.claude-field .ev-key{font-size:12px;max-width:750px}.claude-field .ev,.claude-field .vd{font-size:9px;border-radius:0}.claude-field .scene-head .measure{font-size:16px;margin-top:20px;max-width:750px}
 @media(min-width:960px){.claude-field .tree-parts .part{min-height:52vh}.claude-field .tree-parts .part:last-child{min-height:58vh}}
 @media(max-width:600px){.claude-field{--gutter:24px}.claude-field .field-motion{padding:30px 24px 0}.claude-field .origin-path{grid-template-columns:1fr;gap:20px;margin-top:35px}.claude-field .scene{padding-top:60px;padding-bottom:60px}.claude-field .field-receipt{padding-top:0}.claude-field .scene-sky{padding:0}.claude-field .field-motion .eyebrow{max-width:130px}.claude-field .field-motion .btn{font-size:8px}}
+
+/* Keep the local room and its controls together; extended records open on request. */
+#partial-view .view-heading>p:not(.eyebrow){padding:10px 12px;background:#14251ce8;color:var(--bone)}
+#partial-view .cell-stage{margin:0;background:#14251c}
+#partial-view .cell-play{max-width:600px}
+#partial-view .cell-play .cell-frame{margin:0;justify-content:center}
+#partial-view .cell-local{margin:0;padding:12px;border:0;border-top:1px solid #839b6744;background:#14251c;max-width:600px}
+#partial-view .cell-directions{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;max-width:360px;margin:0 auto}
+#partial-view .cell-directions button{grid-column:auto;min-height:44px;padding:7px 4px;font-size:16px}
+#partial-view .cell-directions [data-cell-examine]{font-size:12px}
+#partial-view .cell-local-view{min-height:0;margin:10px 0 0;font-size:13px;line-height:1.55}
+#partial-view .cell-feedback{margin:8px 0 0;padding-left:10px;border-left:2px solid var(--saffron);color:var(--bone);font-size:13px;line-height:1.55}
+#partial-view .cell-feedback:empty{display:none}
+#partial-view .cell-thought{height:auto;min-height:0;margin:6px 0 0;text-transform:none;letter-spacing:0;font-size:12px;line-height:1.55}
+#partial-view .cell-thought:empty{display:none}
+#partial-view .cell-thought::before{content:none}
+#partial-view .cell-actions{margin-top:8px;gap:6px}
+#partial-view .cell-hud{margin-top:0;gap:6px;padding:0 12px 8px;background:#14251c;max-width:600px}
+#partial-view .cell-hud>div{gap:4px}
+#partial-view .cell-hud .btn{padding-inline:10px}
+#partial-view .cell-how{margin:0;padding:0 12px 10px;background:#14251c;font-size:11px;line-height:1.5}
+#partial-view .cell-touch-hint{display:none}
+#partial-view details.cell-journal{min-width:0;align-self:start;border-top:1px solid #839b6744;padding:4px 12px 10px;background:#14251c}
+#partial-view details.cell-journal>summary{min-height:44px;cursor:pointer;font:13px/1.5 var(--f-mono);color:var(--bone);padding:10px 0;box-sizing:border-box}
+#partial-view details.cell-journal>summary span{display:inline-block;min-width:24px;margin-left:8px;color:var(--sage)}
+#partial-view details.cell-journal .cell-journal-empty{margin:10px 0 0;font-size:13px}
+#partial-view .context-room+.src{display:inline-block;margin-top:12px;padding:8px 12px;background:#14251c}
+#partial-view .cell-choice{margin-top:16px;padding:16px}
+#partial-view .cell-choice h3{margin:8px 0 12px;font-size:25px}
+#partial-view .cell-choice p{margin:10px 0;line-height:1.65}
+#partial-view .cell-choice .cell-terms{margin:8px 0 14px;font-size:13px;line-height:1.6}
+#partial-view .cell-choice .cell-terms>summary{cursor:pointer;min-height:44px;padding:10px 0;box-sizing:border-box}
+#tree .tree-intro{margin-bottom:30px}
+#tree .tree-intro .measure{max-width:45ch;margin-top:16px}
+#tree .tree-reading-key{margin-top:14px;font-size:14px;line-height:1.7;max-width:750px}
+#tree .tree-reading-key>summary{cursor:pointer;min-height:44px;padding:10px 0;box-sizing:border-box;color:var(--sage)}
+#tree .tree-reading-key>p{margin:12px 0}
+#tree .tree-reading-key .ev-key{margin:14px 0}
+#tree .tree-reading-key .q{margin:24px 0 16px}
+#ancestors .plane-frame{justify-content:center;width:100%;margin:0}
+#ancestors .plane-controls{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 12px;margin-top:10px}
+#ancestors .plane-controls .range,#ancestors .plane-stat{grid-column:1/-1}
+#ancestors .plane-controls label{margin:0;line-height:1.6}
+#ancestors .plane-controls .btn{justify-self:end;min-height:44px}
+#ancestors .plane-controls .range{height:44px;margin:0}
+#ancestors .plane-record-caption{margin:0;font-size:13px;line-height:1.7}
+#ancestors .plane-record-details{margin-top:8px;font-size:13px;line-height:1.7}
+#ancestors .plane-record-details>summary,#ancestors .ancestral-return summary{cursor:pointer;min-height:44px;padding:10px 0;box-sizing:border-box;color:var(--sage)}
+#ancestors .plane-record-details .legend{margin:16px 0}
+#ancestors .plane-record-details .src{margin-bottom:12px}
+#ancestors .plane-record-details .ancestral-voices{margin-top:22px;padding-top:16px}
+#ancestors .ancestral-return details{max-width:55ch;margin:0 auto;font-size:14px;line-height:1.7}
+@media(max-width:700px){
+  #partial-view .context-room{gap:12px}
+  #partial-view .cell-local{margin-top:0}
+  #partial-view .cell-directions{max-width:none;gap:4px}
+  #partial-view .cell-keyboard-hint{display:none}
+  #partial-view .cell-touch-hint{display:inline}
+  #partial-view details.cell-journal[open] .cell-notes{max-height:50svh;overflow-y:auto;overscroll-behavior:contain}
+  #partial-view .cell-choice .cell-decisions{gap:6px}
+  #partial-view .cell-choice .cell-decisions .btn{flex:1;padding-inline:10px;justify-content:center;text-align:center}
+  #tree .tree-intro{padding:20px 18px;margin-bottom:20px}
+  #tree .tree-intro h2{margin-bottom:16px;font-size:40px}
+  #tree .tree-intro .measure{font-size:15px;line-height:1.6;margin-top:0}
+  #tree .tree-layout{gap:18px}
+  #tree .tree-parts .part{padding:20px}
+  #tree .tree-parts .part p{font-size:14px;line-height:1.65}
+  #tree .tree-parts .part .q{margin:20px 0 0}
+  #tree .tree-parts .part .q p{font-size:21px;line-height:1.35}
+  #ancestors{padding-top:40px;padding-bottom:40px}
+  #ancestors .ancestral-heading{margin-bottom:24px}
+  #ancestors .ancestral-heading h2{font-size:42px;margin:16px 0}
+  #ancestors .ancestral-heading>p:last-child{font-size:15px;line-height:1.6}
+  #ancestors .plane{gap:16px}
+  #ancestors .plane-side{padding:16px}
+  #ancestors .ancestral-return{margin-top:24px}
+  #ancestors .ancestral-return blockquote{font-size:27px;line-height:1.2;margin-bottom:10px}
+  #ancestors .ancestral-return .src{margin-top:12px}
+  .claude-field.cf-js #sky .sky-card.scene-head{margin-bottom:32svh}
+}
+
+/* Local disclosures show their own affordance; the journal count stays upright. */
+.claude-field :is(.cell-terms,.cell-journal,.tree-reading-key,.plane-record-details,.ancestral-return details)>summary::after{content:"+";flex:none;font:18px/1 var(--f-mono);margin-left:auto;color:var(--sage)}
+.claude-field :is(.cell-terms,.cell-journal,.tree-reading-key,.plane-record-details,.ancestral-return details)[open]>summary::after{content:"−"}
+#partial-view details.cell-journal[open]>summary span{transform:none}

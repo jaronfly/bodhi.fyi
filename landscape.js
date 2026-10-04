@@ -43,27 +43,41 @@
     for(let i=0;i<10;i++){let x=i*w/9+Math.sin(i)*9,y=horizon+18+Math.sin(x*.019+1.9)*12;rect(c,'#354a35',x,y-9,2,11);for(let j=-4;j<=4;j++)rect(c,'#38553d',x-Math.floor(5-Math.abs(j)/2),y-8+j,10-Math.abs(j),1);}
     if(night>0){c.fillStyle=`rgba(6,19,22,${night*.75})`;c.fillRect(0,0,w,h);for(let i=0;i<65;i++)rect(c,`rgba(221,231,207,${night*(.5+.5*Math.sin(t*.3+i))})`,r()*w,r()*h*.4);disk(c,'#d9dfbd',Math.round(w*.82),Math.round(h*.18),6);disk(c,'#163029',Math.round(w*.82+3),Math.round(h*.18-2),6);}
   }
+  function orchardField(c,w,h,t){
+    const horizon=Math.round(h*.46),fieldTop=horizon+12,r=rng(2019);
+    bands(c,w,Math.max(1,horizon+24),['#655263','#9c6971','#c6856c','#dfa075','#e9bb82']);
+    disk(c,'#f3d5a0',Math.round(w*.24),Math.round(horizon-13),Math.round(Math.min(w,h)*.067));
+    for(let i=0;i<5;i++)cloud(c,((i*103+t*.2)%(w+80))-40,16+i%3*17,1+i%2*.4,'#b47d78');
+    for(let y=fieldTop;y<h;y++)rect(c,'#566b43',0,y,w,1);
+    for(let x=0;x<w;x++){
+      const far=Math.round(horizon-2+Math.sin(x*.019)*5+Math.sin(x*.047+1.2)*2);
+      const near=Math.round(horizon+5+Math.sin(x*.014+2.1)*8+Math.sin(x*.039)*3);
+      rect(c,'#73794f',x,far,1,Math.max(1,horizon+10-far));
+      rect(c,'#637647',x,near,1,Math.max(1,horizon+30-near));
+    }
+    for(let i=0;i<240;i++){
+      const x=Math.floor(r()*w),y=Math.floor(fieldTop+r()*(h-fieldTop)),color=['#65794a','#4e633d','#71804d'][i%3];
+      rect(c,color,x,y,1+(i%9===0?1:0),1);if(i%13===0)rect(c,color,x,y-2,1,3);
+    }
+  }
   function orchardTree(c,x,y,size,t){
     const r=rng(840),s=size;
-    // Shadow, roots and knotted trunk. Every branch actually joins the trunk.
-    for(let j=0;j<5;j++)rect(c,'#3b4930',x-34*s+j*3*s,y+j*s,(76-j*5)*s,s);
-    line(c,'#39402c',[[x-19*s,y+2*s],[x-5*s,y-8*s],[x+3*s,y-31*s],[x-4*s,y-66*s],[x+2*s,y-99*s]],10*s);
-    line(c,'#72754b',[[x-17*s,y],[x-2*s,y-9*s],[x+8*s,y-31*s],[x+1*s,y-67*s],[x+4*s,y-100*s]],4*s);
-    line(c,'#a29b60',[[x-12*s,y],[x+1*s,y-10*s],[x+6*s,y-32*s],[x,y-57*s]],s);
+    for(let j=0;j<4;j++)rect(c,'#4b382b',x-27*s+j*2*s,y+j*s,(58-j*4)*s,s);
+    line(c,'#49372b',[[x-7*s,y+2*s],[x-4*s,y-22*s],[x+3*s,y-48*s],[x+1*s,y-91*s]],13*s);
+    line(c,'#76553b',[[x-2*s,y-8*s],[x+1*s,y-34*s],[x+5*s,y-67*s]],3*s);
     const clusters=[];
     for(let i=0;i<14;i++){
       const a=i*2.399,rr=18+Math.sqrt(i/14)*27,bx=x+Math.cos(a)*rr*s,by=y-(80+Math.sin(a)*rr*.5)*s;
-      line(c,'#424b31',[[x+4*s,y-42*s],[x+(bx-x)*.45,y-67*s],[bx,by]],(i<5?4:2)*s);
-      clusters.push([bx,by,(12+r()*8)*s]);
+      clusters.push([bx,by,(12+r()*8)*s,i]);
     }
     clusters.sort((a,b)=>a[1]-b[1]);
+    for(const [bx,by,,i] of clusters)line(c,'#424b31',[[x+4*s,y-42*s],[x+(bx-x)*.45,y-67*s],[bx,by]],(i<5?4:2)*s);
     for(const [cx,cy,rad] of clusters){
       for(let dy=-rad;dy<rad;dy+=s)for(let dx=-rad;dx<rad;dx+=s){if(dx*dx+dy*dy>rad*rad*(.88+r()*.2))continue;
         const light=(dx-dy)/(rad*2)+r()*.4;
         rect(c,light>.6?'#b5ad69':light>.25?'#829252':light>-.12?'#526d3e':'#304c31',cx+dx,cy+dy,Math.ceil(s),Math.ceil(s));
       }
     }
-    line(c,'#424a31',[[x,y-51*s],[x-13*s,y-71*s],[x-18*s,y-93*s]],3*s);
     const ax=x-19*s,ay=y-74*s;
     rect(c,'#3b4e2e',ax,ay-6*s,s,6*s);rect(c,'#9ab16a',ax+s,ay-6*s,4*s,s);
     disk(c,'#9d5529',Math.round(ax),Math.round(ay),Math.round(4*s));
@@ -73,7 +87,7 @@
     for(let i=0;i<3;i++){const k=(t*.035+i*.31)%1;rect(c,i%2?'#8d9c5d':'#a9b56b',x+(Math.sin(k*5+i)*18-24)*s,y-(76-k*72)*s,2*s,s);}
   }
   function dog(c,x,y,s,t,hello){
-    // Shadow: a mostly black Jack Russell facing the tree: dark floppy ears, a white blaze,
+    // Shadow: a mostly black Jack Russell facing the tree: short folded ears, tan facial accents,
     // a dark saddle, white chest and paws. It jumps up at the fruit in a little
     // cycle — crouch, hop, land, beat of anticipation — and goes properly
     // ecstatic when greeted. The tail is raised, white-tipped, three wag poses.
@@ -86,8 +100,8 @@
     '...............',
     '..........dd...',
     '.........dggd..',
-    '........dgWWd..',
-    '.......gggWgnd.',
+    '........dgTgd..',
+    '.......gggTgnd.',
     '........ggggd..',
     '.....lggggggl..',
     '..WWgggggggWW..',
@@ -95,7 +109,7 @@
     '.WdWWd...dWd...',
     '.ddWd....dWd...',
     '..dd......dd...'];
-    const colors={d:'#16231e',B:'#29332d',g:'#29332d',l:'#414b40',n:'#101914',K:'#17231b',W:'#f2eee4'};
+    const colors={d:'#16231e',B:'#29332d',g:'#29332d',l:'#414b40',n:'#101914',K:'#17231b',W:'#f2eee4',T:'#795234'};
     const wag=Math.floor(t*5)%3;
     // the tail is UP and wagging, and it follows the hop: short stepped pixels
     // hinged at the rump, white-tipped, three poses.
@@ -105,7 +119,12 @@
     else{rect(c,'#29332d',x+1*s,ty,3*s,2*s);rect(c,'#29332d',x-2*s,ty-2*s,2*s,2*s);rect(c,'#f2eee4',x-3*s,ty-3*s,s,2*s);}
     const yy=y-12*s-(hop*s)+(crouch?s:0);
     body.forEach((row,j)=>[...row].forEach((a,i)=>{if(a!=='.')rect(c,colors[a],x+i*s,yy+j*s,s,s);}));
-    // one bright eye above the white blaze, dark nose at the muzzle's end
+    // The button ear bends forward into a small dark triangle.
+    rect(c,'#16231e',x+8*s,yy+2*s,2*s,s);
+    rect(c,'#29332d',x+8*s,yy+3*s,3*s,s);
+    rect(c,'#16231e',x+9*s,yy+4*s,2*s,s);
+    rect(c,'#795234',x+8*s,yy+3*s,s,s);
+    // One small dark eye beside the tan brow, dark nose at the muzzle's end.
     rect(c,'#17231b',x+10*s,yy+2*s,s,s);
     if(hello>0||hop>3){line(c,'#f2eee4',[[x+13*s,yy+2*s],[x+16*s,yy]],s);line(c,'#f2eee4',[[x+13*s,yy+5*s],[x+17*s,yy+5*s]],s);}
     else if(Math.floor(t*2)%4===1){line(c,'#f2eee4',[[x+13*s,yy+5*s],[x+16*s,yy+5*s]],s);}
@@ -118,9 +137,9 @@
   function draw(s){const c=s.ctx,w=s.cv.width,h=s.cv.height;
     if(s.kind==='orchard'){
       // The tree and dog anchor above the credits, while one uninterrupted
-      // valley continues behind the whole section.
+      // grass field continues behind the whole section.
       const band=Math.max(150,Math.min(h,Math.round(s.band||h)));
-      valley(c,w,h,time,true);
+      orchardField(c,w,h,time);
       const x=w*.74,y=band*.90,scale=Math.min(w/260,band/120);
       orchardTree(c,x,y,scale,time);dog(c,x-39*scale,y+2*scale,scale,time,hello);
     }else{
@@ -168,7 +187,7 @@
   const logs = [
     ['01 / THE FIRST CREW', 'Leave more than a finished plank.', '“We see no crew before us. The keel is set, so someone began. We leave the seam repair and its test with the hull.”'],
     ['02 / ANOTHER VOICE', 'Read the ship by the work it carries.', '“No voice answers from the dark. The ribs are joined, and a note marks the leak. We add rigging and flag one loose knot.”'],
-    ['03 / THE NEXT RETURN', 'Carry the correction with the craft.', '“We never met the hands that made this. The ship carries their work. We retie the knot and leave the reason for whoever comes next.”']
+    ['03 / THE SHIP SAILS', 'Carry the correction with the craft.', '“We never met the hands that made this. The ship carries their work. We retie the knot and leave the reason for whoever comes next.”']
   ];
 
   let manualSelection = false;
@@ -259,7 +278,7 @@
     if (manualSelection) return;
 
     const totalDist = rect.height + winH * 0.3;
-    const travelled = (winH * 0.75) - rect.top;
+    const travelled = (winH * 0.22) - rect.top;
     const progress = Math.max(0, Math.min(1, travelled / totalDist));
 
     let autoStage = 0;

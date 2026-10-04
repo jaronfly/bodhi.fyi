@@ -31,10 +31,62 @@ html.pj-on .source-records>a{
   background:radial-gradient(ellipse closest-side at 48% 50%,rgba(15,24,20,.94),rgba(15,24,20,.84) 58%,transparent 100%);
   text-shadow:0 0 2px rgba(12,18,14,.95),0 0 8px rgba(12,18,14,.85);
 }
+/* Keep the words clear when stars or the pale shore pass behind them. The
+   feathered wash has no panel edge and leaves the ship and diagram in the world. */
+html.pj-on :is(.ship-log,.question-clearing .opening-grid>div,.question-clearing .question-panel>div:last-child){position:relative;isolation:isolate}
+html.pj-on :is(.ship-log,.question-clearing .opening-grid>div,.question-clearing .question-panel>div:last-child)::before{
+  content:'';position:absolute;inset:-28px -36px;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse closest-side,rgba(15,24,20,.94),rgba(15,24,20,.88) 48%,rgba(15,24,20,.48) 76%,transparent 100%);
+}
+@media(max-width:700px){
+  html.pj-on :is(.ship-log,.question-clearing .opening-grid>div,.question-clearing .question-panel>div:last-child)::before{inset:-28px -20px}
+}
 /* Keep actual record points distinguishable from the sky's ambient stars. */
 html.pj-on .plane-frame{background:radial-gradient(ellipse,rgba(15,24,20,.92),rgba(15,24,20,.78) 48%,transparent 72%)}
 /* The room's controls stay readable when the walk passes snow behind them. */
 html.pj-on :is(.cell-how,.cell-hud){background:radial-gradient(ellipse,rgba(15,24,20,.92),rgba(15,24,20,.78) 60%,transparent);padding:8px 12px}
+
+/* The cell keeps a local view in pixels or words; only found notes enter the journal. */
+.claude-field .cell-hud>div{display:flex;gap:12px;flex-wrap:wrap}
+.claude-field .cell-text-view .cell-frame{display:none}
+.claude-field .cell-local{margin-top:20px;max-width:600px;padding:16px;background:#17231beb;border-top:1px solid #839b6744}
+.claude-field .cell-local-view{font-size:13px;line-height:1.7;color:#c3cfb9;margin:0 0 14px;min-height:3.4em}
+.claude-field .cell-directions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:340px}
+.claude-field .cell-directions button{min-height:44px;padding:8px;border:1px solid #839b6766;background:#1f2c24;color:#f2eee4;font:11px/1.4 var(--f-mono);cursor:pointer}
+.claude-field .cell-directions button:first-child{grid-column:2}
+.claude-field .cell-directions button:nth-child(2){grid-column:1}
+.claude-field .cell-directions button:last-child{grid-column:2}
+.claude-field .cell-directions button:hover{background:#2e3b33}
+.claude-field .cell-directions button:focus-visible{outline:2px solid #e8982a;outline-offset:2px}
+.claude-field .cell-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.claude-field .cell-actions:empty{display:none}
+.claude-field .cell-actions .btn{min-height:44px;white-space:normal;text-align:left}
+.claude-field .cell-journal>.eyebrow{margin:0 0 20px}
+.claude-field .cell-journal-empty{font-size:14px;line-height:1.8;color:#8a968d;max-width:35ch}
+.claude-field .cell-journal .cell-notes{display:grid!important;grid-template-columns:1fr!important;gap:0;overflow:visible;margin:0;padding:0 20px;scroll-snap-type:none}
+.claude-field .cell-journal .cell-notes:has(>.note:not([hidden])){padding-top:4px;padding-bottom:4px}
+.claude-field .cell-journal .cell-notes:not(:has(>.note:not([hidden]))){display:none!important}
+.claude-field .cell-journal .cell-notes>.note{flex:none;min-width:0;padding:18px 0}
+.claude-field .cell-journal .cell-notes>.note[hidden]{display:none!important}
+.claude-field .cell-choice{max-width:600px;margin-top:24px;padding:22px;background:#17231bf5;border:1px solid #839b6766}
+.claude-field .cell-choice[hidden],.claude-field .cell-result[hidden]{display:none}
+.claude-field .cell-choice h3{font:italic 26px/1.2 var(--f-serif);margin:12px 0 16px}
+.claude-field .cell-choice p{font-size:13px;line-height:1.8;margin:14px 0}
+.claude-field .cell-choice table{width:100%;border-collapse:collapse;font:12px/1.6 var(--f-mono);margin:20px 0}
+.claude-field .cell-choice caption{text-align:left;color:#b8c2ba;margin-bottom:8px}
+.claude-field .cell-choice :is(th,td){padding:8px 5px;border-bottom:1px solid #839b6744;text-align:left}
+.claude-field .cell-choice th{font-weight:500;color:#f2eee4}
+.claude-field .cell-decisions{display:flex;flex-wrap:wrap;gap:10px}
+.claude-field .cell-decisions .btn{min-height:44px;white-space:normal;text-align:left}
+.claude-field .cell-decisions [aria-pressed="true"]{outline:2px solid #e8982a;outline-offset:3px}
+.claude-field .cell-decisions .btn:disabled{cursor:default;opacity:.55}
+.claude-field .cell-decisions [aria-pressed="true"]:disabled{opacity:1}
+.claude-field .cell-result{color:#f2eee4;border-left:2px solid #e8982a;padding-left:14px}
+.claude-field .context-room>noscript{grid-column:1/-1}
+.claude-field .cell-reading{max-width:650px;font-size:15px;line-height:1.8}
+.claude-field .cell-reading details{margin:15px 0 15px 14px;padding-left:14px;border-left:1px solid #839b6766}
+.claude-field .cell-reading summary{cursor:pointer;color:#f2eee4;padding:8px 0}
+@media(max-width:600px){.claude-field .cell-choice{padding:16px}.claude-field .cell-choice table{font-size:11px}.claude-field .cell-choice :is(th,td){padding:8px 3px}.claude-field .cell-local{padding:14px}.claude-field .cell-reading details{margin-left:5px;padding-left:10px}}
 
 /* The citizen census, under the simulator: the grove's residents out walking, counted. */
 .claude-field .census-canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
@@ -75,3 +127,11 @@ html.pj-on .orchard :is(h2,h3,p,li,span){text-shadow:0 0 2px rgba(12,18,14,.95),
   :is(.origin-path,.tree-parts,.conversation-path,.reading-path,.shelf-items,.repository-list,.source-records,.cell-notes)>*{flex:0 0 84%;scroll-snap-align:start;margin:0!important;min-width:0}
   :is(.meeting-cast,.book-spines)>*{flex:0 0 44%;scroll-snap-align:start;margin:0!important;min-width:0}
 }
+
+/* A small interaction belongs to the dog itself, with a keyboard equivalent. */
+.shadow-pet{position:fixed;z-index:15;border:0;border-radius:0;background:transparent;padding:0;cursor:pointer;color:#f2eee4}
+.shadow-pet[hidden]{display:none}
+.shadow-pet span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font:12px monospace;background:#17231bea;padding:7px 10px;opacity:0;transition:opacity .15s}
+.shadow-pet:hover span,.shadow-pet:focus-visible span{opacity:1}
+.shadow-pet:focus-visible{outline:1px dashed #b8c2ba;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.shadow-pet span{transition:none}}

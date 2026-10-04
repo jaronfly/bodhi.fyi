@@ -18,6 +18,7 @@ export const SPRITE_PAL = {
   cyan0: '#d8fbff', cyan1: '#7ae8ff', cyan2: '#38a8d8',
   saff0: '#ffe2a0', saff1: '#ffc35a', saff2: '#E8982A', saff3: '#b8661a',
   dog0: '#171a18', dog1: '#292d2b', dog2: '#424743', dog3: '#c9ccc6', dog4: '#f3f2eb',
+  dogTan0: '#795234', dogTan1: '#a4764b', dogEye: '#0b100c',
   nose: '#24140e', tongue: '#e8707a', mouth: '#5a2018', bark: '#fff6e0',
 };
 
@@ -231,6 +232,66 @@ function thinker(frame = 0) {
   return p;
 }
 
+/* Vision: a neighbor who carries a small field viewer, with a clear lens and frame. */
+function vision(frame = 0) {
+  const p = painter(30, 38);
+  const b = frame ? 1 : 0;
+  p.rect(10, 32, 3, 6, 'bark1'); p.rect(16, 32, 3, 6, 'bark1');
+  p.rect(9, 37, 4, 1, 'bark0'); p.rect(16, 37, 4, 1, 'bark0');
+  p.blob(15, 25, 7, 8, BARK); p.grain(8, 18, 22, 33, 'bark1', 'bark0', 17);
+  p.blob(15, 12 - b, 6.5, 6.5, BARK_L);
+  leaf(p, 10, 5 - b, 2.5, 1.6); leaf(p, 20, 4 - b, 2.4, 1.6); leaf(p, 15, 3 - b, 2, 2.1);
+  eyes(p, 12, 17, 12 - b);
+  // A pocket field viewer: the little landscape stays legible inside its square frame.
+  p.line(10, 19, 7, 22, 'bark2', 2);
+  p.rect(1, 20, 7, 7, 'band2'); p.rect(2, 21, 5, 5, 'band0');
+  p.rect(3, 22, 3, 3, 'cyan2'); p.rect(3, 22, 3, 1, 'leaf3');
+  p.set(4, 23, frame ? 'cyan0' : 'eyeHi'); p.set(5, 24, 'leaf1');
+  p.line(8, 24, 10, 26, 'bark1');
+  p.outline();
+  return p;
+}
+
+/* Tiny local: a compact neighbor with a seed-sized field kit on its back. */
+function tinyLocal(frame = 0) {
+  const p = painter(16, 24);
+  const b = frame ? 1 : 0;
+  p.rect(6, 20, 2, 4, 'bark1'); p.rect(10, 20, 2, 4, 'bark1');
+  p.rect(5, 23, 3, 1, 'bark0'); p.rect(10, 23, 3, 1, 'bark0');
+  p.blob(8, 16, 4, 4.6, BARK); p.grain(4, 13, 12, 20, 'bark1', 'bark0', 23);
+  p.blob(8, 8.5 - b, 4.5, 4.2, BARK_L);
+  leaf(p, 5, 3.8 - b, 1.8, 1.2); leaf(p, 11, 3 - b, 1.8, 1.2); leaf(p, 8, 1.8 - b, 1.5, 1.8);
+  p.set(7, 9 - b, 'eye'); p.set(9, 9 - b, 'eye'); p.set(7, 8 - b, 'eyeHi');
+  // One tidy satchel and one tiny local display, sized for this smaller body.
+  p.rect(12, 12, 3, 5, 'band2'); p.rect(12, 12, 3, 1, 'band0');
+  p.rect(13, 14, 1, 2, frame ? 'cyan0' : 'cyan1');
+  p.line(5, 16, 3, 18, 'bark2'); p.set(3, 18, 'leaf3');
+  p.outline();
+  return p;
+}
+
+/* MoE: three small branch tips meet at one shared seed, without a rank order. */
+function moe(frame = 0) {
+  const p = painter(32, 40);
+  const b = frame ? 1 : 0;
+  p.rect(13, 33, 3, 6, 'bark1'); p.rect(19, 33, 3, 6, 'bark1');
+  p.rect(12, 38, 4, 1, 'bark0'); p.rect(19, 38, 4, 1, 'bark0');
+  p.blob(17, 26, 7, 8, BARK); p.grain(10, 18, 24, 34, 'bark1', 'bark0', 29);
+  p.blob(17, 13 - b, 6.8, 6.6, BARK_L);
+  eyes(p, 14, 18, 13 - b);
+  // Three equal branch ends arc around one shared crown.
+  p.line(17, 9 - b, 17, 4 - b, 'vine1');
+  p.line(15, 9 - b, 11, 5 - b, 'vine1'); p.line(19, 9 - b, 23, 5 - b, 'vine1');
+  p.disc(11, 4 - b, 1.7, 'cyan1'); p.disc(17, 3 - b, 1.7, 'leaf3'); p.disc(23, 4 - b, 1.7, 'saff1');
+  p.set(11, 4 - b, frame ? 'cyan0' : 'eyeHi'); p.set(17, 3 - b, 'leaf4'); p.set(23, 4 - b, 'saff0');
+  // One common carried seed sits below the converging branches.
+  p.line(13, 20, 10, 23, 'bark2', 2); p.line(21, 20, 24, 23, 'bark2', 2);
+  p.line(10, 23, 15, 25, 'vine1'); p.line(24, 23, 19, 25, 'vine1');
+  p.disc(17, 24, 2.4, 'leaf4'); p.set(17, 23, 'eyeHi');
+  p.outline();
+  return p;
+}
+
 /* Shadow, a mostly black Jack Russell. Bark and tail pose are independent. */
 function puppy(frame = 0, pose = 0) {
   const p = painter(32, 24);
@@ -251,23 +312,28 @@ function puppy(frame = 0, pose = 0) {
   p.disc(12, 12.5, 1.2, 'dog3');
   // the head, tipped up
   p.blob(21.5, 6.5, 4.6, 4.2, DOG);
-  p.line(20, 3, 21, 5, 'dog4'); p.set(20, 4, 'dog3');
+  p.set(20, 3, 'dog2');
   // muzzle pointing at the apple
-  p.blob(25.6, 4 - b * 0.4, 2.6, 1.9, ['dog2', 'dog3', 'dog4']);
+  p.blob(25.6, 4 - b * 0.4, 2.6, 1.9, ['dog0', 'dog1', 'dogTan0']);
   p.set(27, 2 - b, 'nose'); p.set(28, 2 - b, 'nose'); p.set(28, 3 - b, 'nose');
-  if (b) { p.rect(24, 6, 4, 1, 'mouth'); p.set(26, 6, 'tongue'); p.blob(25.4, 7.4, 2.2, 1, ['dog2', 'dog3']); }
+  if (b) { p.rect(24, 6, 4, 1, 'mouth'); p.set(26, 6, 'tongue'); p.blob(25.4, 7.4, 2.2, 1, ['dog1', 'dogTan0']); }
   else p.line(24, 5, 27, 5, 'dog1');
   p.outline();
-  // a floppy ear at the back of the head, and a bright eye
-  p.blob(19, 7.6, 1.8, 3.2, ['dog0', 'dog0', 'dog1']);
-  p.set(18, 11, 'out'); p.set(19, 11, 'out'); p.set(17, 8, 'out'); p.set(17, 9, 'out');
-  p.set(22, 4, 'nose'); p.set(23, 4, 'nose'); p.set(22, 3, 'eyeHi');
+  // A short button ear folds forward into a triangular tip, like a Jack Russell.
+  // The tan crease is tiny; the ear stays dark instead of hanging to the chest.
+  p.rect(17, 3, 3, 1, 'dog0'); p.rect(17, 4, 4, 1, 'dog1');
+  p.rect(18, 5, 3, 1, 'dog0'); p.rect(19, 6, 2, 1, 'dog0');
+  p.set(18, 4, 'dogTan0'); p.set(20, 7, 'out');
+  // One small eye. The tan brow is separate from the
+  // white coat spots so the face never reads as one oversized white eyeball.
+  p.set(22, 3, 'dogTan1'); p.set(23, 3, 'dogTan0');
+  p.set(22, 4, 'dogEye'); p.set(23, 4, 'dogTan0');
   // the bark, as little cream strokes (sound, not body)
   if (b) { p.line(29, 1, 31, 0, 'bark'); p.rect(30, 3, 2, 1, 'bark'); p.line(29, 5, 31, 6, 'bark'); }
   return p;
 }
 
-export const PAINTERS = { local, blind, instruct, cloud, thinker, puppy };
+export const PAINTERS = { local, blind, instruct, cloud, thinker, vision, tinyLocal, moe, puppy };
 
 // Draw a sprite to a canvas (scale = whole pixels per art pixel). Puppy pose is independent of bark frame.
 export function spriteCanvas(name, frame = 0, scale = 1, pose = 0) { return toCanvas(PAINTERS[name](frame, pose), scale); }

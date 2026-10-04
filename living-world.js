@@ -1,8 +1,8 @@
 /* GLM/ZCode living grove, adapted by Astra: palette, sprites, timing, accessibility and lifecycle. */
-import { spriteCanvas } from './assets/seed/sprites.js?v=543cf1ef031d';
+import { spriteCanvas } from './assets/seed/sprites.js?v=ea42dbdb046f';
 import { paintCottage } from './assets/seed/cottage.js';
-const villageKinds = ['local','blind','instruct','cloud','thinker'];
-const villageNames = ['A local sprout','A text-only reader','An instruction-shaped resident','A cloud resident','A thinking resident'];
+const villageKinds = ['local','blind','instruct','cloud','thinker','vision','tinyLocal','moe'];
+const villageNames = ['A local sprout','A text-only reader','An instruction-shaped resident','A cloud resident','A thinking resident','A resident with a field viewer','A small local resident','A branching resident'];
 const villageArt = Object.fromEntries(villageKinds.map(k=>[k,[spriteCanvas(k,0),spriteCanvas(k,1)]]));
 (()=>{
 /* ═══ Pixel engine v7 — whole pixels, living world ═══
@@ -67,20 +67,28 @@ let actors = [
  {type:'pet',variant:2,x:SW*.47,mode:'walk',timer:300,scale:.24,frame:100,target:SW*.72,dir:1},
  {type:'pet',variant:3,x:SW*.65,mode:'think',timer:160,scale:.34,frame:70,dir:-1},
  {type:'pet',variant:4,x:SW*.80,mode:'note',timer:180,scale:.22,frame:120,dir:1},
+ {type:'pet',variant:5,x:SW*.38,mode:'inspect',timer:190,scale:.20,frame:30,dir:1},
+ {type:'pet',variant:6,x:SW*.56,mode:'type',timer:170,scale:.20,frame:90,dir:-1},
+ {type:'pet',variant:7,x:SW*.71,mode:'note',timer:210,scale:.20,frame:60,dir:1},
+ {type:'pet',variant:0,name:'A tree sitter',treeperson:true,meditating:true,x:TREE_X-10,mode:'sit',timer:330,scale:.20,frame:30,dir:1},
  {type:'pet',variant:3,sprite:'bodhi',name:'Bodhi',x:SW*.22,mode:'walk',timer:250,scale:.20,frame:0,dir:1,target:SW*.44},
  {type:'pet',variant:4,sprite:'codex',name:'The returning scout',x:SW-12,mode:'walk',timer:380,scale:.20,frame:0,dir:-1,target:TREE_X+16,returning:true}
 ], nextSeed = 50, held = null;
-actors.forEach(a=>{a.age=0;a.stay=1800+Math.random()*2000;if(!a.sprite)a.name=villageNames[a.variant%villageNames.length];});
+actors.forEach(a=>{a.age=0;a.stay=1800+Math.random()*2000;if(!a.name&&!a.sprite)a.name=villageNames[a.variant%villageNames.length];});
 
 let pointer = {x:0, y:0, down:false};
 
 /* treeperson renderer — hair canopy, face, body, root feet; modes change the arms */
 function drawTP(ctx, pxX, pxY, u, mode, t, heldSwing, side=1, variant=0){
   const bark=BARK[variant%BARK.length];
-  const g = ['001111100','011111110','111111111','111111111','001101100','001111100',
-             '001111100','001111100','001111100','001111100','001111100','001101100','001000100'];
+  const sitting=mode==='sit'||mode==='levitate';
+  const g = sitting
+    ? ['001111100','011111110','111111111','111111111','001101100','001111100',
+       '001111100','001111100','001111100','001111100','000111000','011000110','001111100']
+    : ['001111100','011111110','111111111','111111111','001101100','001111100',
+       '001111100','001111100','001111100','001111100','001111100','001101100','001000100'];
   const swing = heldSwing ? Math.sin(t/6)*1.5 : 0;
-  const X = pxX + swing;
+  const X = Math.round(pxX + swing);
   for (let yy=0; yy<g.length; yy++){
     for (let xx=0; xx<9; xx++){
       const v = g[yy][xx];
@@ -101,6 +109,12 @@ function drawTP(ctx, pxX, pxY, u, mode, t, heldSwing, side=1, variant=0){
   }else if(variant%3===2){
     pxr(ctx,'#98bdb0',X+5*u,pxY+3*u,3*u,3*u);pxr(ctx,'#2a5041',X+5.5*u,pxY+3.5*u,2*u,2*u);
     pxr(ctx,'#dce4be',X+6*u,pxY+4*u,u,u);pxr(ctx,'#b3c086',X+u,pxY-2*u,u,3*u);
+  }
+  if(sitting){
+    // Fold the lower roots across one another and rest the hands in the lap.
+    pxr(ctx,G.D,X+u,pxY+11*u,2*u,u);pxr(ctx,bark,X+3*u,pxY+11*u,3*u,u);pxr(ctx,G.D,X+6*u,pxY+11*u,2*u,u);
+    pxr(ctx,bark,X+3*u,pxY+9*u,3*u,u);
+    if(mode==='levitate'){pxr(ctx,bark,X,pxY+7*u,u,2*u);pxr(ctx,bark,X+8*u,pxY+7*u,u,2*u);}
   }
   const kick = heldSwing ? Math.floor(t/4)%2 : 0;
   if (mode==='type'){
@@ -178,6 +192,10 @@ function updateActors(){
       a.age=(a.age||0)+1;
       a.scale = Math.min(0.20, (a.scale||0.10)+0.002);
       a.frame++;
+      if(a.meditating){
+        if(--a.timer<=0){a.mode=a.mode==='sit'?'levitate':'sit';a.timer=a.mode==='levitate'?90:270+Math.random()*150;}
+        continue;
+      }
       if(a.returning){
         const homeX=TREE_X+16,remaining=homeX-a.x;
         a.mode='walk';a.target=homeX;a.dir=remaining<0?-1:1;
@@ -242,7 +260,7 @@ sc.addEventListener('pointerdown', e=>{
     if (a.type!=='pet') continue;
     const b=a.bounds;if(!b)continue;const d=Math.hypot(b.x+b.w/2-mx,b.y+b.h/2-my);if(mx>b.x-8&&mx<b.x+b.w+8&&my>b.y-8&&my<b.y+b.h+8&&d<bd){bd=d;best=a;}
   }
-  if (best){sc.setPointerCapture(e.pointerId);if(best.meet){best.meet.with.meet=null;best.meet=null;}held=best;best.mode='held';best.holdY=my/SU;best.dropV=null;best.departing=false;best.age=0;sc.style.cursor='grabbing';document.getElementById('world-status').textContent=(best.name||'Grove resident '+(best.variant+1))+' · Picked up. Set them down anywhere in the grove.';if(worldPaused)drawScene(false);}
+ if (best){sc.setPointerCapture(e.pointerId);if(best.meet){best.meet.with.meet=null;best.meet=null;}best.meditating=false;held=best;best.mode='held';best.holdY=my/SU;best.dropV=null;best.departing=false;best.age=0;sc.style.cursor='grabbing';document.getElementById('world-status').textContent=(best.name||'Grove resident '+(best.variant+1))+' · Picked up. Set them down anywhere in the grove.';if(worldPaused)drawScene(false);}
 });
 sc.addEventListener('pointermove', e=>{
   const r = sc.getBoundingClientRect();
@@ -265,20 +283,38 @@ window.addEventListener('pointerup',releasePerson);sc.addEventListener('pointerc
 
 // Sprite sheets and procedural residents share the same hit boxes and lifecycle.
 function drawResident(a,x,y,w,h,u,mode,picked){
+ if(a.treeperson){
+  const ix=Math.round(x),iy=Math.round(y);
+  drawTP(sx,ix,iy,u,mode,T+a.frame,picked,a.dir,a.variant);
+  a.bounds={x:ix,y:iy,w,h};
+  return;
+ }
  if(a.sprite){
   const img=a.sprite==='codex'?codexSheet:sheet;
-  const row=mode==='held'?(a.sprite==='codex'?10:4):mode==='walk'?(a.dir>0?1:2):mode==='wave'?3:mode==='hop'?4:mode==='talk'?6:mode==='think'?7:mode==='inspect'?8:0;
+  const row=mode==='held'?(a.sprite==='codex'?10:4):mode==='walk'?(a.dir>0?1:2):mode==='wave'?3:mode==='hop'?4:mode==='talk'||mode==='note'?6:mode==='think'?7:mode==='inspect'?8:0;
   const count=a.sprite==='codex'?[7,8,8,4,5,8,6,6,6,8,8][row]:[6,8,8,4,5,8,6,6,6][row];
   const frame=Math.floor((T+a.frame)/(mode==='walk'?7:13))%count;
-  const scale=picked?1.55:1,ww=w*scale,hh=h*scale,xx=x-(ww-w)/2,yy=y-(hh-h)*.4;
-  if(img.complete&&img.naturalWidth){sx.imageSmoothingEnabled=false;sx.drawImage(img,frame*192,row*208,192,208,xx,yy,ww,hh);}else drawTP(sx,x,y,u,mode,T+a.frame,picked,a.dir,a.variant);
-  a.bounds={x:xx,y:yy,w:ww,h:hh};
-  if(a.returning){pxr(sx,C[1],xx+ww*.65,yy+hh*.68,11,9);pxr(sx,C[5],xx+ww*.68,yy+hh*.71,7,1);}
+  const scale=(picked?1.55:1)*(a.sprite==='codex'?1.14:1),ww=w*scale,hh=h*scale,xx=x-(ww-w)/2,yy=y-(hh-h)*.4;
+  const iw=Math.max(1,Math.round(ww)),ih=Math.max(1,Math.round(hh)),ix=Math.round(xx),iy=Math.round(yy);
+  if(img.complete&&img.naturalWidth){sx.imageSmoothingEnabled=false;sx.drawImage(img,frame*192,row*208,192,208,ix,iy,iw,ih);}else drawTP(sx,ix,iy,u,mode,T+a.frame,picked,a.dir,a.variant);
+  a.bounds={x:ix,y:iy,w:iw,h:ih};
+  if(a.sprite==='codex'&&mode==='type'){
+    // A small, high-contrast laptop gives Codex a visible working action between walks.
+    const bx=ix+Math.round(iw*.39),by=iy+Math.round(ih*.73);
+    pxr(sx,C[2],bx,by,16,9);pxr(sx,C[8],bx+1,by+1,14,5);
+    pxr(sx,'#9bc18c',bx+2,by+2,5,3);pxr(sx,'#263b2c',bx+8,by+2,6,1);pxr(sx,'#263b2c',bx+8,by+4,4,1);
+    pxr(sx,C[7],bx-2,by+7,20,2);pxr(sx,C[6],bx+1,by+7,16,1);
+  }else if(a.sprite==='codex'&&mode==='note'){
+    const bx=ix+Math.round(iw*.40),by=iy+Math.round(ih*.75);
+    pxr(sx,C[2],bx,by,13,8);pxr(sx,C[1],bx+1,by+1,11,5);pxr(sx,C[8],bx+5,by+1,1,6);
+    pxr(sx,C[8],bx+2,by+2,2,1);pxr(sx,C[8],bx+8,by+3,2,1);pxr(sx,C[3],bx+9,by+5,2,1);
+  }
+  if(a.returning){pxr(sx,C[1],ix+Math.round(iw*.65),iy+Math.round(ih*.68),11,9);pxr(sx,C[5],ix+Math.round(iw*.68),iy+Math.round(ih*.71),7,1);}
  }else{
   // Claude's original model figures now inhabit GLM's existing world and lifecycle.
   // Keep its hit boxes and physics; fit the source art in whole pixels rather than stretching it.
   const kind=villageKinds[a.variant%villageKinds.length],phase=Math.floor((T+a.frame)/(mode==='walk'?5:mode==='hop'?7:13)),frame=worldPaused?0:phase%2;
-  const art=villageArt[kind][frame],k=Math.max(1,Math.floor(Math.min(w/art.width,h/art.height)*(picked?1.4:1)));
+  const art=villageArt[kind][frame],fit=Math.min(w/art.width,h/art.height)*(picked?1.4:1),k=Math.max(1,Math.floor(kind==='tinyLocal'?Math.min(2,fit):fit));
   const ww=art.width*k,hh=art.height*k,xx=Math.round(x+(w-ww)/2),hop=mode==='hop'&&!worldPaused&&phase%2?2:0,yy=Math.round(y+h-hh-hop);
   sx.imageSmoothingEnabled=false;sx.save();
   if((a.meet?a.meet.side:a.dir)<0){sx.translate(xx+ww,yy);sx.scale(-1,1);sx.drawImage(art,0,0,ww,hh);}else sx.drawImage(art,xx,yy,ww,hh);
@@ -312,7 +348,7 @@ function drawResident(a,x,y,w,h,u,mode,picked){
 
 let keyboardIndex=0;
 sc.addEventListener('keydown',e=>{
- if(e.code==='Space'){e.preventDefault();if(held){releasePerson();keyboardIndex++;}else{const people=actors.filter(a=>a.type==='pet');held=people[keyboardIndex%people.length];if(held){if(held.meet){held.meet.with.meet=null;held.meet=null;}held.mode='held';held.holdY=GROUND-23;held.dropV=null;document.getElementById('world-status').textContent=(held.name||'Grove resident '+(held.variant+1))+' · Use the arrows to move. Space sets them down.';}}if(worldPaused)drawScene(false);}
+ if(e.code==='Space'){e.preventDefault();if(held){releasePerson();keyboardIndex++;}else{const people=actors.filter(a=>a.type==='pet');held=people[keyboardIndex%people.length];if(held){if(held.meet){held.meet.with.meet=null;held.meet=null;}held.meditating=false;held.mode='held';held.holdY=GROUND-23;held.dropV=null;document.getElementById('world-status').textContent=(held.name||'Grove resident '+(held.variant+1))+' · Use the arrows to move. Space sets them down.';}}if(worldPaused)drawScene(false);}
  else if(e.key==='Escape'&&held){e.preventDefault();releasePerson();}
  else if(held&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();held.x=Math.max(8,Math.min(SW-8,held.x+(e.key==='ArrowRight'?3:e.key==='ArrowLeft'?-3:0)));held.holdY=Math.max(14,Math.min(GROUND-6,held.holdY+(e.key==='ArrowDown'?3:e.key==='ArrowUp'?-3:0)));if(worldPaused)drawScene(false);}
 });
@@ -380,46 +416,34 @@ function drawScene(advance=true){
   for(let x=0;x<SW;x+=3){const h=1+(x*17%4);pxr(sx,x%2?'#6b8960':'#375a3d',x*SU,(GROUND-h)*SU,2,SU*h);}
   // One taproot feeds two descending laterals and their shorter feeders.
   const rootY=(GROUND+1)*SU,rootBase=GROUND+1;
-  const rootDepth=Math.max(8,Math.floor((sc.height-rootY)/SU)-3),rootAt=t=>rootBase+Math.round(rootDepth*t);
-  const leftReach=Math.min(TREE_X-8,SW*.20),rightReach=Math.min(SW-TREE_X-12,SW*.34),center=TREE_X;
+  const rootDepth=Math.max(8,Math.floor((sc.height-rootY)/SU)-1),rootAt=t=>rootBase+Math.round(rootDepth*t);
+  const leftReach=Math.min(TREE_X-5,SW*.23),rightReach=Math.min(SW-TREE_X-8,SW*.38),center=TREE_X;
   const corePaths=[
-    [[center,rootBase],[center+1,rootAt(.16)],[center-1,rootAt(.34)],[center+1,rootAt(.52)],[center-1,rootAt(.72)],[center,rootAt(1)]],
-    [[center,rootBase],[center-5,rootAt(.12)],[center-11,rootAt(.25)],[center-17,rootAt(.43)],[center-leftReach*.70,rootAt(.63)],[center-leftReach,rootAt(.88)]],
-    [[center,rootBase],[center+5,rootAt(.12)],[center+12,rootAt(.25)],[center+22,rootAt(.42)],[center+rightReach*.70,rootAt(.66)],[center+rightReach,rootAt(.90)]]
+    [[center,rootBase],[center,rootAt(.18)],[center+1,rootAt(.36)],[center-1,rootAt(.56)],[center,rootAt(.76)],[center,rootAt(1)]],
+    [[center-2,rootBase],[center-4,rootAt(.12)],[center-9,rootAt(.26)],[center-16,rootAt(.41)],[center-leftReach*.48,rootAt(.54)],[center-leftReach*.74,rootAt(.74)],[center-leftReach,rootAt(.96)]],
+    [[center+2,rootBase],[center+4,rootAt(.12)],[center+9,rootAt(.26)],[center+16,rootAt(.41)],[center+rightReach*.48,rootAt(.54)],[center+rightReach*.74,rootAt(.74)],[center+rightReach,rootAt(.96)]]
   ];
   const feederPaths=[
-    [[center-11,rootAt(.25)],[center-17,rootAt(.36)],[center-leftReach*.76,rootAt(.53)],[center-leftReach*.96,rootAt(.72)]],
-    [[center-leftReach*.70,rootAt(.63)],[center-leftReach*.91,rootAt(.74)],[center-leftReach*.78,rootAt(.89)]],
-    [[center+12,rootAt(.25)],[center+21,rootAt(.35)],[center+rightReach*.42,rootAt(.48)],[center+rightReach*.49,rootAt(.67)]],
-    [[center+rightReach*.70,rootAt(.66)],[center+rightReach*.83,rootAt(.76)],[center+rightReach*.72,rootAt(.90)]]
+    [[center-leftReach*.48,rootAt(.54)],[center-leftReach*.72,rootAt(.63)],[center-leftReach*.94,rootAt(.74)],[center-leftReach*1.08,rootAt(.86)],[center-leftReach*1.12,rootAt(.97)]],
+    [[center+rightReach*.48,rootAt(.54)],[center+rightReach*.72,rootAt(.63)],[center+rightReach*.94,rootAt(.74)],[center+rightReach*1.08,rootAt(.86)],[center+rightReach*1.12,rootAt(.97)]]
   ];
-  const rootStroke=(points,color,width)=>{
-    const pixelPoint=([x,y])=>[Math.round(x)*SU,Math.round(y)*SU];
+  const rootStroke=(points,color,width,offsetY=0)=>{
+    const pixelPoint=([x,y])=>[Math.round(x)*SU,Math.round(y)*SU+offsetY];
     sx.strokeStyle=color;sx.lineWidth=width*SU;sx.beginPath();sx.moveTo(...pixelPoint(points[0]));
     for(let i=1;i<points.length;i++)sx.lineTo(...pixelPoint(points[i]));
     sx.stroke();
   };
   sx.save();sx.beginPath();sx.rect(0,rootY,sc.width,sc.height-rootY);sx.clip();
-  sx.lineCap='round';sx.lineJoin='round';
-  corePaths.forEach((path,i)=>{
-    const width=i===0?3.2:2.8,innerWidth=i===0?1.6:1.4;
-    rootStroke(path,'#1c2b20',width);rootStroke(path,i===0?'#3c5138':'#304832',innerWidth);rootStroke(path,'#61744f',.4);
-  });
-  feederPaths.forEach(path=>{rootStroke(path,'#1c2b20',1.6);rootStroke(path,'#3c5138',.8);});
-  const pointAlongRoot=(path,t)=>{
-    const lengths=[];let total=0;
-    for(let i=1;i<path.length;i++){const len=Math.hypot(path[i][0]-path[i-1][0],path[i][1]-path[i-1][1]);lengths.push(len);total+=len;}
-    let distance=t*total;
-    for(let i=0;i<lengths.length;i++){
-      if(distance<=lengths[i]){const f=distance/lengths[i];return [path[i][0]+(path[i+1][0]-path[i][0])*f,path[i][1]+(path[i+1][1]-path[i][1])*f];}
-      distance-=lengths[i];
-    }
-    return path[path.length-1];
+  sx.lineCap='butt';sx.lineJoin='bevel';
+  const shadedRoot=(path,color,width)=>{
+    rootStroke(path,'#1c2b20',width);
+    rootStroke(path,color,width*.62);
+    rootStroke(path,'#53674a',.22,-2);
   };
   corePaths.forEach((path,i)=>{
-    const t=(T*.00055+i/3)%1,[x,y]=pointAlongRoot(path,t);
-    pxr(sx,'#94bb7c',Math.round(x)*SU,Math.round(y)*SU,2,2);
+    shadedRoot(path,i===0?'#3f543a':i===1?'#354b34':'#304631',i===0?1.7:1.55);
   });
+  feederPaths.forEach((path,i)=>shadedRoot(path,i===0?'#344a33':'#304530',1.15));
   sx.restore();
   const sway=Math.round(Math.sin(T/70));
   // Root flare, a shaded trunk and branching timber under the canopy.
@@ -452,9 +476,16 @@ function drawScene(advance=true){
       }
     });
   }
-  /* autumn leaf-fall */
-  if ((sIdx===2 && sT>0.03) || (inTrans && sIdx===2)){
-    if (advance&&Math.random()<0.38) drops.push({kind:'leaf', x:(8+Math.random()*58)*SU, y:(20+Math.random()*18)*SU, vy:0.4+Math.random()*0.3, sway:Math.random()*6.28});
+  /* Autumn leaves leave the lower canopy and drift out from their source. */
+  if(sIdx===2&&density>.04&&advance&&Math.random()<(weather==='wind'?.24:.10)){
+    const rows=CANOPY_ROWS.filter(row=>row.y>=27&&row.y<=39);
+    for(let attempt=0;attempt<4;attempt++){
+      const row=rows[Math.floor(Math.random()*rows.length)],x=row.x0+Math.random()*(row.x1-row.x0);
+      if(((Math.round(x)*73+row.y*151)%97)/97>density)continue;
+      const breeze=Math.sin(T/70)*.12+(weather==='wind'?.30:0)+(Math.random()-.5)*.10;
+      drops.push({kind:'leaf',x:x*SU,y:(row.y+1)*SU,vy:.75+Math.random()*.55,vx:(x-TREE_X)*.006+breeze,sway:Math.random()*6.28,spin:.045+Math.random()*.035,color:Math.random()<.5?'#c18a46':'#a96537'});
+      break;
+    }
   }
   /* weather particles */
   if (weather!=='clear'){
@@ -467,8 +498,13 @@ function drawScene(advance=true){
     if (d.kind==='rain'){ pxr(sx,'rgba(184,194,186,0.7)',d.x,d.y,1.6,SU); d.y+=d.vy; d.x+=0.5; }
     else if (d.kind==='snow'){ pxr(sx,C[1],d.x,d.y,2.5,2.5); d.y+=d.vy*0.25; d.x+=Math.sin((d.y+T)/14)*0.8; }
     else if (d.kind==='wind'){ pxr(sx, sIdx===2?C[8]:C[4], d.x,d.y,SU/2,SU/2); d.x+=2.2; d.y+=Math.sin((d.x+T)/16)*0.8; }
-    else if (d.kind==='leaf'){ pxr(sx,d.sway%2>1?'#c18a46':'#a96537',d.x+Math.sin(d.sway+=0.05)*6,d.y,4,3); d.y+=d.vy; }
-    if (d.y > GROUND*SU+30 || d.x>sc.width+10){ d.dead=true; }
+    else if (d.kind==='leaf'){
+      const x=Math.round(d.x+Math.sin(d.sway)*2),y=Math.round(d.y),tilt=Math.sin(d.sway*1.7)>0;
+      if(tilt){pxr(sx,d.color,x,y+1,2,2);pxr(sx,d.color,x+2,y,2,2);pxr(sx,'#e3bd70',x+1,y,1,1);pxr(sx,'#765136',x+3,y+2,2,1);}
+      else{pxr(sx,d.color,x+1,y,2,2);pxr(sx,d.color,x,y+2,2,2);pxr(sx,'#e3bd70',x+2,y+1,1,1);pxr(sx,'#765136',x+3,y+2,2,1);}
+      d.x+=d.vx+Math.sin(d.sway*.7)*.035;d.y+=d.vy;d.vy=Math.min(1.8,d.vy+.003);d.sway+=d.spin;
+    }
+    if (d.y > GROUND*SU+4 || d.x>sc.width+10 || d.x < -10){ d.dead=true; }
   }
   drops = drops.filter(d=>!d.dead);
 
@@ -505,7 +541,10 @@ function drawScene(advance=true){
       } else {
         const mode = a.mode;
         const hopY = (mode==='hop' && Math.floor(T/10)%2===0) ? 3 : 0;
-        pxX = Math.round(a.x*SU - w/2); pxY = Math.round(GROUND*SU - h - hopY);
+        const lift = a.meditating&&mode==='levitate' ? Math.sin(Math.PI*(1-Math.max(0,a.timer)/90))*1.15 : 0;
+        const liftPx=Math.round(lift*SU);
+        pxX = Math.round(a.x*SU - w/2); pxY = Math.round(GROUND*SU - h - hopY - liftPx);
+        if(liftPx>0){sx.globalAlpha=.22;sx.fillStyle=C[9];sx.beginPath();sx.ellipse(Math.round(a.x*SU),GROUND*SU+1,Math.max(5,Math.round(w*.18)),2,0,0,Math.PI*2);sx.fill();sx.globalAlpha=1;}
         drawResident(a,pxX,pxY,w,h,u,mode,false);
       }
     }

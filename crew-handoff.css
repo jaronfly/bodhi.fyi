@@ -49,12 +49,12 @@
   background-image: none;
 }
 
-/* pixel-journey.css hides this layer when the walk is active; restore the
-   original SVG stage so the close ship and its sea remain visible. */
+/* The walk paints the same ship in its water plane. Retain the stage's
+   breathing room, but never draw a second hull over the path below it. */
 html.pj-on .ghost-harbor .ship-sea {
   display: block;
-  visibility: visible;
-  opacity: 1;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .ghost-harbor .ship {
@@ -237,8 +237,30 @@ html.pj-on .ghost-harbor .ship-sea {
 
 @media (max-width: 700px) {
   .ghost-harbor {
+    padding-top: 40px;
     padding-right: 22px;
     padding-left: 22px;
+  }
+
+  .ghost-harbor > header h2 {
+    max-width: none;
+    margin: 18px auto;
+    font-size: clamp(36px, 9.4vw, 42px);
+  }
+
+  .ghost-harbor > header > p:last-child {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .ghost-harbor .ship-sea {
+    height: 164px;
+    margin-top: 12px;
+  }
+
+  .ghost-harbor .ship {
+    width: min(100%, 240px);
+    bottom: 6px;
   }
 
   .ghost-harbor .crew-controls,
@@ -247,13 +269,31 @@ html.pj-on .ghost-harbor .ship-sea {
   }
 
   .ghost-harbor .crew-stepper {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
   }
 
   .ghost-harbor .crew-step-btn {
-    min-height: 48px;
-    padding: 10px 4px;
+    min-height: 64px;
+    padding: 8px 6px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .ghost-harbor .crew-step-btn .step-name {
+    font-size: 11px;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  .ghost-harbor .crew-slider-bar {
+    margin: 4px 0 8px;
+  }
+
+  .ghost-harbor .crew-range {
+    min-height: 44px;
   }
 
   .ghost-harbor #crew-entry {

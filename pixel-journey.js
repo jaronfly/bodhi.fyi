@@ -13,13 +13,13 @@
 
    What it reuses, literally: the night scroll's 23-colour palette, Bayer dither, star field, moon,
    aurora, cloud puffs, hill ranges and blob trees (pixel-backdrop.js), and the orchard's broad tree (landscape.js) and
-   original seed puppy (assets/seed/sprites.js), whose colours are added to the palette so the walk arrives in the
+   original seed puppy (assets/seed/sprites.js?v=ea42dbdb046f), whose colours are added to the palette so the walk arrives in the
    orchard's light. Colours are authored per hour of the day as a table of roles, and the role palette
    interpolates in whole pixels without smoothing their edges.
 
    Motion: still when the system asks for reduced motion, when the film's Stillness is on, or when the
    field guide's ambient-motion switch is off. Pauses when hidden. No storage, no network. */
-import { spriteCanvas } from './assets/seed/sprites.js?v=543cf1ef031d';
+import { spriteCanvas } from './assets/seed/sprites.js?v=ea42dbdb046f';
 import { paintCottage } from './assets/seed/cottage.js';
 
 (() => {
@@ -132,6 +132,7 @@ import { paintCottage } from './assets/seed/cottage.js';
   // ancestral sky the path returns to thawed ground and a rising sun.
   const winterAt = (z) => inRange(z, 72, 108, 12);
   const pathWidth = (z) => PW - 0.22 * inRange(z, 76, 128, 12) + 0.5 * inRange(z, 202, 234, 12) - 0.28 * inRange(z, 304, 329, 12);
+  const PROP_PATH_CLEARANCE = 2.2; // room for the widest generated rock, not only its anchor
   const RIV0 = 236, RIV1 = 292, RIVZ = 264, RW = 0.9;  // the river crosses the path diagonally at RIVZ
   const riverD = (z) => (z - RIVZ) * 0.9;
   const POND = { d: -4.6, z: 141, rx: 2.6, rz: 1.6 };
@@ -143,7 +144,7 @@ import { paintCottage } from './assets/seed/cottage.js';
     if (z > RIV0 && z < RIV1 && Math.abs(d - riverD(z)) * 0.743 < RW + 0.5) return 'water';
     const pu = (d - POND.d) / POND.rx, pv = (z - POND.z) / POND.rz;
     if (pu * pu + pv * pv < 1.6) return 'water';
-    if (Math.abs(d) < pathWidth(z) + 0.6) return 'path';
+    if (Math.abs(d) < pathWidth(z) + PROP_PATH_CLEARANCE) return 'path';
     return 'grass';
   }
 
@@ -225,7 +226,8 @@ import { paintCottage } from './assets/seed/cottage.js';
     add('rail', 0, 0, { a: [0.8, 261.6], b: [0.8, 266.4] }); add('rail', 0, 0, { a: [-0.8, 261.6], b: [-0.8, 266.4] });
     add('post', 0.8, 261.6); add('post', 0.8, 266.4); add('post', -0.8, 261.6); add('post', -0.8, 266.4);
     add('boat', riverD(259.5) - 0.1, 259.5);
-    add('ship', 8.5, 390);
+    // Its pixel hull spans farther at the horizon; keep the full silhouette offshore.
+    add('ship', 15, 390);
     add('orchard', 3.0, 450); add('dog', 1.9, 449.7);
     // the countryside
     for (let z = 2; z < 470; z += 0.45) {
@@ -317,7 +319,7 @@ import { paintCottage } from './assets/seed/cottage.js';
   const put = (x, y, r) => { if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = roleColor(x, y, r); };
   const raw = (x, y, c) => { if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = U32[c]; };
   let FOGK = 0; // fog on the sprite being drawn
-  const fput = (x, y, r) => { x |= 0; y |= 0; if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = roleColor(x, y, BAY[bi(x, y)] < FOGK ? S.FOG : r); };
+  const fput = (x, y, r) => { x |= 0; y |= 0; if (x < 0 || x >= W || y < 0 || y >= H) return; buf[y * W + x] = mixInk(roleColor(x,y,r),colours[S.FOG],FOGK*.22); };
   const frect = (x, y, w, h, r) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) fput(x + i, y + j, r); };
   const fdisk = (cx, cy, rad, r) => { for (let j = -rad; j <= rad; j++) { const w = Math.floor(Math.sqrt(rad * rad - j * j)); for (let i = -w; i <= w; i++) fput(cx + i, cy + j, r); } };
   const fline = (pts, r, wd) => {
@@ -399,8 +401,8 @@ import { paintCottage } from './assets/seed/cottage.js';
     }
   }
   function drawAurora(a, t) {
-    if (a <= 0.02) return;
-    const hy = HY0 + DY;
+    if (a <= 0) return;
+    const hy = HY0 + DY, warmAmount = smooth(0.2, 0.95, a) * 0.42;
     for (let x = 0; x < W; x++) {
       const env = smooth(0.15, 0.7, 0.5 + 0.5 * Math.sin(x * 0.011 + 1.3 + t * 0.04));
       if (env <= 0) continue;
@@ -415,8 +417,15 @@ import { paintCottage } from './assets/seed/cottage.js';
         else if (k > 0.42 + th * 0.3) buf[y * W + x] = U32[P.canopyDk];
         else if (k > 0.08 + th * 0.45) buf[y * W + x] = U32[P.moss];
       }
-      // Claude's single warm thread returns with the original aurora, after the sun has set.
-      if (a > 0.65 && x > W * 0.1 && x < W * 0.9) raw(x, Math.round(yb) + 1, P.saffron);
+      // Warm light travels along the curtain's own edge, fading into it rather than drawing a separate line.
+      const u = (x + 0.5) / W, edge = smooth(0.02, 0.22, u) * smooth(0.02, 0.22, 1 - u);
+      const flow = Math.pow(0.5 + 0.5 * Math.sin((u - 0.5) * 10.5 - t * 0.12 + Math.PI / 2), 6);
+      const warmth = warmAmount * edge * env * flow, yt = yb - 0.75;
+      for (let y = Math.floor(yt); y <= Math.ceil(yt); y++) {
+        if (y < 0 || y >= HY || y >= H) continue;
+        const weight = warmth * (1 - Math.abs(y - yt)), i = y * W + x;
+        buf[i] = mixInk(buf[i], U32[P.saffron], weight);
+      }
     }
   }
   function drawClouds(t) {
@@ -484,8 +493,7 @@ import { paintCottage } from './assets/seed/cottage.js';
           if (moonOn && Math.abs(x - moonX) < 3 && hash(x, y, tick + 50) < 0.3) r = S.WHI;
         }
         const t = BAY[bi(x, y)];
-        if (t < haze) r = S.HILL2; else if (t < fogk) r = S.FOG;
-        buf[y * W + x] = roleColor(x, y, r);
+        buf[y * W + x] = mixInk(mixInk(roleColor(x,y,r),colours[S.HILL2],haze*.72),colours[S.FOG],fogk*.22);
       }
     }
   }
@@ -523,11 +531,11 @@ import { paintCottage } from './assets/seed/cottage.js';
         fput(x + shear, y, lv === 3 ? S.T3 : lv === 2 ? S.T2 : lv === 1 ? S.T1 : S.T0);
       }
     }
-    if (anim && fallWeight > 0.1 && snowWeight < 0.5) for (let i = 0; i < 8; i++) {
+    if (anim && fallWeight > 0.1 && snowWeight < 0.5) for (let i = 0; i < 22; i++) {
       const phase = (t * 0.13 + hash(i, seed, 72)) % 1;
-      const lx = cx + (hash(i, seed, 73) - 0.5) * r * 2 + Math.sin(phase * 6 + seed) * r * 0.16;
+      const lx = cx + (hash(i, seed, 73) - 0.5) * r * 2 + Math.sin(phase * 6 + seed) * r * 0.18 + phase*r*.65;
       const ly = cy - r * 0.4 + phase * (sy - cy + r * 0.4);
-      fput(Math.round(lx), Math.round(ly), i % 2 ? S.T3 : S.TUFT);
+      fput(Math.round(lx), Math.round(ly), i % 2 ? S.T3 : S.TUFT);if(r>14&&i%3===0)fput(Math.round(lx)+1,Math.round(ly)+(i%2),S.TUFT);
     }
   }
   function drawPine(sx, sy, hp) {
@@ -655,12 +663,16 @@ import { paintCottage } from './assets/seed/cottage.js';
     const c = spriteCanvas('puppy', frame, 1, pose);
     return new Uint32Array(c.getContext('2d').getImageData(0, 0, 32, 24).data.buffer);
   }));
-  function paintPuppy(target, x, y, s, t, hi) {
+  function puppyMetrics(s, t, hi) {
     const k = Math.max(1, Math.round(s * 0.75));
     const cyc = t % 1.5;
     const hop = hi > 0 ? Math.abs(Math.sin(hi * 6)) * 5 : cyc > 0.16 && cyc < 0.66 ? Math.sin((cyc - 0.16) / 0.5 * Math.PI) * 4.5 : 0;
     const frame = hi > 0 || hop > 3 ? 1 : Math.floor(t * 5) % 2;
     const pose = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1][Math.floor(t * 12) % 10];
+    return { k, hop, frame, pose };
+  }
+  function paintPuppy(target, x, y, s, t, hi) {
+    const { k, hop, frame, pose } = puppyMetrics(s, t, hi);
     const src = PET[frame][pose], x0 = Math.round(x), y0 = Math.round(y - 23 * k - hop * s);
     for (let j = 0; j < 24; j++) for (let i = 0; i < 32; i++) {
       const c = src[j * 32 + i]; if (!(c >>> 24)) continue;
@@ -688,10 +700,32 @@ import { paintCottage } from './assets/seed/cottage.js';
     };
     im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
   })();
-  function drawShip(sx, sy, s, build, t, anim) {
+  function drawShip(sx, sy, s, build, t, anim, departure = 0) {
     if (!SHIP || build <= 0.01) return;
-    const k = Math.max(1, Math.round(s * 0.11)), x0 = Math.round(sx - 32 * k), bob = anim ? Math.round(Math.sin(t * 1.2) * k * 0.6) : 0;
-    const y0 = Math.round(sy - 34 * k) + bob, from = Math.floor(40 - build * 40);
+    const from = Math.floor(40 - build * 40);
+    let k = H / W > 1.3
+      ? Math.max(1, Math.min(Math.floor(W * .76 / 64), Math.round(s * .18)))
+      : Math.max(1, Math.round(s * 0.11));
+    if (win.innerWidth <= 700) {
+      // On phones the same hull occupies the free art stage, below the words and above its controls.
+      const stage = doc.querySelector('#the-crew .ship-sea'), area = stage?.getBoundingClientRect(), frame = canvas.getBoundingClientRect();
+      if (!area?.width || !area.height || !frame.width || !frame.height || area.bottom <= frame.top || area.top >= frame.bottom) return;
+      const cssX = frame.width / W, cssY = frame.height / H;
+      k = clamp(Math.min(2, Math.floor((area.width / cssX - 2) / 64), Math.floor((area.height / cssY - 8) / 36)), 1, 2);
+      sy = (area.top + area.height / 2 - frame.top) / cssY + (34 - (Math.min(from, 35) + 36) / 2) * k;
+      const row = Math.round(sy - DY);
+      if (row <= HY0 || row >= H) return;
+      // The left edge of the whole hull must remain beyond the actual shore at its waterline.
+      const wz = CZ + G[row], scale = SC[row];
+      const waterLeft = W / 2 + (PX(wz) + seaEdge(wz) + 0.8 - CX) * scale;
+      const left = Math.max((area.left - frame.left) / cssX + 1, waterLeft), right = (area.right - frame.left) / cssX - 1;
+      while (k > 1 && right - left < 64 * k) k--;
+      if (right - left < 64 * k) return;
+      sx = clamp((area.left + area.width / 2 - frame.left) / cssX, left + 32 * k, right - 32 * k);
+    }
+    const x0 = Math.round(sx - 32 * k + departure * (W + 64 * k + 6 * s));
+    const bob = anim ? Math.round(Math.sin(t * 1.2) * k * 0.6) : 0;
+    const y0 = Math.round(sy - 34 * k) + bob;
     for (let j = from; j < 40; j++) for (let i = 0; i < 64; i++) {
       const c = SHIP[j * 64 + i];
       if (c < 0) continue;
@@ -701,8 +735,8 @@ import { paintCottage } from './assets/seed/cottage.js';
 
 
   /* ------------------------------------------------------------------ the orchard, painted by its own code
-     landscape.js's valley, broad tree and dog, ported line for line to whole pixels in a second buffer, so the
-     walk can ease into the orchard in whole pixels and it never arrives as a block with an edge. */
+     Its open field and tree are painted to whole pixels in a second buffer, so the walk can ease into the
+     orchard in whole pixels and it never arrives as a block with an edge. */
   const HEXU = new Map();
   const hu = (h) => { let v = HEXU.get(h); if (v === undefined) { v = (0xff000000 | (parseInt(h.slice(5, 7), 16) << 16) | (parseInt(h.slice(3, 5), 16) << 8) | parseInt(h.slice(1, 3), 16)) >>> 0; HEXU.set(h, v); } return v; };
   let OB = null;
@@ -723,56 +757,83 @@ import { paintCottage } from './assets/seed/cottage.js';
     }
   };
   const B16 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-  function oValley(w, h, t, night) {
-    const horizon = Math.round(h * 0.56), r = rng(2019);
-    const sky = ['#655263', '#9c6971', '#c6856c', '#dfa075', '#e9bb82'], bh = horizon + 24;
+  function oField(w, h, t) {
+    const horizon = Math.round(h * 0.46), fieldTop = horizon + 12, r = rng(2019);
+    const sky = ['#655263', '#9c6971', '#c6856c', '#dfa075', '#e9bb82'], bh = Math.max(1, horizon + 24);
     for (let y = 0; y < bh; y++) { const pp = (y / bh) * (sky.length - 1), i = Math.min(sky.length - 2, Math.floor(pp)), f = pp - i; for (let x = 0; x < w; x++) orect(B16[(y % 4) * 4 + (x % 4)] / 16 < f ? sky[i + 1] : sky[i], x, y, 1, 1); }
     odisk('#f3d5a0', Math.round(w * 0.24), Math.round(horizon - 13), Math.round(Math.min(w, h) * 0.067));
-    for (let i = 0; i < 7; i++) { const cx = ((i * 83 + t * 0.2) % (w + 70)) - 40, cy = 18 + (i % 3) * 17, k = 1 + (i % 2) * 0.4; for (const [dx, dy, ww, hh] of [[0, 0, 34, 3], [6, -3, 22, 3], [12, -6, 11, 3], [28, 1, 18, 2], [-5, 2, 17, 2]]) orect('#b47d78', cx + dx * k, cy + dy * k, ww * k, hh * k); }
-    const hills = ['#69686c', '#626d60', '#73794f', '#7e824d'];
-    for (let layer = 0; layer < 4; layer++) for (let x = 0; x < w; x++) { const y = horizon + layer * 15 + Math.sin(x * 0.019 + layer * 1.9) * 12 + Math.sin(x * 0.048 + layer) * 4; orect(hills[layer], x, Math.floor(y), 1, h - y); }
-    for (let y = horizon + 13; y < h; y++) {
-      const pp = (y - horizon - 13) / (h - horizon - 13), x = w * (0.43 + Math.sin(pp * 5.5 + 0.1) * 0.16), half = 1 + Math.pow(pp, 1.7) * w * 0.095;
-      orect('#a09269', x - half - 2, y, half * 2 + 4, 1); orect('#c1b38b', x - half, y, half * 2, 1);
-      if (y % 4 === 0) { const shine = (Math.sin(y * 0.33 + t * 0.6) + 1) / 2; orect('#dfc592', x - half + shine * half, y, Math.max(1, half * 0.6), 1); }
+    for (let i = 0; i < 5; i++) { const cx = ((i * 103 + t * 0.2) % (w + 80)) - 40, cy = 16 + (i % 3) * 17, k = 1 + (i % 2) * 0.4; for (const [dx, dy, ww, hh] of [[0, 0, 34, 3], [6, -3, 22, 3], [12, -6, 11, 3], [28, 1, 18, 2], [-5, 2, 17, 2]]) orect('#b47d78', cx + dx * k, cy + dy * k, ww * k, hh * k); }
+    for (let y = fieldTop; y < h; y++) orect('#566b43', 0, y, w, 1);
+    for (let x = 0; x < w; x++) {
+      const far = Math.round(horizon - 2 + Math.sin(x * 0.019) * 5 + Math.sin(x * 0.047 + 1.2) * 2);
+      const near = Math.round(horizon + 5 + Math.sin(x * 0.014 + 2.1) * 8 + Math.sin(x * 0.039) * 3);
+      orect('#73794f', x, far, 1, Math.max(1, horizon + 10 - far));
+      orect('#637647', x, near, 1, Math.max(1, horizon + 30 - near));
     }
-    for (let i = 0; i < 700; i++) {
-      const x = r() * w, y = horizon + 16 + r() * (h - horizon - 16), pp = (y - horizon) / (h - horizon), rx = w * (0.43 + Math.sin(((y - horizon - 13) / (h - horizon - 13)) * 5.5 + 0.1) * 0.16);
-      if (Math.abs(x - rx) < 3 + Math.pow(clamp((y - horizon - 13) / (h - horizon - 13), 0, 1), 1.7) * w * 0.095) continue;
-      const c = ['#a9a263', '#666f48', '#c1ac6b'][i % 3];
-      orect(c, x, y, 1 + Math.floor(pp * 2), 1); if (i % 7 === 0) orect(c, x, y - 2, 1, 3);
+    for (let i = 0; i < 240; i++) {
+      const x = Math.floor(r() * w), y = Math.floor(fieldTop + r() * (h - fieldTop));
+      const color = ['#65794a', '#4e633d', '#71804d'][i % 3];
+      orect(color, x, y, 1 + (i % 9 === 0 ? 1 : 0), 1);
+      if (i % 13 === 0) orect(color, x, y - 2, 1, 3);
     }
-    for (let i = 0; i < 10; i++) { const x = (i * w) / 9 + Math.sin(i) * 9, y = horizon + 18 + Math.sin(x * 0.019 + 1.9) * 12; orect('#354a35', x, y - 9, 2, 11); for (let j = -4; j <= 4; j++) orect('#38553d', x - Math.floor(5 - Math.abs(j) / 2), y - 8 + j, 10 - Math.abs(j), 1); }
   }
   function oTree(x, y, s, t) {
     const r = rng(840);
-    for (let j = 0; j < 5; j++) orect('#3b4930', x - 34 * s + j * 3 * s, y + j * s, (76 - j * 5) * s, s);
-    oline('#39402c', [[x - 19 * s, y + 2 * s], [x - 5 * s, y - 8 * s], [x + 3 * s, y - 31 * s], [x - 4 * s, y - 66 * s], [x + 2 * s, y - 99 * s]], 10 * s);
-    oline('#72754b', [[x - 17 * s, y], [x - 2 * s, y - 9 * s], [x + 8 * s, y - 31 * s], [x + 1 * s, y - 67 * s], [x + 4 * s, y - 100 * s]], 4 * s);
-    oline('#a29b60', [[x - 12 * s, y], [x + 1 * s, y - 10 * s], [x + 6 * s, y - 32 * s], [x, y - 57 * s]], s);
+    for (let j = 0; j < 4; j++) orect('#4b382b', x - 27 * s + j * 2 * s, y + j * s, (58 - j * 4) * s, s);
+    oline('#49372b', [[x - 7 * s, y + 2 * s], [x - 4 * s, y - 22 * s], [x + 3 * s, y - 48 * s], [x + 1 * s, y - 91 * s]], 13 * s);
+    oline('#76553b', [[x - 2 * s, y - 8 * s], [x + 1 * s, y - 34 * s], [x + 5 * s, y - 67 * s]], 3 * s);
     const cl = [];
-    for (let i = 0; i < 14; i++) { const a = i * 2.399, rr = 18 + Math.sqrt(i / 14) * 27, bx = x + Math.cos(a) * rr * s, by = y - (80 + Math.sin(a) * rr * 0.5) * s; oline('#424b31', [[x + 4 * s, y - 42 * s], [x + (bx - x) * 0.45, y - 67 * s], [bx, by]], (i < 5 ? 4 : 2) * s); cl.push([bx, by, (12 + r() * 8) * s]); }
+    for (let i = 0; i < 14; i++) {
+      const a = i * 2.399, rr = 18 + Math.sqrt(i / 14) * 27, bx = x + Math.cos(a) * rr * s, by = y - (80 + Math.sin(a) * rr * 0.5) * s;
+      cl.push([bx, by, (12 + r() * 8) * s, i]);
+    }
     cl.sort((a, b) => a[1] - b[1]);
-    const st = Math.max(1, s);
-    for (const [cx, cy, rad] of cl) for (let dy = -rad; dy < rad; dy += st) for (let dx = -rad; dx < rad; dx += st) {
+    for (const [bx, by, , i] of cl) oline('#424b31', [[x + 4 * s, y - 42 * s], [x + (bx - x) * 0.45, y - 67 * s], [bx, by]], (i < 5 ? 4 : 2) * s);
+    for (const [cx, cy, rad] of cl) for (let dy = -rad; dy < rad; dy += s) for (let dx = -rad; dx < rad; dx += s) {
       if (dx * dx + dy * dy > rad * rad * (0.88 + r() * 0.2)) continue;
       const light = (dx - dy) / (rad * 2) + r() * 0.4;
-      orect(light > 0.6 ? '#b5ad69' : light > 0.25 ? '#829252' : light > -0.12 ? '#526d3e' : '#304c31', cx + dx, cy + dy, Math.ceil(st), Math.ceil(st));
+      orect(light > 0.6 ? '#b5ad69' : light > 0.25 ? '#829252' : light > -0.12 ? '#526d3e' : '#304c31', cx + dx, cy + dy, Math.ceil(s), Math.ceil(s));
     }
-    oline('#424a31', [[x, y - 51 * s], [x - 13 * s, y - 71 * s], [x - 18 * s, y - 93 * s]], 3 * s);
     const ax = x - 19 * s, ay = y - 74 * s;
     orect('#3b4e2e', ax, ay - 6 * s, s, 6 * s); orect('#9ab16a', ax + s, ay - 6 * s, 4 * s, s);
     odisk('#9d5529', Math.round(ax), Math.round(ay), Math.round(4 * s)); odisk('#e8982a', Math.round(ax - s), Math.round(ay - s), Math.round(3 * s)); orect('#ffe0a0', ax - 2 * s, ay - 2 * s, s, 2 * s);
     for (let i = 0; i < 3; i++) { const k = (t * 0.035 + i * 0.31) % 1; orect(i % 2 ? '#8d9c5d' : '#a9b56b', x + (Math.sin(k * 5 + i) * 18 - 24) * s, y - (76 - k * 72) * s, 2 * s, s); }
   }
+  function oFlower(x, y, k, petal) {
+    const stem = Math.max(2, Math.round(3 * k)), unit = Math.max(1, Math.round(k));
+    orect('#666f48', x, y - stem + 1, unit, stem);
+    orect(petal, x - unit, y - stem - unit, unit * 3, unit * 2);
+    orect('#f3d5a0', x, y - stem - unit, unit, unit);
+  }
   function oDog(x, y, s, t, hi) { paintPuppy(OB, x, y, s, t, hi); }
   function drawOrchardScene(t, night) {
     OB = buf2;
     const w = W, h = H, band = Math.round(h * (h / w > 1.3 ? 0.78 : 0.86));
-    oValley(w, h, t, night);
+    oField(w, h, t);
+    // Celestial details belong behind the foreground tree, not on its canopy.
+    if (night > 0.01) {
+      const rr = rng(77);
+      for (let i = 0; i < 65; i++) { const sx = rr() * w, sy = rr() * h * 0.4; if (Math.sin(t * 0.3 + i) > 0.2 - night) orect('#dde7cf', sx, sy, 1, 1); }
+      odisk('#d9dfbd', Math.round(w * 0.82), Math.round(h * 0.18), 6); odisk('#163029', Math.round(w * 0.82 + 3), Math.round(h * 0.18 - 2), 6);
+    }
     const x = w * 0.74, y = band * 0.9, sc = Math.max(1, Math.round(Math.min(w / 260, band / 120) * 2) / 2);
-    oTree(x, y, sc, t); oDog(x - 39 * sc, y + 2 * sc, sc, t, hello);
-    // Shade the existing valley, keeping its river and texture continuous.
+    const k = Math.max(1, Math.round(sc * 0.75));
+    // Keep the whole dog on the grass outside the crooked trunk and its broad roots.
+    const dogX = Math.round(x - 34 * sc - 32 * k - 4), dogY = Math.round(y + 6 * sc);
+    oTree(x, y, sc, t);
+    oFlower(dogX - 7 * k, dogY, k, '#dfa075');
+    oFlower(dogX - 4 * k, dogY, k, '#a86f85');
+    oFlower(dogX - k, dogY, k, '#e9bb82');
+    orect('#586242', dogX + 9 * k, dogY, 14 * k, Math.max(1, Math.round(k * 0.7)));
+    oDog(dogX, dogY, sc, t, hello);
+    const pose = puppyMetrics(sc, t, hello), rect = canvas.getBoundingClientRect();
+    const cssX = rect.width / W, cssY = rect.height / H;
+    const puppyX = Math.round(dogX), puppyY = Math.round(dogY - 23 * pose.k - pose.hop * sc);
+    pet.style.left = (rect.left + puppyX * cssX) + 'px';
+    pet.style.top = (rect.top + puppyY * cssY) + 'px';
+    pet.style.width = (32 * pose.k * cssX) + 'px';
+    pet.style.height = (24 * pose.k * cssY) + 'px';
+    // Keep the open grass field continuous beneath the foreground scene.
     // There is no second ground painting or grass row to expose a section edge.
     for (let yy = Math.floor(h * 0.72); yy < h; yy++) for (let xx = 0; xx < w; xx++) {
       const a = smooth(h * 0.72, h, yy + Math.sin(xx * 0.03) * 3) * 0.42;
@@ -782,9 +843,6 @@ import { paintCottage } from './assets/seed/cottage.js';
     if (night > 0.01) {
       const a = night * 0.75, ia = 1 - a, dr = 6 * a, dg = 19 * a, db = 22 * a;
       for (let k = 0; k < w * h; k++) { const c = OB[k]; OB[k] = (0xff000000 | ((((c >>> 16) & 255) * ia + db) << 16) | ((((c >>> 8) & 255) * ia + dg) << 8) | ((c & 255) * ia + dr)) >>> 0; }
-      const rr = rng(77);
-      for (let i = 0; i < 65; i++) { const sx = rr() * w, sy = rr() * h * 0.4; if (Math.sin(t * 0.3 + i) > 0.2 - night) orect('#dde7cf', sx, sy, 1, 1); }
-      odisk('#d9dfbd', Math.round(w * 0.82), Math.round(h * 0.18), 6); odisk('#163029', Math.round(w * 0.82 + 3), Math.round(h * 0.18 - 2), 6);
     }
   }
 
@@ -803,9 +861,9 @@ import { paintCottage } from './assets/seed/cottage.js';
     ['#ancestors', 294, 297, 3, 1, 0],
     ['.source-window', 318, 321, 4, 0.15, 0],
     ['.evidence-folio', 323, 328, 4, 0, 0],
-    ['#the-crew', 366, 384, 4, 0, 0],
+    ['#the-crew', 376, 380, 4, 0, 0],
     ['#similar-trees', 426, 436, 5, 0, 0],
-    ['#afterward', 437, 443, 0, 0, 0]
+    ['#afterward', 437, 443, 5, 0, 0]
   ];
   // room to breathe: a stretch of the walk with nothing over it, after each of these
   const INTERLUDE_AFTER = ['#the-seed', '#roots', '#partial-view', '#tree', '#the-practice', '#questions', '#influences', '#ancestors', '.evidence-folio', '#the-crew'];
@@ -819,13 +877,15 @@ import { paintCottage } from './assets/seed/cottage.js';
   }
   let stEls = [];
   const collect = () => { stEls = STATIONS.map((s) => [doc.querySelector(s[0]), s]).filter((e) => e[0]); };
-  function where() {
-    const vh = win.innerHeight, sy = win.scrollY || 0, keys = [];
+  function where(sampleY = win.scrollY || 0) {
+    const vh = win.innerHeight, actualY = win.scrollY || 0, sy = sampleY, keys = [];
     let prev = -1e9;
     for (const [el, s] of stEls) {
-      const r = el.getBoundingClientRect(), top = r.top + sy - vh * 0.55, bot = r.bottom + sy - vh * 0.45;
-      const a = Math.max(prev + 1, top), b = Math.max(a + 1, bot); prev = b;
-      keys.push([a, s[1], s[3], s[4], s[5]], [b, s[2], s[3], s[4], s[5]]);
+      const r = el.getBoundingClientRect(), top = r.top + actualY - vh * .12, bot = r.bottom + actualY - vh * .88;
+      // Travel borrows the edges of each chapter as well as the interlude.
+      // Short, adjoining panels share one waypoint rather than a one-pixel leap.
+      if(bot<=top){const at=Math.max(prev+1,(r.top+r.bottom)/2+actualY-vh*.5);keys.push([at,(s[1]+s[2])/2,s[3],s[4],s[5]]);prev=at;}
+      else{const a=Math.max(prev+1,top),b=Math.max(a+1,bot);keys.push([a,s[1],s[3],s[4],s[5]],[b,s[2],s[3],s[4],s[5]]);prev=b;}
     }
     if (!keys.length) return null;
     // Leave the village through its closing reflection, before the field-guide
@@ -836,18 +896,28 @@ import { paintCottage } from './assets/seed/cottage.js';
     while (i < keys.length - 1 && sy > keys[i + 1][0]) i++;
     const A = keys[i], B = keys[Math.min(i + 1, keys.length - 1)];
     const f = B === A ? 0 : sat((sy - A[0]) / Math.max(1, B[0] - A[0]));
-    const e = smooth(0, 1, f);
-    const oe = doc.getElementById('similar-trees'), title = doc.querySelector('.seed-finale .seed-canvas');
+    // Shape-preserving cubic interpolation: neighboring spans share velocity,
+    // without overshooting a stop or changing the direction of a look-up.
+    const value=(field)=>{
+      if(B===A||sy<=keys[0][0])return A[field];
+      const slope=j=>{
+        if(j<=0)return (keys[1][field]-keys[0][field])/(keys[1][0]-keys[0][0]);
+        if(j>=keys.length-1)return (keys[j][field]-keys[j-1][field])/(keys[j][0]-keys[j-1][0]);
+        const h0=keys[j][0]-keys[j-1][0],h1=keys[j+1][0]-keys[j][0];
+        const d0=(keys[j][field]-keys[j-1][field])/h0,d1=(keys[j+1][field]-keys[j][field])/h1;
+        if(d0*d1<=0)return 0;const w0=2*h1+h0,w1=h1+2*h0;return (w0+w1)/(w0/d0+w1/d1);
+      };
+      const h=B[0]-A[0],u=f,u2=u*u,u3=u2*u;
+      return (2*u3-3*u2+1)*A[field]+(u3-2*u2+u)*h*slope(i)+(-2*u3+3*u2)*B[field]+(u3-u2)*h*slope(i+1);
+    };
+    const hour=clamp(value(2),0,5),ha=Math.floor(hour),hb=Math.min(5,ha+1);    const oe = doc.getElementById('similar-trees'), title = doc.querySelector('.seed-finale .seed-frame');
     const orch = oe ? smooth(vh * 1.6, -vh * 0.15, oe.getBoundingClientRect().top) : 0;
     // Shadow stays in the orchard's light until the closing mark itself is visible.
-    // The canvas uses whole pixel multiples and can be narrower than its frame on phones.
     const titleRect = title?.getBoundingClientRect();
     const tr = titleRect?.width ? titleRect : null;
-    const ending = tr ? smooth(vh * 0.7, vh * 0.1, tr.top) : 0;
+    const ending = tr ? smooth(vh * 0.82, vh * 0.44, tr.top) : 0;
     const dusk = ending * 0.65;
-    const rootX = tr ? (tr.left + tr.width * 5.5 / 35) / win.innerWidth : 0.5;
-    const rootY = tr ? (tr.top + tr.height) / vh : 0.35;
-    return { on, z: lerp(A[1], B[1], sy < keys[0][0] ? 0 : f), ha: A[2], hb: B[2], hf: e, look: lerp(A[3], B[3], e), fog: lerp(A[4], B[4], e), orch, dusk, ending, rootX, rootY };
+    return { on, z:value(1),ha,hb,hf:hour-ha,look:value(3),fog:value(4), orch, dusk, ending };
   }
   const crewBuild = () => {
     const stage = Number(doc.getElementById('the-crew')?.dataset.crewStage ?? 0);
@@ -856,8 +926,15 @@ import { paintCottage } from './assets/seed/cottage.js';
 
   /* ------------------------------------------------------------------ draw */
   let hello = 0;
+  let shipDepartureStart = null, shipDepartureComplete = false;
+  const pet=doc.createElement('button');pet.className='shadow-pet';pet.type='button';pet.hidden=true;pet.setAttribute('aria-label','Pet Shadow');pet.innerHTML='<span>Pet Shadow</span>';
+  const petStatus=doc.createElement('span');petStatus.className='sr-only';petStatus.setAttribute('role','status');doc.body.append(pet,petStatus);
+  pet.addEventListener('click',()=>{hello=2.6;petStatus.textContent='Shadow leans into your hand and wags his tail.';lastKey='';wake();});
   function drawWalk(st, t, anim, tick) {
     CZ = st.z; CX = PX(CZ + GMAX * 0.3) + inRange(CZ, 220, 237, 5) * 1.5 - inRange(CZ, 138, 149, 5) * 1.2;
+    // A portrait frame turns gently toward the harbor instead of pushing the
+    // offshore hull beyond its right edge. The boat keeps its world position.
+    if (H / W > 1.3) CX += inRange(CZ, 366, 390, 20) * lerp(8, 14, smooth(366, 384, CZ));
     DY = Math.round(st.look * (H - HY0 + 8)); HY = HY0 + DY;
     FOG = st.fog;
     setHour(st.ha, st.hb, st.hf);
@@ -876,13 +953,19 @@ import { paintCottage } from './assets/seed/cottage.js';
 
     // things standing in the world, far to near
     const lampAmt = hourVal('lamp'), build = crewBuild(), vis = [];
+    const chapter = doc.getElementById('the-crew'), shipDeparted = chapter?.dataset.shipDeparted === 'true';
+    if (!shipDeparted) { shipDepartureStart = null; shipDepartureComplete = false; }
+    else if (!anim) shipDepartureComplete = true;
+    else {
+      if (shipDepartureStart === null) shipDepartureStart = t;
+      if (t - shipDepartureStart >= 2.4) shipDepartureComplete = true;
+    }
+    // The final crew's explicit departure moves the pixel ship off to the right.
+    // Reduced-motion mode uses the final position without playing the transit.
+    const shipDeparture = shipDeparted ? (shipDepartureComplete ? 1 : smooth(0, 1, (t - shipDepartureStart) / 2.4)) : 0;
     for (const p of props) {
       if (p.k === 'rail') continue;
-      // The chapter's original close ship tells this story; keep its distant approach out of the text.
-      if (p.k === 'ship') {
-        const chapter = doc.getElementById('the-crew'), r = chapter?.getBoundingClientRect();
-        if (chapter?.dataset.shipDeparted === 'true' || (r && r.bottom > 0 && r.top < innerHeight)) continue;
-      }
+      if (p.k === 'ship' && shipDeparture >= 1) continue;
       if (p.z < CZ - 3 || p.z > CZ + GMAX) continue;
       const q = project(p.d, p.z, p.k === 'fly' ? p.y + (anim ? Math.sin(t * 0.8 + p.ph) * 0.1 : 0) : 0);
       if (!q || q.y - q.s * 6 > H) continue;
@@ -908,11 +991,11 @@ import { paintCottage } from './assets/seed/cottage.js';
         case 'boat': drawBoat(sx, sy, sc); break;
         case 'reeds': drawReeds(sx, sy, sc, p.seed, anim, t); break;
         case 'cat': drawCat(sx, sy, sc, anim, tick); break;
-        case 'ship': drawShip(sx, sy, sc, build, t, anim); break;
+        case 'ship': drawShip(sx, sy, sc, build, t, anim, shipDeparture); break;
         case 'orchard': drawOrchardTree(sx, sy, Math.max(0.05, sc * 0.03), t); break;
         case 'dog': drawDog(sx, sy, sc * 0.035, anim ? t : 0.4, hello); break;
         case 'fly': {
-          if (lampAmt < 0.5) break;
+          if (hourVal('stars') < 0.95) break;
           const on = anim ? Math.sin(t * 2.3 + p.ph * 5) > -0.1 : p.ph > 1.2;
           if (!on) break;
           raw(sx, sy, P.saffron);
@@ -930,45 +1013,48 @@ import { paintCottage } from './assets/seed/cottage.js';
       put(bx - 1, by - (fl ? 1 : 0), S.HILL2); put(bx, by, S.HILL2); put(bx + 1, by - (fl ? 1 : 0), S.HILL2);
     }
   }
-  // Small, slow motes share the same pixel grid as the landscape. Autumn
-  // leaves descend; night fireflies rise. Stillness paints one quiet arrangement.
+  // Snow stays local to the winter passage. Fireflies are attached to the pond,
+  // river, and great tree props instead of being scattered across the screen.
   function drawMotes(st, t, anim) {
     if (st.look > 0.6 || st.fog > 0.75) return;
-    const autumn = st.z > 30 && st.z < 76, rr = rng(420);
-    for (let i = 0; i < 28; i++) {
-      const ph = rr(), speed = 0.7 + rr(), baseX = rr() * W;
-      const fall = ((ph + (anim ? t * 0.011 * speed : 0)) % 1);
-      const y = Math.round(H * (0.36 + (autumn ? fall : 1 - fall) * 0.64));
-      const x = Math.round((baseX + Math.sin(fall * 7 + i) * 6 + W) % W);
-      const color = autumn ? P.clay : i % 5 === 0 ? P.saffron : P.lichen;
-      if (autumn || !anim || Math.sin(t * 0.6 + ph * 8) > 0.1) raw(x, y, color);
+    const winter = winterAt(st.z);
+    if (winter <= 0.1) return;
+    const rr = rng(420);
+    for (let i = 0; i < 42; i++) {
+      const ph = rr(), speed = 0.7 + rr(), baseX = rr() * W, phase = (ph + (anim ? t * 0.016 * speed : 0)) % 1;
+      // Snow crosses the sky, then settles toward the projected surface.
+      const y = Math.round(phase * H), x = Math.round((baseX + Math.sin(phase * 4 + i) * 3 + W) % W);
+      if (hash(i, 1, 2) < winter) raw(x, y, i % 4 ? P.sage : P.bone);
     }
   }
 
-  // Come home to the mark's soil. Its roots carry on through the green credits,
-  // using the same whole-pixel line painter as the orchard's trunk and branches.
+  // A quiet root network belongs to the green background, independent of the
+  // title. It enters from beyond the frame, leaving the mark room to breathe.
   let returnBase = null, returnKey = '';
   function drawRootReturn(st, t, anim) {
     if (st.ending <= 0.001) return;
     OB = buf2;
-    const rx = Math.round(st.rootX * W), ry = Math.round(st.rootY * H);
-    const key = W + 'x' + H + '|' + rx + '|' + ry;
+    const key = W + 'x' + H;
     if (key !== returnKey) {
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        const glow = Math.exp(-Math.pow((x - rx) / (W * 0.65), 2) - Math.pow((y - ry) / (H * 0.9), 2));
+        const glow = Math.exp(-Math.pow((x - W * 0.5) / (W * 0.65), 2) - Math.pow((y - H * 0.6) / (H * 0.9), 2));
         OB[y * W + x] = mixInk(hu('#071b13'), hu('#21462a'), glow * 0.8);
       }
-      const span = Math.max(H * 0.72, 120);
-      for (let i = 0; i < 9; i++) {
-        const side = (i - 4) / 4, depth = span * (0.6 + (i % 3) * 0.16);
-        const x1 = rx + side * W * 0.09, y1 = ry + depth * 0.28;
-        const x2 = rx + side * W * 0.24, y2 = ry + depth * 0.64;
-        const x3 = rx + side * W * 0.39, y3 = ry + depth;
-        oline(i % 2 ? '#3c6940' : '#4f7c45', [[rx, ry], [x1, y1], [x2, y2], [x3, y3]], 1);
-        if (side) {
-          oline('#294d31', [[x2, y2], [x2 + side * W * 0.12, y2 + depth * 0.09], [x2 + side * W * 0.18, y2 + depth * 0.27]], 1);
-        }
-      }
+      // Uneven stems and small forks suggest roots in the soil, rather than
+      // a mirrored lattice. None begins at, or tracks, the title's position.
+      const roots = [
+        [[-.03, .54], [.04, .61], [.07, .72], [.15, .78], [.19, .89], [.28, .94], [.33, 1.04]],
+        [[.07, .72], [.03, .80], [.04, .91]],
+        [[.19, .89], [.23, .82], [.30, .80]],
+        [[-.04, .86], [.05, .88], [.10, .97], [.17, 1.03]],
+        [[1.03, .47], [.96, .55], [.95, .67], [.87, .75], [.84, .86], [.75, .92], [.71, 1.04]],
+        [[.95, .67], [.99, .75], [.97, .84]],
+        [[.84, .86], [.79, .79], [.74, .78]],
+        [[1.04, .90], [.95, .93], [.89, 1.04]],
+        [[.48, 1.04], [.46, .95], [.50, .89], [.49, .83]],
+        [[.46, .95], [.40, .92], [.37, .86]]
+      ];
+      roots.forEach((points, i) => oline(i % 3 ? '#254a30' : '#315737', points.map(([x, y]) => [x * W, y * H]), 1));
       returnBase = new Uint32Array(buf2); returnKey = key;
     } else buf2.set(returnBase);
     const rr = rng(1990);
@@ -979,7 +1065,7 @@ import { paintCottage } from './assets/seed/cottage.js';
     for (let k = 0; k < W * H; k++) buf[k] = mixInk(buf[k], buf2[k], st.ending);
   }
   function draw(st, t, anim) {
-    const tick = anim ? Math.floor(t * 2.6) : 0, oa = st.orch || 0;
+    const tick = anim ? Math.floor(t * 2.6) : 0, oa = st.orch || 0;pet.hidden=oa<.95||st.ending>.18||!st.on;
     if (oa < 0.999) drawWalk(st, t, anim, tick);
     if (oa > 0.001) {
       drawOrchardScene(anim ? t : 0.4, st.dusk || 0);
@@ -1009,29 +1095,28 @@ import { paintCottage } from './assets/seed/cottage.js';
   const reduced = win.matchMedia ? win.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
   const motionOff = () => reduced.matches || doc.body.classList.contains('still-frames') ||
     doc.querySelector('[data-motion-toggle]')?.getAttribute('aria-pressed') === 'false';
-  let visible = false, raf = 0, last = 0, time = 0, zS = null, lastKey = '', lastT = 0;
+  let visible = false, raf = 0, last = 0, time = 0, scrollS = null, lastKey = '', lastT = 0;
   const api = (win.BodhiPixelJourney = { z: 0, on: false, frames: 0 });
   function frame(now) {
     raf = 0;
     const dt = last ? Math.min(0.1, (now - last) / 1000) : 1 / 60; last = now;
-    const st = where();
+    const actualY=win.scrollY||0,off=motionOff();if(scrollS===null||off||Math.abs(actualY-scrollS)>win.innerHeight*2)scrollS=actualY;else scrollS+=(actualY-scrollS)*(1-Math.exp(-dt*9));
+    const st = where(scrollS);
     if (!st) return;
     if (st.on !== visible) { visible = st.on; root.classList.toggle('pj-on', visible); }
-    api.on = visible;
+    api.on = visible;if(!visible)pet.hidden=true;
     if (!visible || doc.hidden) { last = 0; return; }
     const still = motionOff();
     if (still) {
-      const zq = Math.round(st.z / 3) * 3, key = zq + '|' + st.ha + st.hb + Math.round(st.hf * 4) + '|' + Math.round(st.look * 4) + '|' + Math.round(st.orch * 4) + Math.round(st.dusk * 4) + '|' + Math.round(st.ending * 16) + '|' + Math.round(st.rootY * H) + '|' + W + 'x' + H + '|' + crewBuild();
+      const zq = Math.round(st.z / 3) * 3, key = zq + '|' + st.ha + st.hb + Math.round(st.hf * 4) + '|' + Math.round(st.look * 4) + '|' + Math.round(st.orch * 4) + Math.round(st.dusk * 4) + '|' + Math.round(st.ending * 16) + '|' + W + 'x' + H + '|' + crewBuild()+'|'+hello;
       if (key !== lastKey) { lastKey = key; draw(Object.assign({}, st, { z: zq, hf: Math.round(st.hf * 4) / 4, orch: Math.round(st.orch * 4) / 4 }), 0, false); api.frames++; }
       api.z = zq;
       return;
     }
-    if (zS === null || Math.abs(st.z - zS) > 30) zS = st.z;
-    zS += (st.z - zS) * (1 - Math.exp(-dt * 6));
     time += dt; if (hello > 0) hello = Math.max(0, hello - dt);
-    const key = zS.toFixed(3) + st.hf.toFixed(3) + st.look.toFixed(3) + st.orch.toFixed(3) + st.dusk.toFixed(3) + st.ending.toFixed(3) + st.rootY.toFixed(3);
-    if (key !== lastKey || now - lastT > 80) { lastKey = key; lastT = now; draw(Object.assign({}, st, { z: zS }), time, true); api.frames++; }
-    api.z = zS;
+    const key = st.z.toFixed(3) + st.hf.toFixed(3) + st.look.toFixed(3) + st.orch.toFixed(3) + st.dusk.toFixed(3) + st.ending.toFixed(3);
+    if (key !== lastKey || now - lastT > 80) { lastKey = key; lastT = now; draw(st,time,true); api.frames++; }
+    api.z = st.z;
     raf = requestAnimationFrame(frame);
   }
   const wake = () => { if (!raf) raf = requestAnimationFrame(frame); };

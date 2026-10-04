@@ -10,6 +10,11 @@
 .grove-arrival .eyebrow,.grove-arrival>p:last-child{color:var(--bone)}
 .grove-window{border:0}
 .world-toolbar{background:#12251ccb;border:0}
+@media(max-width:600px){
+  .world-toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:12px 24px}
+  .world-toolbar>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
+  .world-toolbar button{min-height:52px;padding:6px 2px;line-height:1.4}
+}
 .world-status{color:#d3dccb}
 .grove-thought{padding:17vh 7vw;background:none;text-shadow:0 2px 18px #13271a}
 .grove-thought::before{display:none}
@@ -263,10 +268,9 @@
 
 .crew-fallback-log{margin-top:44px;padding-top:24px;border-top:1px solid #516151}
 
-/* The last shot returns to Claude's seed: a title, then roots carrying the credits. */
-.end-note{min-height:85svh;display:flex;flex-direction:column;justify-content:center;gap:clamp(24px,5vh,56px);padding:12svh 7vw 10svh;position:relative}
-.closing-cue{color:#a7c695;font:10px/1.7 var(--mono);letter-spacing:.22em}
-.seed-finale{width:100%;max-width:840px;margin:0 auto;filter:drop-shadow(0 0 26px #83b34a22)}
+/* Claude's seed closes the story at the original footer's compact scale. */
+.end-note{display:flex;flex-direction:column;justify-content:center;gap:24px;padding:110px 7vw 60px;position:relative}
+.seed-finale{width:100%;max-width:175px;margin:0 auto;filter:drop-shadow(0 0 26px #83b34a22)}
 .seed-finale .seed-frame{position:relative;width:100%;aspect-ratio:35 / 13}
 .seed-finale .seed-static,.seed-finale .seed-canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
 .seed-finale .seed-canvas{display:none}
@@ -278,3 +282,6 @@
 .site-footer .footer-heading,.site-footer .colophon{color:#92b479}
 .pj-on .outside-world .end-note,.pj-on .outside-world .site-footer{background:transparent}
 @media(prefers-reduced-motion:reduce){.seed-finale{filter:none}}
+
+.reading-path .reading-illustration{display:block;width:min(100%,288px);height:auto;aspect-ratio:3/1;image-rendering:pixelated;margin:0 0 24px}
+@media(max-width:600px){.reading-path .reading-illustration{width:min(100%,240px);margin-bottom:18px}}
