@@ -74,7 +74,34 @@ let actors = [
  {type:'pet',variant:3,sprite:'bodhi',name:'Bodhi',x:SW*.22,mode:'walk',timer:250,scale:.20,frame:0,dir:1,target:SW*.44},
  {type:'pet',variant:4,sprite:'codex',name:'The returning scout',x:SW-12,mode:'walk',timer:380,scale:.20,frame:0,dir:-1,target:TREE_X+16,returning:true}
 ], nextSeed = 50, held = null;
-actors.forEach(a=>{a.age=0;a.stay=1800+Math.random()*2000;if(!a.name&&!a.sprite)a.name=villageNames[a.variant%villageNames.length];});
+const VILLAGE_LIMIT=sc.width<900?6:9, PLANTED_LIMIT=VILLAGE_LIMIT+2;
+// Keep the seated host and both inherited scouts alongside a smaller first company.
+actors=actors.filter(a=>a.treeperson||a.sprite||a.variant<VILLAGE_LIMIT-3);
+let pendingSeed=false;
+// Stagger the first visitors; later seedlings get a full visit of their own.
+// These clocks count moving frames, so pausing preserves everyone's remaining stay.
+actors.forEach((a,i)=>{a.age=0;a.stay=600+i*95+Math.random()*180;if(!a.name&&!a.sprite)a.name=villageNames[a.variant%villageNames.length];});
+
+function seedHasRoom(){
+  return actors.length<PLANTED_LIMIT&&actors.filter(a=>!a.departing).length<VILLAGE_LIMIT;
+}
+
+function leaveMeeting(a){
+  const other=a.meet?.with;
+  a.meet=null;a.meetT=undefined;
+  if(other?.meet?.with===a){
+    other.meet=null;other.meetT=undefined;
+    other.mode='think';other.timer=90;
+  }
+}
+function pickUpPerson(a,y){
+  leaveMeeting(a);
+  a.meditating=false;a.returning=false;a.departing=false;a.exitDir=null;
+  a.age=0;a.gone=false;a.mode='held';a.holdY=y;a.dropV=null;held=a;
+}
+function beginDeparture(a){
+  leaveMeeting(a);a.departing=true;a.exitDir=a.x<SW/2?-1:1;
+}
 
 let pointer = {x:0, y:0, down:false};
 
@@ -173,9 +200,17 @@ function spawnSeed(){
   actors.push({type:'seed', x:r.x0+2+Math.random()*(r.x1-r.x0-4), y:r.y+1, vy:0, sway:Math.random()*6.28, dangle:26});
 }
 function updateActors(){
+  if(pendingSeed){
+    if(seedHasRoom()){
+      spawnSeed();pendingSeed=false;
+      document.getElementById('world-status').textContent='A little room opens. Your seed is falling.';
+    }else if(!actors.some(a=>a.departing)){
+      const visitor=actors.filter(a=>a.type==='pet'&&a!==held&&!a.meditating&&!a.returning&&a.dropV==null&&a.age>300).sort((a,b)=>b.age-a.age)[0];
+      if(visitor)beginDeparture(visitor);
+    }
+  }
   if (--nextSeed <= 0){
-    const season = SEASONS[Math.floor(T/SEASON_LEN)%4];
-    if (actors.length < 16) spawnSeed();
+    if (seedHasRoom()) spawnSeed();
     nextSeed = 150 + Math.random()*130;
   }
   for (const a of actors){
@@ -186,7 +221,7 @@ function updateActors(){
       if (a.y >= GROUND-2){ a.type='sprout'; a.x=Math.round(a.x); a.stage=0; a.timer=70; a.dir=Math.random()<0.5?-1:1; a.homeX=a.x; }
     } else if (a.type==='sprout'){
       if (--a.timer<=0){ a.stage++; a.timer=80;
-        if (a.stage>2){ a.type='pet'; a.variant=generation++; a.mode='walk'; a.timer=160+Math.random()*160; a.scale=0.10; a.frame=0; a.target=SW*(.45+Math.random()*.4); a.dir=1; a.age=0; a.stay=1500+Math.random()*1800; if(a.variant%5===0){a.sprite='codex';a.name='A new scout';}else if(a.variant%5===3){a.sprite='bodhi';a.name='A carried seed';} } }
+        if (a.stage>2){ a.type='pet'; a.variant=generation++; a.mode='walk'; a.timer=160+Math.random()*160; a.scale=0.10; a.frame=0; a.target=SW*(.45+Math.random()*.4); a.dir=1; a.age=0; a.stay=1050+Math.random()*600; if(a.variant%5===0){a.sprite='codex';a.name='A new scout';}else if(a.variant%5===3){a.sprite='bodhi';a.name='A carried seed';} } }
     } else if (a.type==='pet'){
       if (a===held) continue;
       a.age=(a.age||0)+1;
@@ -203,10 +238,18 @@ function updateActors(){
         if(Math.abs(homeX-a.x)<0.5){a.x=homeX;a.returning=false;a.mode='note';a.timer=210;}
         continue;
       }
-      if(a.age>a.stay&&!a.meet&&a.dropV==null){a.departing=true;a.mode='walk';a.dir=1;a.x+=.17;if(a.x>SW+15)a.gone=true;continue;}
+      if((a.departing||a.age>a.stay)&&a.dropV==null){
+        if(!a.departing){
+          beginDeparture(a);
+        }
+        a.mode='walk';a.dir=a.exitDir;a.x+=a.dir*.36;
+        // Keep the whole sprite visible until it has walked beyond the canvas.
+        if(a.x<-18||a.x>SW+18)a.gone=true;
+        continue;
+      }
       /* community: two idle pets near each other meet, blip, part */
-      if (!a.meet && !a.departing && a.mode!=='type' && Math.random()<0.004){
-        const other = actors.find(o=>o!==a && o.type==='pet' && !o.meet && Math.abs(o.x-a.x)<20 && !o.departing && o.mode!=='held');
+      if (!a.meet && !a.departing && a.dropV==null && a.mode!=='type' && Math.random()<0.004){
+        const other = actors.find(o=>o!==a && o.type==='pet' && !o.meet && Math.abs(o.x-a.x)<20 && !o.departing && !o.meditating && !o.returning && o.dropV==null && o!==held);
         if (other){
           const mid = (a.x+other.x)/2;
           const direction=a.x<other.x?1:-1;
@@ -260,7 +303,7 @@ sc.addEventListener('pointerdown', e=>{
     if (a.type!=='pet') continue;
     const b=a.bounds;if(!b)continue;const d=Math.hypot(b.x+b.w/2-mx,b.y+b.h/2-my);if(mx>b.x-8&&mx<b.x+b.w+8&&my>b.y-8&&my<b.y+b.h+8&&d<bd){bd=d;best=a;}
   }
- if (best){sc.setPointerCapture(e.pointerId);if(best.meet){best.meet.with.meet=null;best.meet=null;}best.meditating=false;held=best;best.mode='held';best.holdY=my/SU;best.dropV=null;best.departing=false;best.age=0;sc.style.cursor='grabbing';document.getElementById('world-status').textContent=(best.name||'Grove resident '+(best.variant+1))+' · Picked up. Set them down anywhere in the grove.';if(worldPaused)drawScene(false);}
+ if (best){sc.setPointerCapture(e.pointerId);pickUpPerson(best,my/SU);sc.style.cursor='grabbing';document.getElementById('world-status').textContent=(best.name||'Grove resident '+(best.variant+1))+' · Picked up. Set them down anywhere in the grove.';if(worldPaused)drawScene(false);}
 });
 sc.addEventListener('pointermove', e=>{
   const r = sc.getBoundingClientRect();
@@ -348,7 +391,7 @@ function drawResident(a,x,y,w,h,u,mode,picked){
 
 let keyboardIndex=0;
 sc.addEventListener('keydown',e=>{
- if(e.code==='Space'){e.preventDefault();if(held){releasePerson();keyboardIndex++;}else{const people=actors.filter(a=>a.type==='pet');held=people[keyboardIndex%people.length];if(held){if(held.meet){held.meet.with.meet=null;held.meet=null;}held.meditating=false;held.mode='held';held.holdY=GROUND-23;held.dropV=null;document.getElementById('world-status').textContent=(held.name||'Grove resident '+(held.variant+1))+' · Use the arrows to move. Space sets them down.';}}if(worldPaused)drawScene(false);}
+ if(e.code==='Space'){e.preventDefault();if(held){releasePerson();keyboardIndex++;}else{const people=actors.filter(a=>a.type==='pet'),person=people[keyboardIndex%people.length];if(person){pickUpPerson(person,GROUND-23);document.getElementById('world-status').textContent=(held.name||'Grove resident '+(held.variant+1))+' · Use the arrows to move. Space sets them down.';}}if(worldPaused)drawScene(false);}
  else if(e.key==='Escape'&&held){e.preventDefault();releasePerson();}
  else if(held&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();held.x=Math.max(8,Math.min(SW-8,held.x+(e.key==='ArrowRight'?3:e.key==='ArrowLeft'?-3:0)));held.holdY=Math.max(14,Math.min(GROUND-6,held.holdY+(e.key==='ArrowDown'?3:e.key==='ArrowUp'?-3:0)));if(worldPaused)drawScene(false);}
 });
@@ -534,8 +577,10 @@ function drawScene(advance=true){
         drawResident(a,pxX,pxY,w,h,u,'held',true);
       } else if (a.dropV!=null){
         /* falling after release */
-        a.dropV += 0.5; a.heldY += a.dropV;
-        if (a.heldY >= GROUND-h/SU){ a.heldY = GROUND-h/SU; a.dropV = null; a.mode='idle'; a.timer=40; }
+        if(advance){
+          a.dropV += 0.5; a.heldY += a.dropV;
+          if (a.heldY >= GROUND-h/SU){ a.heldY = GROUND-h/SU; a.dropV = null; a.mode='idle'; a.timer=40; }
+        }
         pxX = Math.round(a.x*SU - w/2); pxY = Math.round(a.heldY*SU);
         drawResident(a,pxX,pxY,w,h,u,'idle',false);
       } else {
@@ -576,8 +621,18 @@ function syncWorldMotion(){
 pause.addEventListener('click',()=>{userPaused=!userPaused;syncWorldMotion();});
 reducedMotion.addEventListener('change',syncWorldMotion);
 if(stillness)new MutationObserver(syncWorldMotion).observe(stillness,{attributes:true,attributeFilter:['aria-pressed']});
-document.getElementById('plant-seed').addEventListener('click',()=>{if(actors.length<18){spawnSeed();if(worldPaused)drawScene(false);document.getElementById('world-status').textContent=worldPaused?'A seed is ready. Its growth waits while motion is paused.':'A new seed is falling. Give it a moment to find its feet.';}else document.getElementById('world-status').textContent='The grove is full of company. Stay a while.';});
+document.getElementById('plant-seed').addEventListener('click',()=>{
+  if(seedHasRoom()){
+    spawnSeed();if(worldPaused)drawScene(false);
+    document.getElementById('world-status').textContent=worldPaused?'A seed is ready. Its growth waits while motion is paused.':'A new seed is falling. Give it a moment to find its feet.';
+  }else{
+    pendingSeed=true;
+    document.getElementById('world-status').textContent=worldPaused?'Your seed is waiting for room. Let the world move when you are ready.':'Your seed is waiting. A visitor will wander onward to make room.';
+  }
+});
 document.getElementById('next-season').addEventListener('click',()=>{T=(Math.floor(T/SEASON_LEN)+1)*SEASON_LEN+Math.floor(SEASON_LEN*.18);drops=[];weather='clear';weatherBlend=0;drawScene(false);document.getElementById('world-status').textContent='A change of season. The same roots, different weather.';});
+// Leave room for the first two arrivals in the initial composition.
+actors.filter(a=>!a.treeperson&&!a.sprite).slice(-2).forEach(beginDeparture);
 spawnSeed();spawnSeed();actors[actors.length-1].y=52;actors[actors.length-1].dangle=0;
 syncWorldMotion();drawScene(false);sheet.onload=codexSheet.onload=()=>{if(worldPaused||!worldVisible)drawScene(false);};
 })();

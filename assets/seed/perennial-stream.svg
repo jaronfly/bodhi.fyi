@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 80" shape-rendering="crispEdges">
+  <!-- Different doorways retain their forms. The paths meet and also diverge. -->
+  <path fill="#192b25" d="M4 12h120v60H4zM12 6h104v70H12z"/>
+  <path fill="#293e33" d="M4 49h120v23H4zM16 45h29v27H16zM89 43h23v29H89z"/>
+  <path fill="#7c8b6f" d="M15 24h22v27H15zM18 20h16v4H18zM22 17h8v3h-8z"/>
+  <path fill="#1b2d25" d="M20 28h12v23H20zM23 24h6v4h-6z"/>
+  <path fill="#b5b79a" d="M15 24h3v27h-3zM18 20h16v2H18zM22 17h8v2h-8z"/>
+  <path fill="#537665" d="M52 18h25v4H52zM55 22h4v29h-4zM71 22h4v29h-4zM51 18h4v2h-4zM76 18h4v2h-4z"/>
+  <path fill="#9ab79b" d="M52 18h25v1H52zM55 22h1v29h-1zM71 22h1v29h-1z"/>
+  <path fill="#8b7e67" d="M92 22h22v29H92zM95 19h16v3H95z"/>
+  <path fill="#1b2d25" d="M97 27h12v24H97z"/>
+  <path fill="#b8aa8b" d="M92 22h3v29h-3zM95 19h16v2H95zM97 24h12v1H97z"/>
+  <path fill="#2e5260" d="M6 64h16v4H6zM22 62h17v6H22zM39 64h16v6H39zM55 61h17v6H55zM72 58h17v6H72zM89 60h17v6H89zM106 62h18v5h-18z"/>
+  <path fill="#82a4a0" d="M6 64h14v1H6zM23 62h15v1H23zM39 64h10v1H39zM57 61h10v1H57zM75 59h10v1H75zM93 61h8v1h-8zM110 63h9v1h-9z"/>
+  <path fill="#9dad87" d="M24 50h3v6h-3zM27 55h7v3h-7zM34 57h13v3H34zM47 59h10v3H47zM63 50h3v11h-3z"/>
+  <path fill="#b09b79" d="M101 50h4v6h-4zM103 54h10v3h-10zM112 57h11v3h-11z"/>
+  <path fill="#e8982a" d="M62 59h5v3h-5z"/>
+  <path fill="#70925f" d="M11 53h2v5h-2zM9 52h2v2H9zM13 51h2v2h-2zM85 48h2v4h-2zM81 50h4v1h-4zM87 49h3v1h-3z"/>
+  <path fill="#d3dcca" d="M45 17h2v2h-2zM84 13h2v2h-2zM14 12h1v1h-1zM119 35h1v1h-1z"/>
+</svg>

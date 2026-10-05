@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 80" shape-rendering="crispEdges">
+  <!-- Glass, measurement, notebook: the equipment is the subject. -->
+  <path fill="#192b25" d="M4 12h120v59H4zM12 6h104v70H12z"/>
+  <path fill="#2d4538" d="M10 14h36v18H10zM13 11h30v3H13zM49 17h15v1H49zM49 22h24v1H49zM49 27h18v1H49z"/>
+  <path fill="#698674" d="M16 23h4v1h-4zM20 21h4v2h-4zM24 17h4v4h-4zM28 21h4v2h-4zM32 24h6v1h-6z"/>
+  <path fill="#38473a" d="M8 61h112v5H8zM15 66h6v10h-6zM106 66h6v10h-6z"/>
+  <path fill="#9a9671" d="M8 58h112v3H8z"/>
+  <path fill="#101f19" d="M8 61h112v2H8z"/>
+  <!-- Erlenmeyer flask with flat liquid meniscus and glass highlights. -->
+  <path fill="#9bbcab" d="M19 29h11v3H19zM21 32h7v9h-7zM19 41h11v4H19zM16 45h17v5H16zM13 50h23v8H13z"/>
+  <path fill="#253b31" d="M23 32h3v10h-3zM21 42h7v4h-7zM18 46h13v5H18zM15 51h19v5H15z"/>
+  <path fill="#79a475" d="M16 49h17v7H16z"/>
+  <path fill="#d0dfc7" d="M16 49h2v7h-2zM20 44h2v3h-2zM24 33h1v6h-1zM19 29h11v1H19z"/>
+  <path fill="#c8d5bb" d="M27 53h4v1h-4zM23 54h2v1h-2z"/>
+  <!-- Three test tubes in a wooden rack. -->
+  <path fill="#accaba" d="M44 35h4v19h-4zM53 35h4v19h-4zM62 35h4v19h-4z"/>
+  <path fill="#d4dece" d="M43 33h6v2h-6zM52 33h6v2H52zM61 33h6v2h-6zM44 35h1v14h-1zM53 35h1v14h-1zM62 35h1v14h-1z"/>
+  <path fill="#7daa79" d="M45 43h2v10h-2zM54 48h2v5h-2z"/>
+  <path fill="#d9a45a" d="M63 46h2v7h-2z"/>
+  <path fill="#9d8154" d="M40 49h30v3H40zM40 54h30v3H40zM41 51h3v5h-3zM66 51h3v5h-3z"/>
+  <!-- Low microscope, visible eyepiece, bent arm and slide stage. -->
+  <path fill="#17211c" d="M82 57h18v1H82zM97 24h9v4h-9zM94 28h10v7H94zM89 33h8v6h-8zM87 39h8v5h-8z"/>
+  <path fill="#b3c3a9" d="M97 25h8v2h-8zM94 29h8v5h-8zM89 34h6v5h-6zM87 39h5v5h-5zM96 38h4v14h-4zM92 51h9v4H92zM84 54h19v4H84z"/>
+  <path fill="#6c876d" d="M81 44h15v3H81zM98 38h2v13h-2zM87 56h16v2H87z"/>
+  <path fill="#e8ebd9" d="M83 43h9v1h-9zM86 41h3v2h-3z"/>
+  <path fill="#e8982a" d="M95 42h3v3h-3z"/>
+  <!-- Open notes keep both results. -->
+  <path fill="#e0ddc2" d="M107 41h10v16h-10z"/>
+  <path fill="#96977c" d="M107 41h1v16h-1zM110 45h5v1h-5zM110 48h3v1h-3zM110 51h5v1h-5zM110 54h4v1h-4z"/>
+  <path fill="#6a856d" d="M78 16h4v1h-4zM82 12h7v1h-7zM113 29h2v2h-2z"/>
+</svg>

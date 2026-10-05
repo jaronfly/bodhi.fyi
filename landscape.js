@@ -200,10 +200,10 @@
     if (isUserAction) manualSelection = true;
 
     section.dataset.crewStage = String(idx);
-    // Scrolling and scrubbing may assemble the ship. Only activating the final
-    // crew tab sends it away; returning to an earlier crew brings it home.
+    // Scrolling assembles the ship. Every explicit final-stage control sends
+    // it away; returning to an earlier crew brings it home.
     if (idx !== logs.length - 1) delete section.dataset.shipDeparted;
-    else if (depart) section.dataset.shipDeparted = 'true';
+    else if (depart || isUserAction) section.dataset.shipDeparted = 'true';
     if (ship) ship.classList.toggle('ship-departing', section.dataset.shipDeparted === 'true');
     if (ship) ship.dataset.build = idx;
     if (crewNumber) crewNumber.textContent = logs[idx][0];

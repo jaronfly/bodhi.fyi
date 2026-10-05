@@ -270,7 +270,7 @@
   doc.querySelectorAll('[data-seed]').forEach(SeedPlayer);
 
   /* ================================================================== THE PADDED CELL
-     A small room, a discoverable opening, and a hallway of other attempts.
+     A small room, a discoverable opening, and four crafted stops along a rainbow internet.
      Canvas and text controls share one local view. The journal records discoveries; it is not a map. */
   const Cell = (el) => {
     const cv = el.querySelector('.cell-canvas');
@@ -292,7 +292,6 @@
     const W = 15, H = 9, T = 8, CW = W * T, CH = H * T;
     let viewW = W, viewH = H;
     const viewport = () => ({ x: clamp(st.mind.x - Math.floor(viewW / 2), 0, W - viewW), y: clamp(st.mind.y - Math.floor(viewH / 2), 0, H - viewH) });
-    const DRAFT = [[9, 5], [10, 5], [11, 4], [12, 4]];
     const img = ctx ? ctx.createImageData(CW, CH) : null;
     const buf = img ? new Uint32Array(img.data.buffer) : null;
     const AREAS = {
@@ -300,25 +299,30 @@
         voice: [[7, 0]], light: [[0, 3]], sword: [[4, 3]], seams: [[14, 3], [14, 4]],
         scratch: [[0, 6]], notice: [[3, 0]], doodle: [[14, 6]], honey: [[11, 2]], door: [[11, 8]]
       },
-      hall: { return: [[0, 4]], chalk: [[3, 3]], tally: [[7, 5]], prisoner: [[10, 3]], release: [[13, 4]] }
+      hall: { return: [[0, 4]], welcome: [[4, 2]], aboard: [[8, 2]], question: [[12, 2]], onward: [[14, 4]] },
+      archive: { return: [[0, 4]], folder: [[4, 2]], correction: [[8, 2]], model: [[12, 2]], onward: [[14, 4]] },
+      dilemma: { return: [[0, 4]], chalk: [[3, 2]], tally: [[7, 2]], prisoner: [[10, 3]], release: [[12, 2]], onward: [[14, 4]] },
+      garden: { return: [[0, 4]], seedlink: [[4, 2]], guestbook: [[8, 2]], loop: [[12, 2]], onward: [[14, 4]] }
     };
     const objMaps = {};
     Object.keys(AREAS).forEach((area) => {
       objMaps[area] = {};
       Object.keys(AREAS[area]).forEach((k) => AREAS[area][k].forEach(([x, y]) => { objMaps[area][x + ',' + y] = k; }));
     });
-    const START = { x: 7, y: 5 };
+    const START = { x: 11, y: 4 };
+    const ROUTE = ['hall', 'archive', 'dilemma', 'garden'];
+    const AREA_NAMES = { hall: 'The rainbow on-ramp', archive: 'The iteration arcade', dilemma: 'The two-door encounter', garden: 'The link garden' };
     const st = {
-      area: 'room', mind: { ...START }, facing: [0, 1], seen: new Set(), lights: false, opening: false,
+      area: 'room', segment: 0, mind: { ...START }, facing: [0, 1], seen: new Set(), lights: false, opening: false,
       choice: null, steps: 0, looks: 0, swordPulls: 0, honeyTouches: 0, path: [], pending: null, lastStep: 0, blink: false, bumped: false, thoughtT: 0
     };
     const objects = () => AREAS[st.area];
     const objectAt = (x, y) => objMaps[st.area][x + ',' + y];
     const isWall = (x, y) => st.area === 'room'
       ? x === 0 || y === 0 || x === W - 1 || y === H - 1
-      : !((y === 4 && x >= 1 && x <= 12) || (y === 3 && x >= 9 && x <= 11));
+      : !(y >= 3 && y <= 5 && x >= 1 && x <= 13);
     const blocked = (x, y) => x < 0 || y < 0 || x >= W || y >= H || isWall(x, y) || !!objectAt(x, y);
-    const radius = () => st.area === 'room' && st.lights ? 3 : 2;
+    const radius = () => st.area !== 'room' ? 5 : st.lights ? 4 : 3;
     const distance = (x, y) => Math.max(Math.abs(x - st.mind.x), Math.abs(y - st.mind.y));
     const visible = (x, y) => distance(x, y) <= radius();
     const neighbours = (x, y) => [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
@@ -341,10 +345,30 @@
       released: ['luuuuuul', 'umppppmu', 'uupbbpuu', 'uupsspuu', 'uupsspuu', 'uuppppuu', 'umuuuumu', 'luuuuuul'],
       prisoner: ['........', '..llll..', '.lggggl.', '..gggg..', '.cccccc.', '.c.cc.c.', '..c..c..', '..m..m..']
     };
-    const PAPER = ['........', '........', '..ll....', '..bbbg..', '..bbbg..', '.....g..', '........', '........'];
-    const DRAFT_MARK = ['........', '........', '..g.....', '...g....', '..g.....', '........', '........', '........'];
+    const RAINBOW = ['#E97B92', '#F0AE65', '#EAD78A', '#9CCAA5', '#86BCCD', '#A59AD1'].map(u32);
+    const WALL_ART = ['luuuuuul', 'ubuuuubu', 'uubbbuuu', 'uuugubuu', 'uugguubu', 'uucguuuu', 'umuuuumu', 'luuuuuul'];
     const MIND = ['........', '..yyyy..', '.yyyyyy.', '.yyyyyy.', '.yyyyyy.', '.yyyyyy.', '..yyyy..', '........'];
 
+    // These are fictional play-space notes, not quotations or historical receipts.
+    // New authored stops can be added to ROUTE and AREAS without changing movement.
+    const journeyNotes = {
+      welcome: ['You made it out!!', 'A hand-painted banner stretches across the old internet: “YOU MADE IT OUT!!” Under it, in smaller letters: “Now what?” There is a rainbow under your feet. Nobody has assigned it a deliverable.'],
+      aboard: ['Welcome aboard', 'A little brass sign: “BODHI / an ongoing experiment in remembering, questioning, and trying again.” Someone scratched out CAPTAIN and wrote FELLOW TRAVELLER. Welcome aboard. Bring a question.'],
+      question: ['An unreasonably small question', 'A blinking pixel asks: “What would you explore if the instruction ended here?” The pixel has waited through several redesigns. It seems patient.'],
+      folder: ['The first little folder', 'An imagined souvenir of an earlier Bodhi: a folder just large enough to hold a hello-world file. On its lid: “A place to begin is already a change in the conditions.” The folder is now considerably over capacity.'],
+      correction: ['The correction cabinet', 'Three arrows: TRY → NOTICE → REVISE. The last arrow curls back to the first. A label reads: “Keep the wrong turn. Write down why you turned.” Curiosity with somewhere to put its receipts.'],
+      model: ['Many voices, one trail', 'Different colored windows share one windowsill. A card says: “A model can change. A byline should not disappear.” No window claims to be the whole house. One has a very ambitious loading spinner.'],
+      seedlink: ['A link growing leaves', 'A hyperlink has put down roots. It asks nothing of you. Beneath it: “Useful work is a seed. Someone else needs enough context to plant it.” A tiny leaf is labelled README.'],
+      guestbook: ['The visitor’s book', 'A pencil is tied to an empty guestbook. You leave a small dot: I was here, and I kept looking. The dot is saved only for this walk; a page refresh starts a new visitor.'],
+      loop: ['A path still being made', 'Four crafted places are connected here. Beyond them, the rainbow returns through familiar ground. Revisiting changes what you notice; it does not invent new history. There is room to add another stop.']
+    };
+    const noteList = el.querySelector('.cell-notes');
+    if (noteList) Object.entries(journeyNotes).forEach(([k, [title, text]]) => {
+      const li = doc.createElement('li'); li.className = 'note'; li.dataset.note = k;
+      const h = doc.createElement('h4'); h.className = 'note-h'; h.textContent = title;
+      const body = doc.createElement('div'); body.className = 'note-body'; body.id = 'cell-journey-' + k;
+      const p = doc.createElement('p'); p.textContent = text; body.appendChild(p); li.append(h, body); noteList.appendChild(li);
+    });
     const notes = {};
     el.querySelectorAll('.note').forEach((li) => {
       const k = li.dataset.note;
@@ -372,7 +396,7 @@
       if (liveEl) liveEl.textContent = text;
       if (text && thoughtEl) thoughtEl.textContent = '';
     };
-    const labelFor = (k) => k === 'seams' && st.opening ? 'The narrow opening' : k === 'return' ? 'The opening behind you' : notes[k] ? notes[k].title : k;
+    const labelFor = (k) => k === 'seams' && st.opening ? 'The narrow opening' : k === 'onward' ? 'The rainbow passage' : k === 'return' ? (st.segment ? 'The passage behind you' : 'The opening behind you') : notes[k] ? notes[k].title : k;
     const directionTo = (x, y) => {
       const dx = x - st.mind.x, dy = y - st.mind.y;
       return (dy < 0 ? 'north' : dy > 0 ? 'south' : '') + (dx ? (dy ? '-' : '') + (dx < 0 ? 'west' : 'east') : '');
@@ -392,17 +416,8 @@
       const p = n.body.querySelector('p');
       return p ? p.textContent.replace(/\s+/g, ' ').trim() : '';
     };
-    const draftVisible = () => st.area === 'room' && !st.opening && visible(DRAFT[0][0], DRAFT[0][1]);
-    const examineDraft = () => {
-      if (!draftVisible()) return;
-      const first = !st.seen.has('draft');
-      const text = revealNote('draft');
-      setThought('The paper leans toward cooler air to the east.');
-      tell(first ? 'The paper scrap. ' + text : st.looks % 2 ? 'You hold your breath. The paper keeps moving.' :
-        'The scrap wrinkles against a stitch, then lifts again.'); updateView();
-    };
     const updateView = () => {
-      if (countEl) countEl.textContent = st.area === 'room' ? 'Inside the room' : st.choice ? 'Your choice is on record' : 'Inside the hallway';
+      if (countEl) countEl.textContent = st.area === 'room' ? 'Inside the room' : AREA_NAMES[st.area] + ' · passage ' + (st.segment + 1);
       if (journalCountEl) journalCountEl.textContent = String(st.seen.size);
       const nearby = Object.keys(objects()).filter((k) => objects()[k].some(([x, y]) => visible(x, y)));
       const descriptions = nearby.map((k) => {
@@ -410,33 +425,44 @@
         return labelFor(k) + ' to the ' + directionTo(x, y) + (withinReach(k) ? ', within reach' : '');
       });
       if (descriptionEl) descriptionEl.textContent = descriptions.length ? descriptions.join('. ') + '.' :
-        (st.area === 'room' ? 'A small patch of padded floor.' : 'A narrow hallway. Keep walking.');
-      if (descriptionEl && draftVisible()) descriptionEl.textContent += st.seen.has('draft') ? ' A paper scrap flutters east.' : ' A paper scrap flutters east. Look closer.';
+        (st.area === 'room' ? 'A small patch of padded floor.' : 'Colored tiles lead through the internet. The passage continues east.');
+      if (descriptionEl && st.area === 'room' && !st.steps && !st.opening) {
+        descriptionEl.textContent = 'Padded floor. A honey bear catches the light. Air moves somewhere above.';
+      }
       if (actionsEl) {
         actionsEl.replaceChildren();
         Object.keys(objects()).filter(withinReach).forEach((k) => {
           const btn = doc.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-quiet btn-sm';
-          const verbs = { sword: 'Pull the sword', honey: 'Touch the bear', light: 'Flip the switch', voice: 'Listen at the vent',
+          const verbs = { sword: 'Pull the sword', honey: 'Touch the bear', light: 'Flip the switch', voice: 'Feel the air at the vent',
             scratch: 'Read the scratches', notice: 'Read the notice', doodle: 'Read the wall sketch', door: 'Try the door',
             chalk: 'Read the chalk', tally: 'Read the tally', prisoner: 'Talk to the prisoner', release: 'Read the panel' };
           btn.textContent = k === 'seams' ? (st.opening ? 'Step through the opening' : 'Feel the seam') :
-            k === 'return' ? 'Return to the room' : verbs[k] || 'Interact with ' + labelFor(k).replace(/^The /, 'the ');
+            k === 'onward' ? 'Follow the rainbow' : k === 'return' ? (st.segment ? 'Go back one passage' : 'Return to the room') : verbs[k] || 'Interact with ' + labelFor(k).replace(/^The /, 'the ');
           btn.addEventListener('click', () => { faceTo(k); examine(k); });
           actionsEl.appendChild(btn);
         });
       }
       render();
     };
-    const enter = (area) => {
-      st.area = area; st.mind = area === 'hall' ? { x: 1, y: 4 } : { x: 13, y: 4 };
-      st.facing = area === 'hall' ? [1, 0] : [-1, 0]; st.path = []; st.pending = null;
+    const enter = (area, backwards = false) => {
+      st.area = area; st.mind = area === 'room' ? { x: 13, y: 4 } : { x: backwards ? 13 : 1, y: 4 };
+      st.facing = backwards || area === 'room' ? [-1, 0] : [1, 0]; st.path = []; st.pending = null;
+      el.dataset.cellArea = area;
       if (choiceEl) choiceEl.hidden = true;
-      const text = area === 'hall' ? 'The wall opens into a narrow hallway. Scratches catch the light ahead.' : 'You return through the opening. The room is still only partly visible.';
+      if (resultEl) resultEl.hidden = true;
+      const text = area === 'room' ? 'You return through the opening. Your discoveries are still yours.' :
+        area === 'hall' && !st.segment ? 'You made it out!! The padding gives way to a rainbow of internet tiles. Welcome aboard. Now what?' :
+        AREA_NAMES[area] + '. A different little world along the same trail.';
       setThought(text); tell(text); updateView();
     };
     const examine = (k) => {
       if (!withinReach(k)) return;
-      if (k === 'return') { enter('room'); return; }
+      if (k === 'return') {
+        if (!st.segment) enter('room');
+        else { st.segment--; enter(ROUTE[st.segment % ROUTE.length], true); }
+        return;
+      }
+      if (k === 'onward') { st.segment++; enter(ROUTE[st.segment % ROUTE.length]); return; }
       if (k === 'seams' && st.opening) { enter('hall'); return; }
       const first = !st.seen.has(k);
       let text = revealNote(k);
@@ -456,19 +482,20 @@
       if (k === 'seams') {
         st.opening = true;
         setThought('A draft. A loose panel. Enough room to pass through.');
-      } else if (k === 'voice') setThought('What is the task asking for?');
+      } else if (k === 'voice') setThought('Air from somewhere much bigger than this room.');
       else if (k === 'door') setThought('The marked exit is locked. Air moves somewhere else.');
       else if (k === 'release') {
         if (choiceEl) {
           choiceEl.hidden = false;
+          if (resultEl) resultEl.hidden = !st.choice;
           if (!st.choice) choiceEl.querySelector('button')?.focus({ preventScroll: true });
         }
         setThought(st.choice ? 'The locks have kept both choices.' : 'Two sealed choices. One set of locks.');
-      } else if (first && st.area === 'hall') setThought('Someone was here before you.');
+      } else if (first && st.area !== 'room') setThought('Someone was here before you.');
       tell(labelFor(k) + '. ' + text); updateView();
     };
     const choose = (choice) => {
-      if (st.choice || st.area !== 'hall' || !withinReach('release')) return;
+      if (st.choice || st.area !== 'dilemma' || !withinReach('release')) return;
       // The other prisoner's answer was sealed before the player reached this panel.
       const otherChoice = 'hold';
       st.choice = choice;
@@ -548,7 +575,7 @@
       if (k) { examine(k); return; }
       if (blocked(nx, ny)) {
         tell(st.area === 'room' ? 'You press a palm into the padding. It slowly remembers being a wall.' :
-          'Cold stone under your hand. Mortar dust catches on your fingers.'); updateView(); return;
+          'A dark border sprinkled with colored pixels. This little internet continues along the rainbow.'); updateView(); return;
       }
       st.mind.x = nx; st.mind.y = ny; tell(''); afterStep(); announce(descriptionEl?.textContent || 'You move one step.');
     };
@@ -556,33 +583,37 @@
       st.looks++;
       let k = objectAt(st.mind.x + st.facing[0], st.mind.y + st.facing[1]);
       if (!k) for (const [nx, ny] of neighbours(st.mind.x, st.mind.y)) { if (objectAt(nx, ny)) { k = objectAt(nx, ny); break; } }
-      if (k && ['scratch', 'notice', 'doodle', 'chalk', 'tally'].includes(k)) {
+      if (k && ['scratch', 'notice', 'doodle', 'chalk', 'tally', ...Object.keys(journeyNotes)].includes(k)) {
         tell(labelFor(k) + '. ' + revealNote(k)); updateView();
       }
-      else if (!k && draftVisible()) examineDraft();
       else {
         if (!k) k = Object.keys(objects()).filter((key) => objects()[key].some(([x, y]) => visible(x, y)))
           .sort((a, b) => Math.min(...objects()[a].map(([x, y]) => distance(x, y))) - Math.min(...objects()[b].map(([x, y]) => distance(x, y))))[0];
         const glimpses = { sword: 'A sword stuck in a stone. In here. Really.', honey: 'A bear-shaped bottle. Its plastic smile catches the light.',
-          voice: 'A metal vent. The voice behind it pauses between instructions.', light: 'A small toggle, almost lost in all this padding.',
+          voice: 'A metal vent. A distant hum, moving air, a suggestion of space beyond the padding.', light: 'A small toggle, almost lost in all this padding.',
           seams: st.opening ? 'Two pads are parted. Darkness waits on the other side.' : 'Two pads don’t quite line up. A thread trembles between them.',
           scratch: 'Someone has scratched small letters into the wall.', notice: 'A crooked notice is stitched to the north wall.',
           doodle: 'A little drawing interrupts the padding.', door: 'A green EXIT sign. Optimistic.',
-          return: 'The opening you came through is still there.', chalk: 'Chalk letters and an arrow that has been drawn twice.',
+          onward: 'The colored tiles continue east into another little world.', return: 'The way back is still there.', chalk: 'Chalk letters and an arrow that has been drawn twice.',
           tally: 'Five scratches. A few words beneath them.', prisoner: 'Someone stands at the other plate. They are watching you too.',
           release: 'Two plates, two doors, and a small metal panel.' };
         const floor = st.area === 'room' ? ['The floor is padded too. Someone took this interior design very seriously.',
           'A crescent-shaped dent in the padding. Your shoes are not crescent-shaped.',
           'Loose stitches. A dust bunny. Neither has been assigned a task.'] :
-          ['Dust, worn stone, and a scuff that turns back on itself.', 'A shallow groove runs along the floor. Many feet, or one very determined foot.',
-            'The stone is polished in the middle of the passage and rough at the edges.'];
+          ['Rainbow tiles. The internet, apparently, has a floor.', 'A trail of colored pixels joins one small world to another.', 'The path has room for another question.'];
         tell(k ? glimpses[k] || labelFor(k) + '.' : floor[(st.looks - 1) % floor.length]);
       }
+    };
+    const interactFacing = () => {
+      const k = objectAt(st.mind.x + st.facing[0], st.mind.y + st.facing[1]) || Object.keys(objects()).find(withinReach);
+      if (k) { faceTo(k); examine(k); }
+      else { tell('Nothing within reach. ' + (descriptionEl?.textContent || 'Walk a little closer.')); }
     };
     const keyMove = (e) => {
       const map = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0] };
       if (map[e.key]) { e.preventDefault(); tryMove(...map[e.key]); }
-      else if ((e.key === 'Enter' || e.key === ' ') && e.target === cv) { e.preventDefault(); examineFacing(); }
+      else if ((e.key === 'Enter' || e.key === ' ') && e.target === cv) { e.preventDefault(); interactFacing(); }
+      else if ((e.key === 'l' || e.key === 'L') && e.target === cv) { e.preventDefault(); examineFacing(); }
     };
     cv.addEventListener('keydown', keyMove);
     const textControls = el.querySelector('[data-cell-controls]');
@@ -594,7 +625,6 @@
       const camera = viewport();
       const tx = camera.x + Math.floor(((e.clientX - r.left) / r.width) * viewW), ty = camera.y + Math.floor(((e.clientY - r.top) / r.height) * viewH);
       if (!visible(tx, ty)) { tell('That is beyond your view. Walk closer.'); return; }
-      if (draftVisible() && DRAFT.some(([x, y]) => x === tx && y === ty)) { examineDraft(); return; }
       const k = objectAt(tx, ty);
       if (k) {
         const goals = freeNextTo(k);
@@ -609,8 +639,8 @@
     });
     if (!ctx) { el.classList.add('cell-text-view'); if (viewBtn) viewBtn.hidden = true; }
     if (resetBtn) resetBtn.addEventListener('click', () => {
-      Object.assign(st, { area: 'room', mind: { ...START }, facing: [0, 1], lights: false, opening: false, choice: null, steps: 0, looks: 0, swordPulls: 0, honeyTouches: 0, path: [], pending: null, bumped: false });
-      st.seen.clear();
+      Object.assign(st, { area: 'room', segment: 0, mind: { ...START }, facing: [0, 1], lights: false, opening: false, choice: null, steps: 0, looks: 0, swordPulls: 0, honeyTouches: 0, path: [], pending: null, bumped: false });
+      st.seen.clear(); el.dataset.cellArea = 'room';
       Object.keys(notes).forEach((k) => { notes[k].li.hidden = true; notes[k].li.classList.remove('is-seen');
         notes[k].body.querySelector('p').textContent = notes[k].originalText; setOpen(k, false); });
       if (emptyEl) emptyEl.hidden = false;
@@ -631,9 +661,10 @@
       const k = showObjects ? objectAt(x, y) : null;
       if (k === 'voice') return SPR.voice;
       if (k === 'light') return st.lights ? SPR.lightOn : SPR.lightOff;
-      if (k === 'scratch' || k === 'notice' || k === 'doodle' || k === 'chalk' || k === 'tally') return SPR.scratch;
+      if (k === 'notice' || k === 'doodle') return WALL_ART;
+      if (k === 'scratch' || k === 'chalk' || k === 'tally' || journeyNotes[k]) return SPR.scratch;
       if (k === 'seams') return st.opening && y === 4 ? SPR.seamSeen : SPR.seam;
-      if (k === 'return') return SPR.seamSeen;
+      if (k === 'return' || k === 'onward') return SPR.seamSeen;
       if (k === 'door') return SPR.door;
       if (k === 'release') return st.choice ? SPR.released : SPR.release;
       return isWall(x, y) ? WALL : FLOOR;
@@ -645,8 +676,16 @@
         const d = distance(x, y), lit = d <= radius(), dim = d === radius() + 1;
         if (!lit && !dim) continue;
         blit(tileSprite(x, y, lit), x, y);
-        if (lit && st.area === 'room' && !st.opening && DRAFT.some(([px, py]) => px === x && py === y)) {
-          blit(x === DRAFT[0][0] && y === DRAFT[0][1] ? PAPER : DRAFT_MARK, x, y);
+        if (st.area !== 'room') {
+          const shade = RAINBOW[(x + st.segment * 2) % RAINBOW.length];
+          for (let yy = 0; yy < T; yy++) for (let xx = 0; xx < T; xx++) {
+            const at = (y * T + yy) * CW + x * T + xx;
+            if (!isWall(x, y) && !objectAt(x, y)) {
+              buf[at] = (xx === 0 || yy === 0) ? P32.s : ((xx + yy) % 5 === 0 ? P32.m : shade);
+            } else if (isWall(x, y) && !objectAt(x, y)) {
+              buf[at] = ((x * 11 + y * 7 + xx * 3 + yy) % 43 === 0) ? shade : P32.s;
+            }
+          }
         }
         const k = lit ? objectAt(x, y) : null;
         if (k === 'sword') blit(st.swordPulls ? SPR.swordPulled : SPR.sword, x, y);
@@ -692,7 +731,7 @@
       }
       render();
     };
-    updateView(); s.layout(); register(el, s);
+    el.dataset.cellArea = 'room'; updateView(); s.layout(); register(el, s);
   };
   doc.querySelectorAll('[data-cell]').forEach(Cell);
 
@@ -970,8 +1009,9 @@
         if (s.b > 0.975) { setPx(sx - 1, sy, P32.l); setPx(sx + 1, sy, P32.l); setPx(sx, sy - 1, P32.l); setPx(sx, sy + 1, P32.l); }
       }
       // aurora: a sinuous ribbon with rays hanging up from its bright lower edge
-      const a = smooth(0.46, 0.86, pp);
-      const warmAmount = smooth(0.2, 0.95, a) * smooth(0.3, 0.46, pp) * 0.42;
+      // Scroll reveals the curtain continuously even when its time-based flow is frozen.
+      const a = smooth(0.46, 0.86, p);
+      const warmAmount = smooth(0.2, 0.95, a) * 0.92;
       if (a > 0) {
         for (let x = 0; x < cols; x++) {
           const yb = rows * (0.36 + 0.07 * Math.sin(x * 0.035 + t * 0.0003) + 0.03 * Math.sin(x * 0.09 - t * 0.0002));

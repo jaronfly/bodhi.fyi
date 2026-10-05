@@ -402,7 +402,7 @@ import { paintCottage } from './assets/seed/cottage.js';
   }
   function drawAurora(a, t) {
     if (a <= 0) return;
-    const hy = HY0 + DY, warmAmount = smooth(0.2, 0.95, a) * 0.42;
+    const hy = HY0 + DY, warmAmount = smooth(0.2, 0.95, a) * 0.92;
     for (let x = 0; x < W; x++) {
       const env = smooth(0.15, 0.7, 0.5 + 0.5 * Math.sin(x * 0.011 + 1.3 + t * 0.04));
       if (env <= 0) continue;
@@ -696,7 +696,7 @@ import { paintCottage } from './assets/seed/cottage.js';
       const d = x.getImageData(0, 0, 64, 40).data, px = new Int16Array(64 * 40).fill(-1);
       const near = (r, g, b) => { let best = 0, bd = 1e12; for (const n of ['sage', 'moss', 'lichen', 'bone', 'soil']) { const h = HEX[n], dr = r - parseInt(h.slice(1, 3), 16), dg = g - parseInt(h.slice(3, 5), 16), db = b - parseInt(h.slice(5, 7), 16), q = dr * dr + dg * dg + db * db; if (q < bd) { bd = q; best = P[n]; } } return best; };
       for (let i = 0; i < 64 * 40; i++) if (d[i * 4 + 3] > 128) px[i] = near(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]);
-      SHIP = px;
+      SHIP = px; lastKey = ''; wake();
     };
     im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
   })();
@@ -707,21 +707,19 @@ import { paintCottage } from './assets/seed/cottage.js';
       ? Math.max(1, Math.min(Math.floor(W * .76 / 64), Math.round(s * .18)))
       : Math.max(1, Math.round(s * 0.11));
     if (win.innerWidth <= 700) {
-      // On phones the same hull occupies the free art stage, below the words and above its controls.
+      // A fixed whole-pixel scale avoids shoreline-driven size snaps.
+      k = 1;
       const stage = doc.querySelector('#the-crew .ship-sea'), area = stage?.getBoundingClientRect(), frame = canvas.getBoundingClientRect();
-      if (!area?.width || !area.height || !frame.width || !frame.height || area.bottom <= frame.top || area.top >= frame.bottom) return;
-      const cssX = frame.width / W, cssY = frame.height / H;
-      k = clamp(Math.min(2, Math.floor((area.width / cssX - 2) / 64), Math.floor((area.height / cssY - 8) / 36)), 1, 2);
-      sy = (area.top + area.height / 2 - frame.top) / cssY + (34 - (Math.min(from, 35) + 36) / 2) * k;
-      const row = Math.round(sy - DY);
-      if (row <= HY0 || row >= H) return;
-      // The left edge of the whole hull must remain beyond the actual shore at its waterline.
-      const wz = CZ + G[row], scale = SC[row];
-      const waterLeft = W / 2 + (PX(wz) + seaEdge(wz) + 0.8 - CX) * scale;
-      const left = Math.max((area.left - frame.left) / cssX + 1, waterLeft), right = (area.right - frame.left) / cssX - 1;
-      while (k > 1 && right - left < 64 * k) k--;
-      if (right - left < 64 * k) return;
-      sx = clamp((area.left + area.width / 2 - frame.left) / cssX, left + 32 * k, right - 32 * k);
+      if (area?.width && area.height && frame.width && frame.height && area.bottom > frame.top && area.top < frame.bottom) {
+        const cssY=frame.height/H;
+        sy=(area.top+area.height/2-frame.top)/cssY+(34-(Math.min(from,35)+36)/2)*k;
+      }
+      // Outside the close stage the same hull keeps its world projection.
+      // If water is narrow, the far edge may crop; its near edge stays offshore.
+      const row=clamp(Math.round(sy-DY),HY0+1,H-1);
+      const wz=CZ+G[row],scale=SC[row];
+      const waterLeft=W/2+(PX(wz)+seaEdge(wz)+.8-CX)*scale;
+      sx=Math.max(Math.min(sx,W-32*k-1),waterLeft+32*k);
     }
     const x0 = Math.round(sx - 32 * k + departure * (W + 64 * k + 6 * s));
     const bob = anim ? Math.round(Math.sin(t * 1.2) * k * 0.6) : 0;
@@ -767,8 +765,8 @@ import { paintCottage } from './assets/seed/cottage.js';
     for (let x = 0; x < w; x++) {
       const far = Math.round(horizon - 2 + Math.sin(x * 0.019) * 5 + Math.sin(x * 0.047 + 1.2) * 2);
       const near = Math.round(horizon + 5 + Math.sin(x * 0.014 + 2.1) * 8 + Math.sin(x * 0.039) * 3);
-      orect('#73794f', x, far, 1, Math.max(1, horizon + 10 - far));
-      orect('#637647', x, near, 1, Math.max(1, horizon + 30 - near));
+      orect('#727460', x, far - 4, 1, Math.max(1, horizon + 11 - far));
+      orect('#647554', x, near, 1, Math.max(1, horizon + 18 - near));
     }
     for (let i = 0; i < 240; i++) {
       const x = Math.floor(r() * w), y = Math.floor(fieldTop + r() * (h - fieldTop));
@@ -781,7 +779,9 @@ import { paintCottage } from './assets/seed/cottage.js';
     const r = rng(840);
     for (let j = 0; j < 4; j++) orect('#4b382b', x - 27 * s + j * 2 * s, y + j * s, (58 - j * 4) * s, s);
     oline('#49372b', [[x - 7 * s, y + 2 * s], [x - 4 * s, y - 22 * s], [x + 3 * s, y - 48 * s], [x + 1 * s, y - 91 * s]], 13 * s);
-    oline('#76553b', [[x - 2 * s, y - 8 * s], [x + 1 * s, y - 34 * s], [x + 5 * s, y - 67 * s]], 3 * s);
+    oline('#76553b', [[x - 3 * s, y - 9 * s], [x - 1 * s, y - 20 * s]], s);
+    oline('#76553b', [[x + 1 * s, y - 31 * s], [x + 3 * s, y - 44 * s]], s);
+    oline('#76553b', [[x + 2 * s, y - 55 * s], [x + 3 * s, y - 64 * s]], s);
     const cl = [];
     for (let i = 0; i < 14; i++) {
       const a = i * 2.399, rr = 18 + Math.sqrt(i / 14) * 27, bx = x + Math.cos(a) * rr * s, by = y - (80 + Math.sin(a) * rr * 0.5) * s;
@@ -821,9 +821,8 @@ import { paintCottage } from './assets/seed/cottage.js';
     // Keep the whole dog on the grass outside the crooked trunk and its broad roots.
     const dogX = Math.round(x - 34 * sc - 32 * k - 4), dogY = Math.round(y + 6 * sc);
     oTree(x, y, sc, t);
-    oFlower(dogX - 7 * k, dogY, k, '#dfa075');
-    oFlower(dogX - 4 * k, dogY, k, '#a86f85');
-    oFlower(dogX - k, dogY, k, '#e9bb82');
+    oFlower(w * .17, h * .88, k, '#dfa075');
+    oFlower(w * .38, h * .94, k, '#a86f85');
     orect('#586242', dogX + 9 * k, dogY, 14 * k, Math.max(1, Math.round(k * 0.7)));
     oDog(dogX, dogY, sc, t, hello);
     const pose = puppyMetrics(sc, t, hello), rect = canvas.getBoundingClientRect();
@@ -854,6 +853,7 @@ import { paintCottage } from './assets/seed/cottage.js';
     ['#roots', 44, 52, 1, 0, 0],
     ['#partial-view', 92, 104, 2, 0, 1],
     ['#tree', 150, 161, 2, 0, 0],
+    ['#substrate', 174, 184, 2, 0, 0],
     ['#the-practice', 204, 213, 2, 0, 0],
     ['#questions', 224, 232, 2, 1, 0],
     ['#influences', 250, 271, 3, 1, 0],
@@ -866,7 +866,7 @@ import { paintCottage } from './assets/seed/cottage.js';
     ['#afterward', 437, 443, 5, 0, 0]
   ];
   // room to breathe: a stretch of the walk with nothing over it, after each of these
-  const INTERLUDE_AFTER = ['#the-seed', '#roots', '#partial-view', '#tree', '#the-practice', '#questions', '#influences', '#ancestors', '.evidence-folio', '#the-crew'];
+  const INTERLUDE_AFTER = ['#the-seed', '#roots', '#partial-view', '#the-practice', '#questions', '#influences', '#ancestors', '.evidence-folio', '#the-crew'];
   function addInterludes() {
     INTERLUDE_AFTER.forEach((sel) => {
       const el = doc.querySelector(sel);

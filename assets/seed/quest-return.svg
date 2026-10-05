@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 80" shape-rendering="crispEdges">
+  <!-- The sword from the room, now under an open sky. Original pixel study. -->
+  <path fill="#192b25" d="M4 12h120v60H4zM12 6h104v70H12z"/>
+  <path fill="#33483b" d="M4 52h120v20H4zM12 47h25v25H12zM86 49h30v23H86z"/>
+  <path fill="#293b30" d="M4 62h120v10H4zM14 57h27v15H14zM86 58h28v14H86z"/>
+  <path fill="#637462" d="M17 22h20v2H17zM22 18h10v4H22zM91 28h18v2H91zM96 24h8v4h-8z"/>
+  <path fill="#e9e9ce" d="M101 12h8v8h-8zM99 14h12v4H99zM46 14h2v2h-2zM17 36h2v2h-2zM86 12h1v1h-1z"/>
+  <path fill="#506456" d="M14 66h28v2H14zM84 66h30v2H84zM93 55h15v2H93z"/>
+  <path fill="#112019" d="M40 64h51v5H40zM45 61h42v10H45z"/>
+  <path fill="#738177" d="M48 47h28v3H48zM42 50h42v4H42zM38 54h51v12H38zM42 66h42v3H42z"/>
+  <path fill="#9ba58c" d="M48 47h28v3H48zM42 50h40v3H42zM39 54h19v3H39zM41 57h4v3h-4z"/>
+  <path fill="#4a5e51" d="M77 53h7v13h-7zM66 65h18v4H66zM56 56h3v4h-3zM53 60h3v5h-3zM59 53h3v3h-3z"/>
+  <path fill="#92ad66" d="M42 64h10v2H42zM46 61h4v3h-4zM72 51h10v2H72zM75 49h3v2h-3z"/>
+  <path fill="#0e1c18" d="M58 21h12v5H58zM59 26h10v20H59zM54 17h20v5H54z"/>
+  <path fill="#d5dcca" d="M61 25h6v22h-6zM63 47h2v3h-2z"/>
+  <path fill="#99b4a6" d="M65 25h2v22h-2zM62 46h1v2h-1z"/>
+  <path fill="#e8982a" d="M55 19h18v3H55zM61 9h6v3h-6zM62 7h4v2h-4z"/>
+  <path fill="#795b38" d="M62 12h4v7h-4z"/>
+  <path fill="#b98a4a" d="M62 12h2v7h-2zM57 22h4v1h-4z"/>
+  <path fill="#bacd9f" d="M22 62h2v4h-2zM20 60h2v2h-2zM24 61h2v2h-2zM105 65h2v3h-2z"/>
+  <path fill="#d9b9aa" d="M105 62h3v3h-3zM103 63h7v1h-7z"/>
+  <path fill="#8eaf79" d="M31 55h2v3h-2zM93 60h2v2h-2zM18 70h2v1h-2zM109 70h2v1h-2z"/>
+</svg>

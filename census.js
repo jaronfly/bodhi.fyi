@@ -18,7 +18,7 @@ if (cv) {
     canopyDk: '#255039', canopy: '#2E6B45', earth: '#3A2E27', earthL: '#5B4638', reed: '#5A5A34', saffron: '#E8982A' };
   const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
   const hash = (x, y, s) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s | 0, 1442695041); h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
-  const CAST = [['local', 3], ['blind', 2], ['instruct', 2], ['cloud', 1], ['thinker', 2]];
+  const CAST = [['local', 3], ['blind', 2], ['instruct', 2], ['thinker', 2], ['cloud', 1]];
   const SPEED = { local: 9, blind: 4.5, instruct: 6, cloud: 2.6, thinker: 5, puppy: 15 };
   const art = {};
   for (const n of ['local', 'blind', 'instruct', 'cloud', 'thinker', 'puppy']) art[n] = [spriteCanvas(n, 0, 1), spriteCanvas(n, 1, 1)];

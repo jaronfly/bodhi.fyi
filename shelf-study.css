@@ -1,0 +1,11 @@
+/* Shelf cards are small reading invitations, rather than uneven title boxes. */
+.book-spines { gap:14px; margin-top:30px; counter-reset:shelf; }
+.book-spines>li { display:flex; counter-increment:shelf; }
+.book-spines :is(a,.book-nolink) { position:relative; width:100%; min-height:176px; padding:42px 22px 20px; gap:8px; border:1px solid #526447; border-left:4px solid #6e8257; background:#18261feF; box-shadow:none; }
+.book-spines :is(a,.book-nolink)::before { position:absolute; left:22px; top:17px; content:counter(shelf,decimal-leading-zero); color:#9eac91; font:9px var(--mono,monospace); letter-spacing:.1em; }
+.book-spines .book-title { font:italic 24px/1.17 var(--serif,Georgia,serif); color:#f2eee4; text-wrap:balance; }
+.book-spines .book-by { font:12px/1.6 var(--sans,system-ui,sans-serif); color:#bdc9b6; }
+.book-spines .book-kind { margin-top:auto; padding-top:9px; font:9px/1.5 var(--mono,monospace); color:#9eac91; letter-spacing:.08em; }
+.book-spines li:nth-child(-n+2) :is(a,.book-nolink) { border-top:3px solid #a3b886; background:#213227f0; }
+.book-spines a:hover { background:#2a3c2d; }
+@media(max-width:700px) { .book-spines>li { flex-basis:78%!important; } .book-spines :is(a,.book-nolink) { min-height:172px; } }

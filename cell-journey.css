@@ -1,0 +1,17 @@
+/* The room stays quiet; the journey reveals its color only after escape. */
+#partial-view .context-room[data-cell-area]:not([data-cell-area="room"]) .cell-frame {
+  background: #17231b;
+  border: 1px solid #8a968d;
+  box-shadow: 0 0 30px rgb(134 188 205 / .1);
+}
+#partial-view .context-room[data-cell-area]:not([data-cell-area="room"]) .cell-feedback {
+  border-color: #86bccd;
+}
+#partial-view .cell-directions button { touch-action: manipulation; }
+#partial-view .cell-actions button { min-height: 44px; }
+@media (max-width: 700px) {
+  #partial-view .cell-local-view, #partial-view .cell-feedback { font-size: 12px; line-height: 1.45; }
+  #partial-view .cell-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+  #partial-view .cell-actions button { padding: 6px 9px; font-size: 12px; }
+  #partial-view .cell-frame { overflow: hidden; }
+}
