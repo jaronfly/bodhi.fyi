@@ -3,8 +3,8 @@
 import * as THREE from './vendor/three.module.js';
 import {batchMeshesByMaterial} from './geometry-batch.js';
 import {createDissolve} from './scene-dissolve.js';
-import {createClassroom} from './classroom.js?v=176aa575dd73';
-import {createRepeatedExams} from './repeated-exams.js';
+import {createClassroom} from './classroom.js?v=911b1cb694aa';
+import {createRepeatedExams} from './repeated-exams.js?v=a61fb817c7f6';
 import {makeElementalSky} from './elemental-sky.js?v=349e6f7cbc42';
 const canvas=document.getElementById('world'),story=document.getElementById('story');
 const captions=[...document.querySelectorAll('.caption')],counter=document.getElementById('frame-counter');

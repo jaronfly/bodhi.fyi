@@ -1,6 +1,6 @@
 /* A quiet beat before the practical workspace: the inherited resident sits,
    floats briefly, and returns to the ground. It never leaves the section. */
-.meditation-clearing { display:flex; align-items:center; justify-content:center; gap:clamp(35px,6vw,90px); padding:clamp(64px,10vh,120px) 24px; min-height:380px; }
+.meditation-clearing { display:flex; align-items:center; justify-content:center; gap:clamp(35px,6vw,90px); padding:clamp(64px,10vh,120px) 24px clamp(110px,16vh,170px); min-height:440px; }
 .meditation-art { position:relative; flex:0 0 260px; height:220px; }
 .meditation-art .meditation-person { position:absolute; left:112px; bottom:22px; width:96px; height:108px; image-rendering:pixelated; }
 .meditation-art .meditation-bonsai { position:absolute; width:240px; height:200px; left:0; bottom:5px; image-rendering:pixelated; }
@@ -11,9 +11,9 @@
 .meditation-copy p { font-size:15px; line-height:1.8; color:#c1ceba; }
 .meditation-copy a { display:inline-block; margin-top:14px; padding:8px 0; font:11px var(--mono,monospace); color:#c2d6af; border-bottom:1px solid #728967; text-decoration:none; }
 .meditation-copy a:focus-visible { outline:2px solid #e8982a; outline-offset:5px; }
-.meditation-clearing.is-meditating .meditation-art .meditation-person { animation:meditation-rise 9s ease-in-out infinite; }
-.meditation-clearing.is-meditating .meditation-shadow { animation:meditation-shade 9s ease-in-out infinite; }
-@keyframes meditation-rise { 0%,28%,100% { transform:translateY(0); } 52%,66% { transform:translateY(-18px); } 84% { transform:translateY(0); } }
-@keyframes meditation-shade { 0%,28%,84%,100% { transform:scaleX(1);opacity:.55; } 52%,66% { transform:scaleX(.68);opacity:.26; } }
-@media(max-width:600px) { .meditation-clearing { flex-direction:column; gap:20px; text-align:center; padding:54px 22px; } .meditation-art { flex-basis:205px; height:205px; width:260px; } .meditation-copy p { font-size:14px; } }
+.meditation-clearing.is-meditating .meditation-art .meditation-person { animation:meditation-rise 3.4s ease-in-out infinite; }
+.meditation-clearing.is-meditating .meditation-shadow { animation:meditation-shade 3.4s ease-in-out infinite; }
+@keyframes meditation-rise { 0%,3%,100% { transform:translateY(0); } 24%,45% { transform:translateY(-18px); } 72% { transform:translateY(0); } }
+@keyframes meditation-shade { 0%,3%,72%,100% { transform:scaleX(1);opacity:.55; } 24%,45% { transform:scaleX(.68);opacity:.26; } }
+@media(max-width:600px) { .meditation-clearing { flex-direction:column; gap:20px; text-align:center; padding:54px 22px 96px; } .meditation-art { flex-basis:205px; height:205px; width:260px; } .meditation-copy p { font-size:14px; } }
 @media(prefers-reduced-motion:reduce) { .meditation-clearing .meditation-art :is(img,.meditation-shadow) { animation:none!important; } }

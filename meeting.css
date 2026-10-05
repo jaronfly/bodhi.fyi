@@ -68,12 +68,18 @@
   height: auto;
   object-fit: contain;
 }
-.claude-field .meeting-cast li {display:grid;grid-template-rows:180px auto auto;align-content:end;min-width:0}
+.claude-field .meeting-cast li {display:grid;grid-template-rows:180px auto 1fr auto;align-content:start;min-width:0}
 .claude-field .meeting-cast li:nth-child(1) .cast-sprite{width:44px;height:60px}
 .claude-field .meeting-cast li:nth-child(2) .cast-sprite{width:72px;height:72px}
-.claude-field .meeting-cast li:nth-child(3) .cast-sprite{width:52px;height:80px}
-.claude-field .meeting-cast li:nth-child(4) .cast-sprite{width:128px;height:152px}
-.claude-field .meeting-cast li:nth-child(5) .cast-sprite{width:56px;height:80px}
+.claude-field .meeting-cast li:nth-child(3) .cast-sprite{width:80px;height:124px}
+.claude-field .meeting-cast li:nth-child(4) .cast-sprite{width:56px;height:80px}
+.claude-field .meeting-cast li:nth-child(5) .cast-sprite{width:128px;height:152px}
+.claude-field .meeting-cast .cast-examples {margin-top:18px; padding-top:12px; border-top:1px solid #56724b; color:var(--bone); font-size:11px;}
+.claude-field .cast-examples span {display:block; font:8px/1.8 var(--f-mono); letter-spacing:.1em; color:var(--lichen); text-transform:uppercase;}
+.claude-field .cast-examples a,.claude-field .cast-footnote a {color:inherit; text-decoration-color:#789769; text-underline-offset:4px;}
+.claude-field .cast-footnote {max-width:800px; margin:0 auto; padding:0 24px; text-align:center; font-size:12px; color:var(--sage);}
+.claude-field .field-origin .origin-intro {max-width:720px;}
+.claude-field .field-origin .origin-intro p {font-size:17px; line-height:1.8; margin:24px 0;}
 
 /* without script: the same copy as plain text on the same plate */
 .claude-field .meeting-still {
@@ -94,5 +100,7 @@
 .claude-field .meeting-still span span { color: var(--sage); letter-spacing: .02em; text-transform: none; }
 
 @media (max-width: 700px) {
-  .claude-field .meeting-cast { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .claude-field .meeting-cast {gap:20px; padding:12px 16px 20px;}
+  .claude-field .meeting-cast li {flex-basis:72%; grid-template-rows:164px auto 1fr auto;}
+  .claude-field .field-origin .origin-intro p {font-size:15px;}
 }

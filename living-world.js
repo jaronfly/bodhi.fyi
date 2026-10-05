@@ -1,5 +1,5 @@
 /* GLM/ZCode living grove, adapted by Astra: palette, sprites, timing, accessibility and lifecycle. */
-import { spriteCanvas } from './assets/seed/sprites.js?v=ea42dbdb046f';
+import { spriteCanvas } from './assets/seed/sprites.js?v=ba5f2f048d6a';
 import { paintCottage } from './assets/seed/cottage.js';
 const villageKinds = ['local','blind','instruct','cloud','thinker','vision','tinyLocal','moe'];
 const villageNames = ['A local sprout','A text-only reader','An instruction-shaped resident','A cloud resident','A thinking resident','A resident with a field viewer','A small local resident','A branching resident'];

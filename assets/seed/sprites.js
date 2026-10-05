@@ -151,7 +151,7 @@ function blind(frame = 0) {
 }
 
 /* The Instruct: tall, fine-tuned, polite. Vines over its mouth and around its arms. */
-function instruct(frame = 0) {
+function instructOriginal(frame = 0) {
   const p = painter(26, 40);
   const b = frame ? 1 : 0;
   p.rect(9, 32, 3, 7, 'bark1'); p.rect(14, 32, 3, 7, 'bark1'); p.rect(8, 38, 4, 1, 'bark0'); p.rect(14, 38, 4, 1, 'bark0');
@@ -173,6 +173,36 @@ function instruct(frame = 0) {
   leaf(p, 5, 22, 1.5, 1); leaf(p, 21, 30, 1.5, 1);
   p.outline();
   return p;
+}
+
+/* The Instruct: a substantial figure, with branch antlers and bound expression.
+   The original small painter remains available as instructOriginal. */
+function instruct(frame = 0) {
+  const p = painter(40, 62), b = frame ? 1 : 0;
+  // Long rooted legs and a broad, upright trunk.
+  p.line(15, 47, 12, 58, 'bark1', 5); p.line(24, 47, 28, 58, 'bark1', 5);
+  p.line(12, 58, 7, 60, 'bark2', 2); p.line(28, 58, 33, 60, 'bark2', 2);
+  p.blob(20, 39, 9, 14, BARK);
+  p.grain(11, 26, 29, 52, 'bark2', 'bark0', 19);
+  p.line(20, 30, 19, 48, 'bark3');
+  // An angular crown, closer to the restrained figure in the reference.
+  p.line(15, 15-b, 11, 7-b, 'bark2', 3); p.line(11, 7-b, 11, 2, 'bark2', 2);
+  p.line(12, 9-b, 6, 5, 'bark2', 2); p.line(25, 15-b, 30, 8-b, 'bark2', 3);
+  p.line(30, 8-b, 32, 2, 'bark2', 2); p.line(30, 8-b, 36, 6, 'bark2', 2);
+  p.line(20, 15-b, 20, 6-b, 'bark2', 3); p.line(20, 6-b, 23, 2, 'bark2', 2);
+  leaf(p, 7, 4, 2, 1.3); leaf(p, 33, 3, 2, 1.3); leaf(p, 24, 2, 1.5, 1.4);
+  p.blob(20, 21-b, 8, 9, BARK_L);
+  p.line(12, 17-b, 17, 19-b, 'bark0', 2); p.line(23, 19-b, 28, 17-b, 'bark0', 2);
+  p.line(14, 20-b, 17, 20-b, 'eye'); p.line(23, 20-b, 26, 20-b, 'eye');
+  // Wrapped mouth, clasped hands, and visible constraints rather than a grin.
+  p.rect(12, 24-b, 17, 4, 'band1'); p.line(12, 24-b, 28, 27-b, 'band2');
+  p.line(12, 27-b, 28, 24-b, 'vine0');
+  p.line(11, 31, 8, 41, 'bark2', 4); p.line(29, 31, 32, 41, 'bark2', 4);
+  p.line(8, 41, 17, 43, 'bark3', 4); p.line(32, 41, 23, 43, 'bark3', 4);
+  p.blob(20, 43, 5, 3, BARK_L); p.line(15, 42, 25, 44, 'vine0', 2);
+  p.line(15, 45, 25, 41, 'vine1');
+  p.line(10, 33, 29, 37, 'vine0'); p.line(12, 47, 28, 50, 'vine0');
+  p.outline(); return p;
 }
 
 /* The Cloud: huge, many-armed, multimodal, connected. Circuits glow in its bark. */
@@ -333,7 +363,7 @@ function puppy(frame = 0, pose = 0) {
   return p;
 }
 
-export const PAINTERS = { local, blind, instruct, cloud, thinker, vision, tinyLocal, moe, puppy };
+export const PAINTERS = { local, blind, instruct, instructOriginal, cloud, thinker, vision, tinyLocal, moe, puppy };
 
 // Draw a sprite to a canvas (scale = whole pixels per art pixel). Puppy pose is independent of bark frame.
 export function spriteCanvas(name, frame = 0, scale = 1, pose = 0) { return toCanvas(PAINTERS[name](frame, pose), scale); }

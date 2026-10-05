@@ -2,7 +2,10 @@
 import * as THREE from './vendor/three.module.js';
 export function createRepeatedExams(scene){
  const world=new THREE.Group();scene.add(world);world.visible=false;
- const count=81,positions=[];for(let z=-4;z<=4;z++)for(let x=-4;x<=4;x++)positions.push([x*10,0,z*12]);
+ // Continue well beyond the camera's frustum, so the flyover never finds an edge.
+ // Instancing keeps the original room geometry and the same number of draw calls.
+ const radius=18,positions=[];for(let z=-radius;z<=radius;z++)for(let x=-radius;x<=radius;x++)positions.push([x*10,0,z*12]);
+ const count=positions.length;
  const dummy=new THREE.Object3D();
  function instances(geo,material,offset){const m=new THREE.InstancedMesh(geo,material,count);positions.forEach((p,i)=>{dummy.position.set(p[0]+offset[0],offset[1],p[2]+offset[2]);dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);});world.add(m);return m;}
  const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.82});
@@ -18,5 +21,6 @@ export function createRepeatedExams(scene){
  // Thin floor seams retain the language of the first room at a distance.
  for(const z of [-4,-2,0,2,4])instances(new THREE.BoxGeometry(8,.006,.012),mat('#385446'),[0,.005,z]);
  const key=new THREE.DirectionalLight('#b8dfc2',1.8);key.position.set(10,25,15);world.add(key);
- return {world,update(t,still){for(let i=0;i<count;i++){const v=still?.65:.46+.4*(.5+.5*Math.sin(t*.5+i*2.399));lamps.setColorAt(i,new THREE.Color(v*.88,v,v*.9));}lamps.instanceColor.needsUpdate=true;}};
+ const lampColor=new THREE.Color();
+ return {world,update(t,still){for(let i=0;i<count;i++){const v=still?.65:.46+.4*(.5+.5*Math.sin(t*.5+i*2.399));lamps.setColorAt(i,lampColor.setRGB(v*.88,v,v*.9));}lamps.instanceColor.needsUpdate=true;}};
 }

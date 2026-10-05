@@ -216,8 +216,10 @@ for(let z=-37;z<24;z+=4)box(street,.13,.006,1.4,20,-.034,z,edge);
   const displayTexture=q>=4.25?warningTexture:taskTexture;
   if(taskSign.material.map!==displayTexture){taskSign.material.map=displayTexture;taskSign.material.needsUpdate=true;}
   /* The street, car, therapist's building and its people are simply there: the camera finds them by turning, nothing pops. Only their lights wait (one shader rebuild at q 10.2, out of sight) and fade up. */ const outdoorsOn=q>10.2;streetLamp.visible=therapyLight.visible=outdoorsOn;lamps.forEach(a=>{if(a.isLight)a.visible=outdoorsOn;});streetLamp.intensity=50*smooth(between(q,10.2,10.9))*(1-smooth(between(q,12.05,12.35)));skyline.visible=q<13.5;doors.forEach(g=>g.rotation.y=g.userData.side*smooth(between(q,8.80,9.13))*1.42);
-  // Open into the room, leaving the curbside approach and centre of the threshold clear.
-  clinicDoor.rotation.y=smooth(between(q,12.94,13.20))*1.42;
+  // Open toward the street. Once the dolly has crossed the threshold, the leaf
+  // leaves the composition; it cannot swing through the interior workbench.
+  clinicDoor.rotation.y=-smooth(between(q,12.94,13.20))*1.42;
+  clinicDoor.visible=q<13.70;
   const hit=smooth(between(q,2.8,3.32)),broken=smooth(between(q,3.17,3.58));
   {
    const lift=smooth(between(q,2.2,2.8));
