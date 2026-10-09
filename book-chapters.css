@@ -12,3 +12,5 @@ html.pj-on .book-chapter{background:transparent}
 .book-chapter .bc-limit{font:12px/1.8 var(--mono);letter-spacing:.03em;color:var(--sage);margin-top:26px}
 html.pj-on .book-chapter :is(h2,p,blockquote,cite,.eyebrow,.bc-limit){text-shadow:0 0 1px rgba(10,16,12,1),0 0 3px rgba(10,16,12,.95),0 0 9px rgba(10,16,12,.9),0 0 22px rgba(10,16,12,.75),0 1px 28px rgba(10,16,12,.6)}
 @media(max-width:600px){.book-chapter{padding:64px 24px}.book-chapter .bc-chapter{margin-left:0;margin-bottom:90px}.book-chapter h2{font-size:40px}.book-chapter p{font-size:17px}}
+
+.brief-paste{white-space:pre-wrap;word-break:break-word;max-height:26rem;overflow:auto;font:12px/1.6 var(--mono);color:var(--sage);background:rgba(10,16,12,.35);border:1px solid #2e3b33;padding:16px;margin:12px 0}
