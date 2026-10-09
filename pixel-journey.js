@@ -772,37 +772,70 @@ import { paintCottage } from './assets/seed/cottage.js';
     odisk('#f3d5a0', Math.round(w * 0.24), Math.round(horizon - 13), Math.round(Math.min(w, h) * 0.067));
     for (let i = 0; i < 5; i++) { const cx = ((i * 103 + t * 0.2) % (w + 80)) - 40, cy = 16 + (i % 3) * 17, k = 1 + (i % 2) * 0.4; for (const [dx, dy, ww, hh] of [[0, 0, 34, 3], [6, -3, 22, 3], [12, -6, 11, 3], [28, 1, 18, 2], [-5, 2, 17, 2]]) orect('#b47d78', cx + dx * k, cy + dy * k, ww * k, hh * k); }
     for (let y = fieldTop; y < h; y++) orect('#566b43', 0, y, w, 1);
-    for (let x = 0; x < w; x++) {
-      const far = Math.round(horizon - 2 + Math.sin(x * 0.019) * 5 + Math.sin(x * 0.047 + 1.2) * 2);
-      const near = Math.round(horizon + 5 + Math.sin(x * 0.014 + 2.1) * 8 + Math.sin(x * 0.039) * 3);
-      orect('#727460', x, far - 4, 1, Math.max(1, horizon + 11 - far));
-      orect('#647554', x, near, 1, Math.max(1, horizon + 18 - near));
+    // A broad valley, with successive ridges and meadow contours rather than a path.
+    const ridges = [
+      ['#69686c', -7, 6, .7], ['#727460', 0, 7, 2.1],
+      ['#647554', 11, 9, 3.4], ['#73794f', 24, 11, 4.9]
+    ];
+    for (const [color, offset, amp, phase] of ridges) for (let x = 0; x < w; x++) {
+      const u = x / w, ridge = Math.round(horizon + offset + Math.sin(u * 6.3 + phase) * amp + Math.sin(u * 16 + phase) * 2);
+      orect(color, x, ridge, 1, Math.max(1, horizon + offset + amp + 8 - ridge));
+      if (offset > 0 && x % 7 < 4) orect('#7e824d', x, ridge + 3 + Math.round(Math.sin(u * 13) * 2), 1, 1);
     }
-    for (let i = 0; i < 240; i++) {
+    // Small hedgerows give distance a scale. No objects intrude on Shadow's clearing.
+    for (let i = 0; i < 26; i++) {
+      const x = Math.floor(r() * w), yy = horizon + 14 + Math.round(Math.sin(x / w * 6.3 + 3.4) * 9);
+      const rw = 2 + Math.floor(r() * 5);
+      orect('#526342', x, yy - 2, rw, 2); orect('#526342', x + 1, yy - 3, Math.max(1, rw - 2), 1);
+    }
+    for (let i = 0; i < 7; i++) {
+      const x = Math.round(w * (.08 + i * .048)), yy = Math.round(horizon - 24 - Math.sin(i * 1.4) * 4);
+      orect('#69686c', x - 2, yy, 2, 1); orect('#69686c', x + 1, yy, 2, 1); orect('#69686c', x, yy + 1, 1, 1);
+    }
+    for (let i = 0; i < Math.min(2400, Math.round(w * (h - fieldTop) / 28)); i++) {
       const x = Math.floor(r() * w), y = Math.floor(fieldTop + r() * (h - fieldTop));
-      const color = ['#65794a', '#4e633d', '#71804d'][i % 3];
-      orect(color, x, y, 1 + (i % 9 === 0 ? 1 : 0), 1);
-      if (i % 13 === 0) orect(color, x, y - 2, 1, 3);
+      const depth = (y - fieldTop) / Math.max(1, h - fieldTop), color = ['#65794a', '#4e633d', '#71804d', '#859355', '#a9a263'][i % 5];
+      const len = 1 + Math.round(depth * (i % 4 === 0 ? 3 : 1));
+      orect(color, x, y, len, 1);
+      if (depth > .3 && i % 7 === 0) {
+        orect(color, x, y - len, 1, len + 1);
+        orect('#4e633d', x + 2, y - Math.max(1, len - 1), 1, len);
+      }
+      if (depth > .55 && i % 37 === 0) oFlower(x, y, 1, i % 2 ? '#dfa075' : '#a86f85');
     }
   }
   function oTree(x, y, s, t) {
     const r = rng(840);
-    for (let j = 0; j < 4; j++) orect('#4b382b', x - 27 * s + j * 2 * s, y + j * s, (58 - j * 4) * s, s);
-    oline('#49372b', [[x - 7 * s, y + 2 * s], [x - 4 * s, y - 22 * s], [x + 3 * s, y - 48 * s], [x + 1 * s, y - 91 * s]], 13 * s);
-    oline('#76553b', [[x - 3 * s, y - 9 * s], [x - 1 * s, y - 20 * s]], s);
-    oline('#76553b', [[x + 1 * s, y - 31 * s], [x + 3 * s, y - 44 * s]], s);
-    oline('#76553b', [[x + 2 * s, y - 55 * s], [x + 3 * s, y - 64 * s]], s);
+    const trunk = [[x - 7 * s, y], [x - 2 * s, y - 16 * s], [x + 4 * s, y - 33 * s], [x + 3 * s, y - 49 * s], [x - 3 * s, y - 66 * s], [x - 4 * s, y - 88 * s]];
+    oline('#39402c', [[x - 25 * s, y + 2 * s], [x - 12 * s, y], [x - 3 * s, y - 8 * s]], 4 * s);
+    oline('#49372b', [[x + 20 * s, y + 3 * s], [x + 8 * s, y], [x + 1 * s, y - 12 * s]], 4 * s);
+    oline('#49372b', trunk, 12 * s);
+    // Bark follows the bend, broken into short ridges rather than one green stripe.
+    for (let i = 0; i < 3; i++) {
+      const off = (i - 1) * 3 * s;
+      for (let j = 1; j < trunk.length; j++) {
+        const [a, b] = trunk[j - 1], [c, d] = trunk[j];
+        oline(i === 0 ? '#76553b' : '#5b4638', [[a + off, b - 3 * s], [c + off, d + 4 * s]], s);
+      }
+    }
+    // The limbs are behind the crown. Leaflets share a light direction across irregular clusters.
     const cl = [];
-    for (let i = 0; i < 14; i++) {
-      const a = i * 2.399, rr = 18 + Math.sqrt(i / 14) * 27, bx = x + Math.cos(a) * rr * s, by = y - (80 + Math.sin(a) * rr * 0.5) * s;
-      cl.push([bx, by, (12 + r() * 8) * s, i]);
+    for (let i = 0; i < 22; i++) {
+      const a = i * 2.399, rr = 8 + Math.sqrt(i / 22) * 35, bx = x + Math.cos(a) * rr * s, by = y - (83 + Math.sin(a) * rr * .64) * s;
+      cl.push([bx, by, (10 + r() * 6) * s, i]);
     }
     cl.sort((a, b) => a[1] - b[1]);
-    for (const [bx, by, , i] of cl) oline('#424b31', [[x + 4 * s, y - 42 * s], [x + (bx - x) * 0.45, y - 67 * s], [bx, by]], (i < 5 ? 4 : 2) * s);
+    for (const [bx, by, , i] of cl) oline('#49372b', [[x + 3 * s, y - 43 * s], [x + (bx - x) * .4, y - 66 * s], [bx, by]], (i < 5 ? 4 : 2) * s);
     for (const [cx, cy, rad] of cl) for (let dy = -rad; dy < rad; dy += s) for (let dx = -rad; dx < rad; dx += s) {
-      if (dx * dx + dy * dy > rad * rad * (0.88 + r() * 0.2)) continue;
-      const light = (dx - dy) / (rad * 2) + r() * 0.4;
-      orect(light > 0.6 ? '#b5ad69' : light > 0.25 ? '#829252' : light > -0.12 ? '#526d3e' : '#304c31', cx + dx, cy + dy, Math.ceil(s), Math.ceil(s));
+      if (dx * dx + dy * dy * 1.15 > rad * rad * (.84 + r() * .22)) continue;
+      orect('#304c31', cx + dx, cy + dy, Math.ceil(s), Math.ceil(s));
+    }
+    for (const [cx, cy, rad] of cl) for (let i = 0; i < 60; i++) {
+      const a = r() * Math.PI * 2, rr = Math.sqrt(r()) * rad * .9, dx = Math.cos(a) * rr, dy = Math.sin(a) * rr * .88;
+      const light = (-dx - dy) / (rad * 2) + r() * .55;
+      const color = light > .6 ? '#b5ad69' : light > .22 ? '#829252' : '#526d3e';
+      orect(color, cx + dx, cy + dy, 2 * s, s);
+      orect(color, cx + dx + s, cy + dy - s, s, 2 * s);
     }
     const ax = x - 19 * s, ay = y - 74 * s;
     orect('#3b4e2e', ax, ay - 6 * s, s, 6 * s); orect('#9ab16a', ax + s, ay - 6 * s, 4 * s, s);
@@ -830,7 +863,9 @@ import { paintCottage } from './assets/seed/cottage.js';
     const k = Math.max(1, Math.round(sc * 0.75));
     // Keep the whole dog on the grass outside the crooked trunk and its broad roots.
     const dogX = Math.round(x - 34 * sc - 32 * k - 4), dogY = Math.round(y + 6 * sc);
-    oTree(x, y, sc, t);
+    // Fit the full crown above the clearing on wide screens; Shadow keeps his authored scale.
+    const treeScale = Math.min(sc, (y - h * .07) / 126);
+    oTree(x, y, treeScale, t);
     oFlower(w * .17, h * .88, k, '#dfa075');
     oFlower(w * .38, h * .94, k, '#a86f85');
     orect('#586242', dogX + 9 * k, dogY, 14 * k, Math.max(1, Math.round(k * 0.7)));
