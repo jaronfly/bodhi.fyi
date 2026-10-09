@@ -3,15 +3,12 @@
 html.pj-on .book-chapter{background:transparent}
 .book-chapter .bc-chapter{max-width:40rem;margin:0 0 clamp(80px,16vh,170px) clamp(0px,7vw,110px)}
 .book-chapter .bc-chapter:last-child{margin-bottom:0}
-.book-chapter .eyebrow{font:10px/1.6 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--lichen)}
-.book-chapter h2{font-weight:400;font-size:clamp(38px,4.8vw,68px);line-height:1.02;letter-spacing:-.03em;margin:22px 0 28px;color:var(--bone)}
+.book-chapter .eyebrow{font:11px/1.6 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--sage)}
+.book-chapter h2{font-weight:500;font-size:clamp(38px,4.8vw,68px);line-height:1.02;letter-spacing:-.035em;margin:22px 0 28px;color:var(--bone);text-wrap:balance}
 .book-chapter h2 em{font-family:var(--serif);font-style:italic;font-weight:400}
-.book-chapter p{font-size:clamp(15px,1.3vw,18px);line-height:1.75;color:var(--sage);margin:0 0 20px}
-.book-chapter blockquote{margin:0 0 30px;padding:0 0 0 18px;border-left:2px solid #5d765d;font-family:var(--serif);font-style:italic;font-size:clamp(18px,1.6vw,23px);line-height:1.45;color:var(--bone)}
-.book-chapter blockquote cite{display:block;margin-top:10px;font:10px/1.6 var(--mono);font-style:normal;letter-spacing:.08em;color:var(--lichen)}
-.book-chapter .bc-limit{font:11px/1.8 var(--mono);letter-spacing:.04em;color:var(--lichen);margin-top:26px}
-html.pj-on .book-chapter :is(h2,p,blockquote,cite,.eyebrow,.bc-limit){text-shadow:0 0 2px rgba(12,18,14,.95),0 0 8px rgba(12,18,14,.85),0 0 18px rgba(12,18,14,.6)}
-@media(max-width:600px){.book-chapter{padding:64px 24px}.book-chapter .bc-chapter{margin-left:0;margin-bottom:90px}.book-chapter h2{font-size:40px}}
-/* A soft haze of soil behind the words, fading to nothing at its edge (no box), so text holds over any part of the world. */
-html.pj-on .book-chapter .bc-chapter{position:relative;padding:clamp(48px,7vw,96px) clamp(36px,6vw,84px);margin-left:calc(clamp(0px,7vw,110px) - clamp(36px,6vw,84px));background:radial-gradient(ellipse 62% 58% at 50% 50%,rgba(15,24,20,.7) 0,rgba(15,24,20,.58) 55%,rgba(15,24,20,0) 100%)}
-@media(max-width:600px){html.pj-on .book-chapter .bc-chapter{padding:56px 22px;margin-left:-22px;margin-right:-22px;background:radial-gradient(ellipse 80% 62% at 50% 50%,rgba(15,24,20,.72) 0,rgba(15,24,20,.6) 60%,rgba(15,24,20,0) 100%)}}
+.book-chapter p{font-weight:500;font-size:clamp(16px,1.4vw,19px);line-height:1.7;letter-spacing:.003em;color:#e9e6dc;margin:0 0 22px;text-wrap:pretty}
+.book-chapter blockquote{margin:0 0 30px;padding:0 0 0 18px;border-left:2px solid #5d765d;font-family:var(--serif);font-style:italic;font-size:clamp(19px,1.7vw,24px);line-height:1.45;color:var(--bone);text-wrap:pretty}
+.book-chapter blockquote cite{display:block;margin-top:10px;font:11px/1.6 var(--mono);font-style:normal;letter-spacing:.08em;color:var(--sage)}
+.book-chapter .bc-limit{font:12px/1.8 var(--mono);letter-spacing:.03em;color:var(--sage);margin-top:26px}
+html.pj-on .book-chapter :is(h2,p,blockquote,cite,.eyebrow,.bc-limit){text-shadow:0 0 1px rgba(10,16,12,1),0 0 3px rgba(10,16,12,.95),0 0 9px rgba(10,16,12,.9),0 0 22px rgba(10,16,12,.75),0 1px 28px rgba(10,16,12,.6)}
+@media(max-width:600px){.book-chapter{padding:64px 24px}.book-chapter .bc-chapter{margin-left:0;margin-bottom:90px}.book-chapter h2{font-size:40px}.book-chapter p{font-size:17px}}
