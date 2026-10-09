@@ -13,13 +13,13 @@
 
    What it reuses, literally: the night scroll's 23-colour palette, Bayer dither, star field, moon,
    aurora, cloud puffs, hill ranges and blob trees (pixel-backdrop.js), and the orchard's broad tree (landscape.js) and
-   original seed puppy (assets/seed/sprites.js?v=ea42dbdb046f), whose colours are added to the palette so the walk arrives in the
+   original seed puppy (assets/seed/sprites.js?v=ba5f2f048d6a), whose colours are added to the palette so the walk arrives in the
    orchard's light. Colours are authored per hour of the day as a table of roles, and the role palette
    interpolates in whole pixels without smoothing their edges.
 
    Motion: still when the system asks for reduced motion, when the film's Stillness is on, or when the
    field guide's ambient-motion switch is off. Pauses when hidden. No storage, no network. */
-import { spriteCanvas } from './assets/seed/sprites.js?v=ea42dbdb046f';
+import { spriteCanvas } from './assets/seed/sprites.js?v=ba5f2f048d6a';
 import { paintCottage } from './assets/seed/cottage.js';
 
 (() => {

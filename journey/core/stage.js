@@ -3,7 +3,7 @@
 // loss live here.
 import * as THREE from '../vendor/three.module.min.js';
 import { Timeline, CANON } from './timeline.js';
-import { Director, STILL_P } from './director.js';
+import { Director, STILL_P } from './director.js?v=bbaed28c3224';
 import { Quality } from './quality.js';
 import { sstep } from './math.js';
 import { srgb, HEX } from './palette.js';

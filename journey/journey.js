@@ -24,7 +24,7 @@ function boot() {
   } catch (e) { gl = null; }
   if (!gl) return;
   const dpr = parseFloat(q.get('jdpr'));
-  import('./core/stage.js')
+  import('./core/stage.js?v=b833e12e0deb')
     .then((m) => m.start(mount, canvas, gl, { dpr: dpr > 0 ? dpr : undefined, sync: q.get('journey') === 'force' }))
     .catch((err) => {
       document.documentElement.classList.remove('journey-on');

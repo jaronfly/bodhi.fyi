@@ -104,3 +104,5 @@
   .claude-field .meeting-cast li {flex-basis:72%; grid-template-rows:164px auto 1fr auto;}
   .claude-field .field-origin .origin-intro p {font-size:15px;}
 }
+
+.claude-field .origin-reading a {display:inline-block; padding:12px 0; color:var(--bone); font:12px/1.7 var(--f-mono); text-decoration:underline; text-underline-offset:5px;}

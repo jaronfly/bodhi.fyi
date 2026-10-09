@@ -13,7 +13,15 @@ function curve(knots) {
   for (let i = 0; i < n; i++) {
     const d0 = i > 0 ? (ys[i] - ys[i - 1]) / (xs[i] - xs[i - 1]) : 0;
     const d1 = i < n - 1 ? (ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]) : 0;
-    m[i] = i === 0 || i === n - 1 || d0 * d1 <= 0 ? 0 : (d0 + d1) / 2;
+    // Weighted harmonic slopes keep each segment inside its authored values,
+    // even when a fast descent is followed by a much longer, almost-flat beat.
+    // An arithmetic mean overshot the questions return by roughly 20 units.
+    if (i === 0 || i === n - 1 || d0 * d1 <= 0) m[i] = 0;
+    else {
+      const h0 = xs[i] - xs[i - 1], h1 = xs[i + 1] - xs[i];
+      const w0 = 2 * h1 + h0, w1 = h1 + 2 * h0;
+      m[i] = (w0 + w1) / (w0 / d0 + w1 / d1);
+    }
   }
   return (c) => {
     if (c <= xs[0]) return ys[0];
@@ -51,9 +59,11 @@ const CAM = [
   [3.05, [0.00, 0.25, 2.60], [0, 0.15, 0.00], 40, 1.4, 0],
   [3.40, [1.40, 1.50, 8.50], [0, 1.30, 0.00], 42, 5.0, 0],
   [3.95, [5.00, 3.00, 17.0], [0, 2.60, 0.00], 42, 12, 0.08],
-  [4.25, [3.60, 2.10, 14.5], [0, 3.10, 0.00], 42, 11, 0.14],
-  [4.60, [-0.5, 2.40, 14.8], [0, 3.20, 0.00], 42, 11, 0.14],
-  [5.00, [-4.2, 1.90, 13.6], [0, 3.30, 0.00], 42, 11, 0.12],
+  // Above the look point: portrait width fitting dollies back without driving
+  // a low upward-looking eye down through the surrounding hills.
+  [4.25, [3.60, 3.30, 14.5], [0, 3.10, 0.00], 42, 11, 0.14],
+  [4.60, [-0.5, 3.40, 14.8], [0, 3.20, 0.00], 42, 11, 0.14],
+  [5.00, [-4.2, 3.60, 13.6], [0, 3.30, 0.00], 42, 11, 0.12],
   [5.20, [1.60, 1.40, 9.00], [-3, 5.0, -20], 50, 8, 0],
   [5.50, [2.40, 1.30, 8.60], [-5, 6.5, -30], 52, 8, 0],
   [5.80, [2.40, 1.30, 8.60], [5, 17, -32], 55, 8, 0],
@@ -130,6 +140,7 @@ export const STILL_P = { soil: 0.12, roots: 0.95, cell: 0.6, 'to-be': 0.85, tree
 export class Director {
   constructor() {
     this.cam = camTracks();
+    this.eye = [0, 1, 2].map((axis) => curve(CAM.map((k) => [k[0], k[1][axis]])));
     this.s = { c: 0, look: [0, 0, 0], yaw: 0, pitch: 0, dist: 1, fov: 40, fitW: 1, shiftX: 0 };
     for (const k in T) this.s[k] = 0;
   }
@@ -138,6 +149,23 @@ export class Director {
     s.c = c;
     s.look[0] = lx(c); s.look[1] = ly(c); s.look[2] = lz(c);
     s.yaw = yaw(c); s.pitch = pit(c); s.dist = Math.exp(ld(c));
+    // The sky/ascent/return follows the authored world-space eye. Separately
+    // interpolating look, pitch and log-distance can reconstruct an eye below
+    // ground even when every eye knot is above it. Ease into this route after
+    // the tree and out before the intentional plant/soil cutaway; no floor clamp.
+    const route = sstep(5.2, 5.8, c) * (1 - sstep(10.0, 10.35, c));
+    if (route > 0) {
+      const cp = Math.cos(s.pitch);
+      const ex = s.look[0] + cp * Math.sin(s.yaw) * s.dist;
+      const ey = s.look[1] + Math.sin(s.pitch) * s.dist;
+      const ez = s.look[2] + cp * Math.cos(s.yaw) * s.dist;
+      const dx = ex + route * (this.eye[0](c) - ex) - s.look[0];
+      const dy = ey + route * (this.eye[1](c) - ey) - s.look[1];
+      const dz = ez + route * (this.eye[2](c) - ez) - s.look[2];
+      s.dist = Math.hypot(dx, dy, dz);
+      s.yaw = Math.atan2(dx, dz);
+      s.pitch = Math.asin(dy / s.dist);
+    }
     s.fov = fov(c); s.fitW = Math.exp(fw(c)); s.shiftX = sx(c);
     for (const k in T) s[k] = T[k](c);
     s.sunEl *= DEG; s.sunAz *= DEG; s.moonEl *= DEG; s.moonAz *= DEG;
