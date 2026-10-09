@@ -261,6 +261,16 @@ import { paintCottage } from './assets/seed/cottage.js';
       const at = i < 20 ? [riverD(250 + i * 1.2) + (R() - 0.5) * 3, 250 + i * 1.2] : i < 32 ? [POND.d + (R() - 0.5) * 5, POND.z + (R() - 0.5) * 3.5] : [2 + (R() - 0.5) * 4, 156 + (R() - 0.5) * 5];
       add('fly', at[0], at[1], { y: 0.2 + R() * 0.7, ph: R() * TAU });
     }
+    // Meadow fireflies, for the night ground: they gather around bushes and trees and drift over the open grass
+    // between them. World-space props, so they scale with depth and move with the ground, never floating in the sky.
+    {
+      const Rm = rng(913), anchors = props.filter((a) => (a.k === 'bush' || a.k === 'tree') && a.z > 60 && a.z < 335);
+      let n = 0;
+      const mk = (d, z) => { if (n++ < 560) add('fly', d, z, { y: 0.12 + Rm() * 0.95, ph: Rm() * TAU, ph2: Rm() * TAU, w: 0.6 + Rm() * 1.2, green: Rm() < 0.3, meadow: true }); };
+      for (const a of anchors) if (Rm() < 0.75) for (let k = 0, m = 2 + ((Rm() * 4) | 0); k < m; k++) mk(a.d + (Rm() - 0.5) * 2.4, a.z + (Rm() - 0.5) * 2.4);
+      for (let i = 0; i < 90; i++) { const z = 70 + Rm() * 265, d = (Rm() < 0.5 ? -1 : 1) * (1.1 + Rm() * 9); if (kind(d, z) === 'grass') mk(d, z); }
+      for (let i = 0; i < 200; i++) { const z = 60 + Rm() * 280, d = (Rm() < 0.5 ? -1 : 1) * (0.9 + Rm() * 3.2); if (kind(d, z) === 'grass') mk(d, z); }   // along the path, where you will be looking
+    }
   }
 
   /* ------------------------------------------------------------------ canvas and layout (the night scroll's whole-pixel scaling)
@@ -967,7 +977,10 @@ import { paintCottage } from './assets/seed/cottage.js';
       if (p.k === 'rail') continue;
       if (p.k === 'ship' && shipDeparture >= 1) continue;
       if (p.z < CZ - 3 || p.z > CZ + GMAX) continue;
-      const q = project(p.d, p.z, p.k === 'fly' ? p.y + (anim ? Math.sin(t * 0.8 + p.ph) * 0.1 : 0) : 0);
+      const fly = p.k === 'fly', drift = fly && p.meadow && anim;
+      const q = project(drift ? p.d + Math.sin(t * 0.31 + p.ph) * 0.45 + Math.sin(t * 0.77 + p.ph2) * 0.12 : p.d,
+                        drift ? p.z + Math.cos(t * 0.27 + p.ph2) * 0.45 : p.z,
+                        fly ? p.y + (anim ? Math.sin(t * 0.8 + p.ph) * (p.meadow ? 0.16 : 0.1) : 0) : 0);
       if (!q || q.y - q.s * 6 > H) continue;
       if (q.x < -q.s * 5 || q.x > W + q.s * 5) continue;
       vis.push([q, p]);
@@ -995,11 +1008,21 @@ import { paintCottage } from './assets/seed/cottage.js';
         case 'orchard': drawOrchardTree(sx, sy, Math.max(0.05, sc * 0.03), t); break;
         case 'dog': drawDog(sx, sy, sc * 0.035, anim ? t : 0.4, hello); break;
         case 'fly': {
-          if (hourVal('stars') < 0.95) break;
-          const on = anim ? Math.sin(t * 2.3 + p.ph * 5) > -0.1 : p.ph > 1.2;
-          if (!on) break;
-          raw(sx, sy, P.saffron);
-          if (sc > PXW * 0.6) { raw(sx - 1, sy, P.glow); raw(sx + 1, sy, P.glow); raw(sx, sy - 1, P.glow); raw(sx, sy + 1, P.glow); }
+          const fa = smooth(0.55, 1, hourVal('stars'));            // none by day, a few at twilight, many at night
+          if (fa <= 0.02 || (p.meadow && hash(p.seed, 7, 3) > fa)) break;
+          const wave = anim ? Math.sin(t * (p.w || 1.6) + p.ph * 5) : (p.ph > 1.2 ? 1 : -1);
+          if (wave < -0.2) break;                                   // dark half of the blink
+          const lit = wave > 0.25;                                  // full glow vs a faint ember
+          const core = lit ? (p.green ? P.sprout : P.saffron) : P.glow;
+          raw(sx, sy, core);
+          if (lit && sc > PXW * 0.7) { raw(sx + 1, sy, core); raw(sx, sy + 1, core); }   // near ones are two pixels, not one
+          if (lit) {
+            const R = clamp(Math.round(sc * 0.13), 2, 5);
+            for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+              const d2 = dx * dx + dy * dy;
+              if (d2 > 0 && d2 <= R * R + 1 && BAY[bi(sx + dx, sy + dy)] < 0.62 * (1 - Math.sqrt(d2) / (R + 1))) raw(sx + dx, sy + dy, P.glow);
+            }
+          }
           break;
         }
       }
